@@ -1,0 +1,25 @@
+; Engine configuration file.
+; Generic COIN engine + Cuba Libre module.
+
+config_version=5
+
+[application]
+
+config/name="COIN Engine — Cuba Libre"
+config/description="Motore generico per la serie COIN di GMT, con Cuba Libre come primo modulo."
+run/main_scene="res://scenes/Main.tscn"
+config/features=PackedStringArray("4.3", "Forward Plus")
+
+[autoload]
+
+GameController="*res://scenes/GameController.gd"
+
+[display]
+
+window/size/viewport_width=1500
+window/size/viewport_height=820
+window/stretch/mode="canvas_items"
+
+[debug]
+
+gdscript/warnings/unused_parameter=0

@@ -1,0 +1,11 @@
+# Cache di import e file generati da Godot
+.godot/
+.import/
+export.cfg
+
+# Build esportate
+build/
+*.exe
+*.pck
+*.zip
+# NB: export_presets.cfg è versionato apposta (serve alla GitHub Action di export Web)

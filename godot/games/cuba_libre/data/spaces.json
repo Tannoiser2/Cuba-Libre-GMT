@@ -1,0 +1,109 @@
+{
+  "_note": "Spazi della mappa di Cuba Libre. Tipi: province, city, ec (centro economico). Terreno: forest, grassland, mountain. Le adiacenze sono ricostruite dalla mappa del modulo VASSAL e VANNO VERIFICATE contro la mappa fisica prima del rilascio.",
+  "spaces": [
+    {
+      "id": "pinar_del_rio",
+      "name": "Pinar del Río",
+      "type": "province",
+      "terrain": "forest",
+      "pop": 1,
+      "adjacent": ["ec_pinar_habana", "la_habana"]
+    },
+    {
+      "id": "ec_pinar_habana",
+      "name": "Pinar del Río – La Habana EC",
+      "type": "ec",
+      "terrain": null,
+      "econ": 3,
+      "adjacent": ["pinar_del_rio", "la_habana"]
+    },
+    {
+      "id": "la_habana",
+      "name": "La Habana",
+      "type": "province",
+      "terrain": "grassland",
+      "pop": 1,
+      "adjacent": ["pinar_del_rio", "ec_pinar_habana", "havana", "matanzas"]
+    },
+    {
+      "id": "havana",
+      "name": "Havana",
+      "type": "city",
+      "terrain": null,
+      "pop": 6,
+      "adjacent": ["la_habana", "matanzas"]
+    },
+    {
+      "id": "matanzas",
+      "name": "Matanzas",
+      "type": "province",
+      "terrain": "grassland",
+      "pop": 1,
+      "adjacent": ["la_habana", "havana", "las_villas"]
+    },
+    {
+      "id": "las_villas",
+      "name": "Las Villas",
+      "type": "province",
+      "terrain": "forest",
+      "pop": 2,
+      "adjacent": ["matanzas", "ec_lasvillas_camaguey", "camaguey_province"]
+    },
+    {
+      "id": "ec_lasvillas_camaguey",
+      "name": "Las Villas – Camagüey EC",
+      "type": "ec",
+      "terrain": null,
+      "econ": 3,
+      "adjacent": ["las_villas", "camaguey_province"]
+    },
+    {
+      "id": "camaguey_province",
+      "name": "Camagüey (Provincia)",
+      "type": "province",
+      "terrain": "forest",
+      "pop": 1,
+      "adjacent": ["las_villas", "ec_lasvillas_camaguey", "camaguey_city", "oriente"]
+    },
+    {
+      "id": "camaguey_city",
+      "name": "Camagüey (Città)",
+      "type": "city",
+      "terrain": null,
+      "pop": 1,
+      "adjacent": ["camaguey_province"]
+    },
+    {
+      "id": "oriente",
+      "name": "Oriente",
+      "type": "province",
+      "terrain": "mountain",
+      "pop": 2,
+      "adjacent": ["camaguey_province", "ec_oriente_sierra", "sierra_maestra", "santiago_de_cuba"]
+    },
+    {
+      "id": "ec_oriente_sierra",
+      "name": "Oriente – Sierra Maestra EC",
+      "type": "ec",
+      "terrain": null,
+      "econ": 2,
+      "adjacent": ["oriente", "sierra_maestra"]
+    },
+    {
+      "id": "sierra_maestra",
+      "name": "Sierra Maestra",
+      "type": "province",
+      "terrain": "mountain",
+      "pop": 1,
+      "adjacent": ["oriente", "ec_oriente_sierra", "santiago_de_cuba"]
+    },
+    {
+      "id": "santiago_de_cuba",
+      "name": "Santiago de Cuba",
+      "type": "city",
+      "terrain": null,
+      "pop": 1,
+      "adjacent": ["oriente", "sierra_maestra"]
+    }
+  ]
+}

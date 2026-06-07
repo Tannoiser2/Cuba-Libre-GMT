@@ -1,0 +1,50 @@
+{
+  "_note": "Schieramento Standard (regolamento p.29). Lo Schieramento Variabile è descritto in docs/RULES_DIGEST.md.",
+  "markers": {
+    "usAlliance": "solid",
+    "aid": 15,
+    "resources": { "government": 15, "syndicate": 15, "m26": 10, "directorio": 5 },
+    "trackers": {
+      "totalSupport": 16,
+      "oppositionPlusBases": 7,
+      "drPopPlusBases": 1,
+      "openCasinos": 3
+    },
+    "eligibility": "all"
+  },
+  "supportOpposition": {
+    "active_support": ["pinar_del_rio", "havana"],
+    "passive_support": ["la_habana", "camaguey_city"],
+    "passive_opposition": ["matanzas", "camaguey_province", "oriente"],
+    "active_opposition": ["sierra_maestra"],
+    "neutral": ["las_villas", "santiago_de_cuba"]
+  },
+  "control": {
+    "government": ["havana", "camaguey_city", "santiago_de_cuba", "las_villas"],
+    "m26": ["sierra_maestra"],
+    "directorio": ["camaguey_province"],
+    "syndicate": ["pinar_del_rio"]
+  },
+  "forces": {
+    "government": {
+      "havana": { "troops": 6, "police": 4 },
+      "camaguey_city": { "troops": 1, "police": 2 },
+      "santiago_de_cuba": { "troops": 2, "police": 2 },
+      "las_villas": { "troops": 3 }
+    },
+    "m26": {
+      "la_habana": { "guerrillas": 1 },
+      "sierra_maestra": { "guerrillas": 2, "bases": 1 },
+      "santiago_de_cuba": { "guerrillas": 1 }
+    },
+    "directorio": {
+      "havana": { "guerrillas": 2 },
+      "camaguey_province": { "guerrillas": 1 }
+    },
+    "syndicate": {
+      "havana": { "casinos_open": 1 },
+      "la_habana": { "casinos_open": 1 },
+      "pinar_del_rio": { "casinos_open": 1 }
+    }
+  }
+}
