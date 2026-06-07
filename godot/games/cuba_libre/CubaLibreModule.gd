@@ -180,6 +180,15 @@ func can_place_base(state: GameState, space_id: String, is_casino: bool) -> bool
 # Helper condivisi da Operazioni e Attività Speciali
 # ---------------------------------------------------------------------------
 
+## Capacità Insorgente attiva? (per titolo carta)
+func has_capability(state: GameState, title: String) -> bool:
+	return state.active_capabilities.has(title)
+
+## Momentum del Governo attivo?
+func has_momentum(state: GameState, title: String) -> bool:
+	return state.active_momentum.has(title)
+
+
 func faction_has_non_base(st: SpaceState, fid: String) -> bool:
 	return st.count(fid, "guerrilla") > 0 or st.count(fid, "troops") > 0 or st.count(fid, "police") > 0
 

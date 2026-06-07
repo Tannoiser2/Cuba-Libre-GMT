@@ -40,6 +40,7 @@ func _initialize() -> void:
 	_test_cards_data()
 	_test_events()
 	_test_all_events()
+	_test_capabilities()
 
 	print("\n-- Risultato: %d passati, %d falliti --" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
@@ -774,6 +775,59 @@ func _test_all_events() -> void:
 	_check("Tutti gli eventi eseguono senza errori (fail=%d)" % fail, fail == 0)
 	_eq("Eventi automatizzati (96 lati attesi)", auto_count, 96)
 	print("  (automatizzati=%d, manuali=%d)" % [auto_count, manual_count])
+
+
+func _test_capabilities() -> void:
+	print("\n[Modificatori Capacità/Momentum]")
+	# Sánchez Mosquera: Assalto in Montagna come Città (capacità 4+2 invece di 2)
+	var r := _ops()
+	var st: GameState = r[2]
+	var ops: CubaLibreOperations = r[3]
+	st.active_momentum.append("Sánchez Mosquera")
+	st.space_state("oriente").add_piece("government", "troops", 4)
+	st.space_state("oriente").add_piece("m26", "guerrilla", 4, "active")
+	ops.assault({"spaces": ["oriente"]})
+	_eq("Sánchez Mosquera: Assalto montagna rimuove 4", st.space_state("oriente").count("m26", "guerrilla", "active"), 0)
+
+	# S.I.M.: la Polizia conta come Truppe nell'Assalto
+	var r2 := _ops()
+	var st2: GameState = r2[2]
+	var ops2: CubaLibreOperations = r2[3]
+	st2.active_momentum.append("S.I.M.")
+	st2.space_state("matanzas").add_piece("government", "troops", 1)
+	st2.space_state("matanzas").add_piece("government", "police", 3)
+	st2.space_state("matanzas").add_piece("m26", "guerrilla", 4, "active")
+	ops2.assault({"spaces": ["matanzas"]})
+	_eq("S.I.M.: Polizia conta come Truppe (rimosse 4)", st2.space_state("matanzas").count("m26", "guerrilla", "active"), 0)
+
+	# Guantánamo Bay: Attacco Aereo rimuove 2
+	var r3 := _ops()
+	var st3: GameState = r3[2]
+	var sa3 := CubaLibreSpecials.new(st3, r3[0])
+	st3.active_momentum.append("Guantánamo Bay")
+	st3.space_state("matanzas").add_piece("m26", "guerrilla", 2, "active")
+	sa3.air_strike({"space": "matanzas"})
+	_eq("Guantánamo: Attacco Aereo rimuove 2", st3.space_state("matanzas").count("m26", "guerrilla"), 0)
+
+	# Morgan: il DR può Marciare entro 2 spazi (pinar -> matanzas via la_habana)
+	var r4 := _ops()
+	var st4: GameState = r4[2]
+	var ops4: CubaLibreOperations = r4[3]
+	st4.space_state("pinar_del_rio").add_piece("directorio", "guerrilla", 1, "underground")
+	var res_no := ops4.march({"faction": "directorio", "moves": [{"from": "pinar_del_rio", "to": "matanzas", "count": 1}]})
+	_check("Senza Morgan: Marcia a 2 spazi vietata", not res_no.ok)
+	st4.active_capabilities.append("Morgan")
+	var res_yes := ops4.march({"faction": "directorio", "moves": [{"from": "pinar_del_rio", "to": "matanzas", "count": 1}]})
+	_check("Con Morgan: Marcia a 2 spazi consentita", res_yes.ok)
+
+	# El Che: il 1º gruppo 26July che Marcia resta Clandestino
+	var r5 := _ops()
+	var st5: GameState = r5[2]
+	var ops5: CubaLibreOperations = r5[3]
+	st5.active_capabilities.append("El Che")
+	st5.space_state("la_habana").add_piece("m26", "guerrilla", 3, "underground")  # ora 4
+	ops5.march({"faction": "m26", "moves": [{"from": "la_habana", "to": "havana", "count": 3}]})
+	_eq("El Che: Guerriglie restano Clandestine a Havana", st5.space_state("havana").count("m26", "guerrilla", "active"), 0)
 
 
 func _test_victory_initial() -> void:

@@ -48,6 +48,17 @@ func _adjacent(a: String, b: String) -> bool:
 	return sd != null and sd.adjacent.has(b)
 
 
+## Raggiungibile in Marcia: adiacente, oppure entro 2 spazi se dist2 (Capacità Morgan).
+func _march_reachable(a: String, b: String, dist2: bool) -> bool:
+	if _adjacent(a, b):
+		return true
+	if dist2:
+		for mid in state.game_def.space(a).adjacent:
+			if _adjacent(mid, b):
+				return true
+	return false
+
+
 # ===========================================================================
 # OPERAZIONI DEL GOVERNO (COIN)
 # ===========================================================================
@@ -184,10 +195,17 @@ func _assault_in_space(space_id: String) -> int:
 	var sd: SpaceDef = state.game_def.space(space_id)
 	var st: SpaceState = state.space_state(space_id)
 	var troops := st.count("government", "troops")
+	# Momentum "S.I.M.": la Polizia conta come Truppe nell'Assalto
+	if mod.has_momentum(state, "S.I.M."):
+		troops += st.count("government", "police")
+	# Momentum "Sánchez Mosquera": l'Assalto tratta la Montagna come Città
+	var as_city := sd.type == CoinEnums.SpaceType.CITY or sd.is_economic()
+	if sd.terrain == "mountain" and mod.has_momentum(state, "Sánchez Mosquera"):
+		as_city = true
 	var capacity: int
-	if sd.terrain == "mountain":
+	if sd.terrain == "mountain" and not mod.has_momentum(state, "Sánchez Mosquera"):
 		capacity = int(troops / 2)
-	elif sd.type == CoinEnums.SpaceType.CITY or sd.is_economic():
+	elif as_city:
 		capacity = troops + int(troops / 2)
 	else:
 		capacity = troops
@@ -286,6 +304,10 @@ func rally(params: Dictionary) -> Dictionary:
 			_:  # "place": 1 Guerriglia
 				var p := state.place_from_available(f, "guerrilla", sid, 1)
 				log.append("Rally: +%d Guerriglia di %s a %s" % [p, f, sid])
+	# Capacità "The Guerrilla Life": le Guerriglie 26July restano Clandestine col Rally
+	if f == "m26" and mod.has_capability(state, "The Guerrilla Life"):
+		for sid in spaces:
+			state.flip_pieces("m26", "guerrilla", sid, "active", "underground")
 	return _ok(cost, log)
 
 
@@ -303,10 +325,11 @@ func march(params: Dictionary) -> Dictionary:
 			cost += 1
 	if not _can_pay(f, cost):
 		return _err("Risorse insufficienti (servono %d)" % cost)
-	# Valida adiacenza
+	# Valida adiacenza (Capacità "Morgan": il DR può Marciare entro 2 spazi)
+	var dist2: bool = f == "directorio" and mod.has_capability(state, "Morgan")
 	for m in moves:
-		if not _adjacent(m["from"], m["to"]):
-			return _err("Marcia non adiacente: %s->%s" % [m["from"], m["to"]])
+		if not _march_reachable(m["from"], m["to"], dist2):
+			return _err("Marcia non raggiungibile: %s->%s" % [m["from"], m["to"]])
 	state.add_resources(f, -cost)
 	var log: Array = []
 	# Esegui i movimenti (le Guerriglie restano Clandestine durante lo spostamento)
@@ -316,10 +339,17 @@ func march(params: Dictionary) -> Dictionary:
 		var moved_u := state.move_pieces(f, "guerrilla", m["from"], m["to"], cnt, "underground")
 		if moved_u < cnt:
 			state.move_pieces(f, "guerrilla", m["from"], m["to"], cnt - moved_u, "active")
+	# Capacità "El Che": il 1º gruppo che Marcia (26July) resta/torna Clandestino, senza Attivarsi
+	var el_che_first: bool = f == "m26" and mod.has_capability(state, "El Che")
 	# Attivazione: per ogni destinazione, se EC o spazio con Supporto e (guerriglie mosse + cubi) > 3
 	for d in dests.keys():
 		var sd: SpaceDef = state.game_def.space(d)
 		var st: SpaceState = state.space_state(d)
+		if el_che_first:
+			state.flip_pieces(f, "guerrilla", d, "active", "underground")
+			el_che_first = false
+			log.append("Marcia (El Che): 1º gruppo di %s resta Clandestino a %s" % [f, d])
+			continue
 		var moved_here := 0
 		for m in moves:
 			if m["to"] == d:

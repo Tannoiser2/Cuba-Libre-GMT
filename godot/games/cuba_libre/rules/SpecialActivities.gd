@@ -58,11 +58,13 @@ func air_strike(params: Dictionary) -> Dictionary:
 	var sd: SpaceDef = state.game_def.space(sid)
 	if sd == null or sd.type == CoinEnums.SpaceType.CITY:
 		return _err("Attacco Aereo solo in Provincia o EC")
-	var removed := mod.remove_enemy_pieces(state, sid, 1, "government",
+	# Momentum "Guantánamo Bay": l'Attacco Aereo rimuove 2 pezzi invece di 1
+	var cap: int = 2 if mod.has_momentum(state, "Guantánamo Bay") else 1
+	var removed := mod.remove_enemy_pieces(state, sid, cap, "government",
 		{"active_g": true, "underground_g": false, "cubes": false, "bases": true})
 	if removed == 0:
 		return _err("Nessun bersaglio per l'Attacco Aereo a %s" % sid)
-	return _ok(0, ["Attacco Aereo a %s: rimosso 1 pezzo" % sid])
+	return _ok(0, ["Attacco Aereo a %s: rimossi %d pezzi" % [sid, removed]])
 
 
 ## Rappresaglia (4.2.3): in 1 spazio Controllato dal Governo, pone Terrore, sposta
