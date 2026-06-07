@@ -175,6 +175,22 @@ func set_highlight(on: bool) -> void:
 	queue_redraw()
 
 
+var _flash := 0.0
+var _flash_color := Color(1, 1, 0)
+
+
+## Lampeggio di evidenziazione (lo spazio è cambiato).
+func flash(col := Color(1, 0.9, 0.2)) -> void:
+	_flash_color = col
+	var tw := create_tween()
+	tw.tween_method(_set_flash, 1.0, 0.0, 0.85)
+
+
+func _set_flash(v: float) -> void:
+	_flash = v
+	queue_redraw()
+
+
 func _draw() -> void:
 	var outline := Color("f1c40f") if _highlight else Color(1, 1, 1, 0.35)
 	var width := 3.0 if _highlight else 1.0
@@ -185,7 +201,10 @@ func _draw() -> void:
 		if _control != "":
 			var cc := GameController.faction_color(_control); cc.a = 0.22
 			draw_circle(c, r, cc)
-		draw_arc(c, r, 0, TAU, 48, outline, width)
+		if _flash > 0.0:
+			var fc := _flash_color; fc.a = _flash * 0.55
+			draw_circle(c, r, fc)
+		draw_arc(c, r, 0, TAU, 48, outline, width + _flash * 4.0)
 		return
 	# Province: poligono
 	var poly := _scaled_poly()
@@ -195,8 +214,11 @@ func _draw() -> void:
 		var col := GameController.faction_color(_control)
 		col.a = 0.22
 		draw_colored_polygon(poly, col)
+	if _flash > 0.0:
+		var fc2 := _flash_color; fc2.a = _flash * 0.45
+		draw_colored_polygon(poly, fc2)
 	var line := poly + PackedVector2Array([poly[0]])
-	draw_polyline(line, outline, width)
+	draw_polyline(line, outline, width + _flash * 4.0)
 
 
 func _gui_input(event: InputEvent) -> void:
