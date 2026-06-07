@@ -1,63 +1,216 @@
 {
   "_note": "Tabelle Calixto. eligibility (C8.5.2), piece_priorities (C8.5.8), effective_events (C8.5.5), propaganda (C8.5.9). space_selection (C8.5.6) e move_priorities (C8.5.7) sono matrici dense: in trascrizione con lettura ad alto zoom.",
-
   "eligibility": {
     "first": [
-      {"cond": "gov_acting_and_underground_dr_or_26j_in_havana", "result": "op_sa"},
-      {"cond": "current_event_critical_and_effective", "result": "event"},
-      {"cond": "next_eligible_could_choose_effective_critical_event", "result": "op_only"},
-      {"cond": "acting_faction_first_eligible_on_upcoming_critical_event", "result": "pass"},
-      {"cond": "otherwise", "result": "op_and_sa"}
+      {
+        "cond": "gov_acting_and_underground_dr_or_26j_in_havana",
+        "result": "op_sa"
+      },
+      {
+        "cond": "current_event_critical_and_effective",
+        "result": "event"
+      },
+      {
+        "cond": "next_eligible_could_choose_effective_critical_event",
+        "result": "op_only"
+      },
+      {
+        "cond": "acting_faction_first_eligible_on_upcoming_critical_event",
+        "result": "pass"
+      },
+      {
+        "cond": "otherwise",
+        "result": "op_and_sa"
+      }
     ],
     "second": [
-      {"cond": "first_eligible_on_upcoming_critical_and_cannot_execute_current_critical_effective", "result": "pass"},
-      {"cond": "first_eligible_chose_event", "result": "op_sa"},
-      {"cond": "first_eligible_chose_op_sa_and_current_event_critical_or_performed_and_effective", "result": "event"},
-      {"cond": "acting_faction_first_eligible_on_upcoming_event", "result": "pass"},
-      {"cond": "otherwise", "result": "lim_op"}
+      {
+        "cond": "first_eligible_on_upcoming_critical_and_cannot_execute_current_critical_effective",
+        "result": "pass"
+      },
+      {
+        "cond": "first_eligible_chose_event",
+        "result": "op_sa"
+      },
+      {
+        "cond": "first_eligible_chose_op_sa_and_current_event_critical_or_performed_and_effective",
+        "result": "event"
+      },
+      {
+        "cond": "acting_faction_first_eligible_on_upcoming_event",
+        "result": "pass"
+      },
+      {
+        "cond": "otherwise",
+        "result": "lim_op"
+      }
     ]
   },
-
   "piece_priorities": {
     "_note": "C8.5.8. Lettura: (A) muovi/rimuovi/sostituisci/attiva pezzi del giocatore prima di quelli NP. (B) dall'alto in basso e da sx a dx per muovere/rimuovere/sostituire/attivare pezzi nemici e piazzare/muovere pezzi amici. (C) dal basso in alto e da dx a sx per rimuovere pezzi amici.",
     "groups": [
-      {"when": "acting_faction_is_syn", "label": "forces_with_cash", "order": [["26j", "dr", "gov"], ["underground", "active"]]},
-      {"label": "bases_casinos", "order": [["syn", "dr", "26j"]]},
-      {"when": "assault", "label": "guerrillas_of_faction_with_vulnerable_base_casino", "order": [["syn", "dr", "26j"]]},
-      {"when": "attack_or_ambush", "label": "faction_with_base_or_open_casino_with_only_1_guerrilla_or_cube", "order": [["26j", "dr"]]},
-      {"label": "cubes", "order": [["with_cash"], ["police", "troops"]], "note": "se NP GOV: alterna piazzando Police prima, poi Troops"},
-      {"label": "guerrillas", "order": [["with_cash"], ["underground", "active"], ["syn", "26j", "dr"]]}
+      {
+        "when": "acting_faction_is_syn",
+        "label": "forces_with_cash",
+        "order": [
+          [
+            "26j",
+            "dr",
+            "gov"
+          ],
+          [
+            "underground",
+            "active"
+          ]
+        ]
+      },
+      {
+        "label": "bases_casinos",
+        "order": [
+          [
+            "syn",
+            "dr",
+            "26j"
+          ]
+        ]
+      },
+      {
+        "when": "assault",
+        "label": "guerrillas_of_faction_with_vulnerable_base_casino",
+        "order": [
+          [
+            "syn",
+            "dr",
+            "26j"
+          ]
+        ]
+      },
+      {
+        "when": "attack_or_ambush",
+        "label": "faction_with_base_or_open_casino_with_only_1_guerrilla_or_cube",
+        "order": [
+          [
+            "26j",
+            "dr"
+          ]
+        ]
+      },
+      {
+        "label": "cubes",
+        "order": [
+          [
+            "with_cash"
+          ],
+          [
+            "police",
+            "troops"
+          ]
+        ],
+        "note": "se NP GOV: alterna piazzando Police prima, poi Troops"
+      },
+      {
+        "label": "guerrillas",
+        "order": [
+          [
+            "with_cash"
+          ],
+          [
+            "underground",
+            "active"
+          ],
+          [
+            "syn",
+            "26j",
+            "dr"
+          ]
+        ]
+      }
     ],
-    "reading": {"A": "pezzi giocatore prima dei pezzi NP", "B": "alto->basso, sx->dx: nemici e piazza/muovi amici", "C": "basso->alto, dx->sx: rimuovi amici"}
-  },
-
-  "effective_events": {
-    "government": {
-      "is": ["gov_op_sa_or_limop", "first_three_cards_of_campaign_momentum"],
-      "adds_increases": ["support", "gov_forces", "cash_with_cubes", "us_alliance"],
-      "removes_reduces": ["enemy_forces_from_map_or_close_casinos", "opposition", "np_syn_or_player_resources"]
-    },
-    "syndicate": {
-      "is": ["syn_op_sa_or_limop", "not_final_campaign_capability"],
-      "adds_increases": ["syn_resources", "syn_forces", "open_casinos", "cash_with_syn_guerrillas"],
-      "removes_reduces": ["enemy_forces_from_map", "support_or_opposition", "player_resources"]
-    },
-    "directorio": {
-      "is": ["dr_op_sa_or_limop", "not_final_campaign_capability"],
-      "adds_increases": ["dr_forces", "cash_with_dr_guerrillas"],
-      "removes_reduces": ["enemy_forces_from_map_or_close_casinos", "support_or_opposition", "np_syn_or_player_resources", "player_gov_aid", "us_alliance"]
-    },
-    "m26": {
-      "is": ["m26_op_sa_or_limop", "not_final_campaign_capability"],
-      "adds_increases": ["opposition", "m26_forces", "cash_with_26j_guerrillas"],
-      "removes_reduces": ["enemy_forces_from_map_or_close_casinos", "support", "np_syn_or_player_resources", "player_gov_aid", "us_alliance"]
+    "reading": {
+      "A": "pezzi giocatore prima dei pezzi NP",
+      "B": "alto->basso, sx->dx: nemici e piazza/muovi amici",
+      "C": "basso->alto, dx->sx: rimuovi amici"
     }
   },
-
+  "effective_events": {
+    "government": {
+      "is": [
+        "gov_op_sa_or_limop",
+        "first_three_cards_of_campaign_momentum"
+      ],
+      "adds_increases": [
+        "support",
+        "gov_forces",
+        "cash_with_cubes",
+        "us_alliance"
+      ],
+      "removes_reduces": [
+        "enemy_forces_from_map_or_close_casinos",
+        "opposition",
+        "np_syn_or_player_resources"
+      ]
+    },
+    "syndicate": {
+      "is": [
+        "syn_op_sa_or_limop",
+        "not_final_campaign_capability"
+      ],
+      "adds_increases": [
+        "syn_resources",
+        "syn_forces",
+        "open_casinos",
+        "cash_with_syn_guerrillas"
+      ],
+      "removes_reduces": [
+        "enemy_forces_from_map",
+        "support_or_opposition",
+        "player_resources"
+      ]
+    },
+    "directorio": {
+      "is": [
+        "dr_op_sa_or_limop",
+        "not_final_campaign_capability"
+      ],
+      "adds_increases": [
+        "dr_forces",
+        "cash_with_dr_guerrillas"
+      ],
+      "removes_reduces": [
+        "enemy_forces_from_map_or_close_casinos",
+        "support_or_opposition",
+        "np_syn_or_player_resources",
+        "player_gov_aid",
+        "us_alliance"
+      ]
+    },
+    "m26": {
+      "is": [
+        "m26_op_sa_or_limop",
+        "not_final_campaign_capability"
+      ],
+      "adds_increases": [
+        "opposition",
+        "m26_forces",
+        "cash_with_26j_guerrillas"
+      ],
+      "removes_reduces": [
+        "enemy_forces_from_map_or_close_casinos",
+        "support",
+        "np_syn_or_player_resources",
+        "player_gov_aid",
+        "us_alliance"
+      ]
+    }
+  },
   "propaganda": {
     "victory": "In solitario contro 3 NP, l'umano puo vincere solo nell'ultimo Round di Propaganda.",
     "resources": {
-      "ignore_earnings": ["government", "directorio", "m26"],
+      "ignore_earnings": [
+        "government",
+        "directorio",
+        "m26"
+      ],
       "skim": "Le Risorse trasferite alle fazioni NP sono comunque rimosse dal totale Risorse SYN.",
       "cash_deposits": {
         "government": "Usa Cash per piazzare Basi in Province senza Base GOV se possibile, poi +1 al tiro Azione Civica nella Fase Supporto per ogni Cash riportato a Disponibile.",
@@ -79,28 +232,692 @@
     ],
     "reset": "Rimescola il mazzo Calixto."
   },
-
   "space_selection": {
-    "_todo": "Matrici dense C8.5.6 per 4 fazioni: in lettura ad alto zoom.",
+    "_note": "C8.5.6. Per ogni colonna (azione), scorri i criteri dall'alto; 'all'=tutte le colonne. Voci '(player_*)' valgono solo se quella fazione e' un giocatore. Event: esegui l'azione efficace piu' a sinistra.",
     "government": {
-      "_status": "bozza da verificare",
-      "columns": ["shift_active_support", "place_bases", "place_cubes", "sweep_dest", "transport_dest", "garrison_dest", "reprisal", "remove_or_replace"],
-      "event": "esegui l'azione efficace piu a sinistra",
+      "columns": [
+        "shift_active_support",
+        "place_bases",
+        "place_cubes",
+        "sweep_dest",
+        "transport_dest",
+        "garrison_dest",
+        "reprisal",
+        "remove_or_replace"
+      ],
       "rows": [
-        {"crit": "not_at_active_support", "cols": ["shift_active_support", "place_cubes"]},
-        {"crit": "gov_base_without_police", "cols": ["shift_active_support", "place_cubes"]},
-        {"crit": "havana", "cols": ["shift_active_support", "sweep_dest", "garrison_dest", "remove_or_replace"]},
-        {"crit": "underground_guerrillas", "cols": ["place_cubes", "sweep_dest", "garrison_dest", "reprisal"]},
-        {"crit": "most_support", "cols": ["sweep_dest", "garrison_dest"]},
-        {"crit": "enemy_base_open_casino", "cols": ["place_cubes", "sweep_dest", "remove_or_replace"]},
-        {"crit": "most_population", "cols": ["shift_active_support", "place_bases", "place_cubes", "sweep_dest", "transport_dest", "garrison_dest", "reprisal", "remove_or_replace"]},
-        {"crit": "fewest_enemy_forces_ignore_closed_casinos", "cols": ["all"]},
-        {"crit": "select_at_random_from_remaining", "cols": ["all"]}
+        {
+          "crit": "not_at_active_support",
+          "cols": [
+            "shift_active_support",
+            "place_cubes"
+          ]
+        },
+        {
+          "crit": "gov_base_without_police",
+          "cols": [
+            "shift_active_support",
+            "place_cubes"
+          ]
+        },
+        {
+          "crit": "havana",
+          "cols": [
+            "shift_active_support",
+            "sweep_dest",
+            "garrison_dest",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "underground_guerrillas",
+          "cols": [
+            "place_cubes",
+            "sweep_dest",
+            "garrison_dest",
+            "reprisal"
+          ]
+        },
+        {
+          "crit": "most_support",
+          "cols": [
+            "sweep_dest",
+            "garrison_dest"
+          ]
+        },
+        {
+          "crit": "enemy_base_open_casino",
+          "cols": [
+            "place_cubes",
+            "sweep_dest",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "province_room_for_available_gov_base",
+          "cols": [
+            "place_bases",
+            "transport_dest"
+          ]
+        },
+        {
+          "crit": "province_or_city_without_gov_control",
+          "cols": [
+            "shift_active_support",
+            "place_bases",
+            "place_cubes",
+            "sweep_dest",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "city",
+          "cols": [
+            "shift_active_support",
+            "place_cubes",
+            "sweep_dest",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "player_26j:most_opposition",
+          "cols": [
+            "shift_active_support",
+            "place_bases",
+            "garrison_dest",
+            "reprisal"
+          ]
+        },
+        {
+          "crit": "highest_econ",
+          "cols": [
+            "place_cubes",
+            "garrison_dest",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "most_population",
+          "cols": [
+            "all"
+          ]
+        },
+        {
+          "crit": "fewest_enemy_forces_ignore_closed_casinos",
+          "cols": [
+            "all"
+          ]
+        },
+        {
+          "crit": "select_at_random_from_remaining",
+          "cols": [
+            "all"
+          ]
+        }
+      ]
+    },
+    "m26": {
+      "columns": [
+        "shift_active_opposition",
+        "place_bases",
+        "place_guerrillas",
+        "march_dest",
+        "attack",
+        "kidnap",
+        "remove_or_replace"
+      ],
+      "rows": [
+        {
+          "crit": "vulnerable_26j_base",
+          "cols": [
+            "place_guerrillas",
+            "march_dest",
+            "attack",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "most_26j_guerrillas",
+          "cols": [
+            "attack"
+          ]
+        },
+        {
+          "crit": "player_gov:highest_econ",
+          "cols": [
+            "place_guerrillas",
+            "march_dest",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "not_at_active_opposition",
+          "cols": [
+            "shift_active_opposition",
+            "place_guerrillas",
+            "march_dest",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "most_population",
+          "cols": [
+            "shift_active_opposition",
+            "place_bases",
+            "place_guerrillas",
+            "march_dest",
+            "attack",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "enemy_piece_with_cash",
+          "cols": [
+            "march_dest",
+            "attack",
+            "kidnap",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "open_casino",
+          "cols": [
+            "attack",
+            "kidnap",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "player_gov:most_support",
+          "cols": [
+            "shift_active_opposition",
+            "place_guerrillas",
+            "march_dest"
+          ]
+        },
+        {
+          "crit": "province_or_city_without_26j_control",
+          "cols": [
+            "shift_active_opposition",
+            "place_bases",
+            "place_guerrillas",
+            "march_dest",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "fewest_enemy_forces_ignore_closed_casinos",
+          "cols": [
+            "shift_active_opposition",
+            "place_guerrillas",
+            "march_dest",
+            "attack",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "most_underground_26j_guerrillas",
+          "cols": [
+            "place_bases"
+          ]
+        },
+        {
+          "crit": "guerrillas_1_2_and_room_for_26j_base",
+          "cols": [
+            "place_bases"
+          ]
+        },
+        {
+          "crit": "select_at_random_from_remaining",
+          "cols": [
+            "all"
+          ]
+        }
+      ]
+    },
+    "directorio": {
+      "columns": [
+        "place_bases",
+        "place_guerrillas",
+        "shift_neutral",
+        "march_dest",
+        "attack",
+        "remove_or_replace"
+      ],
+      "rows": [
+        {
+          "crit": "vulnerable_dr_base",
+          "cols": [
+            "place_guerrillas",
+            "march_dest"
+          ]
+        },
+        {
+          "crit": "province_or_city_without_dr_control",
+          "cols": [
+            "place_bases",
+            "place_guerrillas",
+            "shift_neutral",
+            "march_dest"
+          ]
+        },
+        {
+          "crit": "most_dr_guerrillas",
+          "cols": [
+            "attack"
+          ]
+        },
+        {
+          "crit": "enemy_piece_with_cash",
+          "cols": [
+            "attack",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "fewest_enemy_forces_ignore_closed_casinos",
+          "cols": [
+            "place_guerrillas",
+            "march_dest"
+          ]
+        },
+        {
+          "crit": "adjacent_to_province_or_city_without_dr_control",
+          "cols": [
+            "place_guerrillas",
+            "march_dest"
+          ]
+        },
+        {
+          "crit": "open_casino",
+          "cols": [
+            "attack",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "most_population",
+          "cols": [
+            "place_bases",
+            "place_guerrillas",
+            "shift_neutral",
+            "march_dest",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "province",
+          "cols": [
+            "place_bases",
+            "place_guerrillas"
+          ]
+        },
+        {
+          "crit": "player_gov:highest_econ",
+          "cols": [
+            "place_guerrillas",
+            "march_dest",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "player_26j:most_opposition",
+          "cols": [
+            "place_guerrillas",
+            "shift_neutral",
+            "march_dest"
+          ]
+        },
+        {
+          "crit": "most_support",
+          "cols": [
+            "place_guerrillas",
+            "shift_neutral",
+            "march_dest"
+          ]
+        },
+        {
+          "crit": "most_underground_dr_guerrillas",
+          "cols": [
+            "place_bases"
+          ]
+        },
+        {
+          "crit": "guerrillas_1_2_and_room_for_dr_base",
+          "cols": [
+            "place_guerrillas",
+            "march_dest"
+          ]
+        },
+        {
+          "crit": "select_at_random_from_remaining",
+          "cols": [
+            "all"
+          ]
+        }
+      ]
+    },
+    "syndicate": {
+      "columns": [
+        "place_open_casinos",
+        "place_guerrillas",
+        "place_cash",
+        "muscle_dest",
+        "march_dest",
+        "shift_neutral",
+        "remove_or_replace"
+      ],
+      "rows": [
+        {
+          "crit": "vulnerable_open_casino",
+          "cols": [
+            "place_guerrillas",
+            "march_dest",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "underground_26j_dr_at_open_casino",
+          "cols": [
+            "muscle_dest",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "underground_syn_guerrilla",
+          "cols": [
+            "place_open_casinos",
+            "place_cash"
+          ]
+        },
+        {
+          "crit": "syn_control",
+          "cols": [
+            "place_open_casinos",
+            "place_cash"
+          ]
+        },
+        {
+          "crit": "player_dr:dr_control",
+          "cols": [
+            "place_guerrillas",
+            "muscle_dest",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "player_26j:most_opposition",
+          "cols": [
+            "place_guerrillas",
+            "march_dest",
+            "shift_neutral"
+          ]
+        },
+        {
+          "crit": "most_support",
+          "cols": [
+            "place_open_casinos",
+            "place_guerrillas",
+            "shift_neutral"
+          ]
+        },
+        {
+          "crit": "city",
+          "cols": [
+            "place_open_casinos",
+            "place_guerrillas",
+            "shift_neutral"
+          ]
+        },
+        {
+          "crit": "highest_econ",
+          "cols": [
+            "place_guerrillas",
+            "muscle_dest",
+            "march_dest"
+          ]
+        },
+        {
+          "crit": "open_casino_or_cash",
+          "cols": [
+            "place_guerrillas",
+            "march_dest",
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "player_gov:gov_control",
+          "cols": [
+            "remove_or_replace"
+          ]
+        },
+        {
+          "crit": "fewest_enemy_forces",
+          "cols": [
+            "place_open_casinos",
+            "place_guerrillas",
+            "place_cash",
+            "muscle_dest",
+            "march_dest"
+          ]
+        },
+        {
+          "crit": "select_at_random_from_remaining",
+          "cols": [
+            "all"
+          ]
+        }
       ]
     }
   },
-
   "move_priorities": {
-    "_todo": "Matrice densa C8.5.7 per 4 fazioni: in lettura ad alto zoom."
+    "_note": "C8.5.7. Usata in Sweep/Garrison/Transport/March e Att.Speciale. A=scegli destinazione (carta o Space Selection). B=scegli origine a portata, non gia' destinazione. 'factions' indica a quali fazioni si applica il criterio.",
+    "select_destination": "Spazio destinazione dalla carta Calixto corrente o, se assente, dalla tabella Space Selection della fazione NP (non gia' scelto come destinazione).",
+    "select_origin": [
+      "most_moveable_forces_not_required_to_remain",
+      "select_at_random_from_remaining"
+    ],
+    "keep_in_origin": [
+      {
+        "crit": "keep_sufficient_to_change_no_control",
+        "factions": "all"
+      },
+      {
+        "crit": "origin_city_or_province:keep_1_troop_and_1_police",
+        "factions": [
+          "government"
+        ]
+      },
+      {
+        "crit": "origin_ec:keep_1_cube_per_guerrilla",
+        "factions": [
+          "government"
+        ]
+      },
+      {
+        "crit": "origin_room_for_base_no_support:keep_3_26j_guerrillas",
+        "factions": [
+          "m26"
+        ]
+      },
+      {
+        "crit": "origin_city_or_province_without_active_opposition:keep_1_underground_26j_guerrilla",
+        "factions": [
+          "m26"
+        ]
+      },
+      {
+        "crit": "origin_room_for_base_no_active_support_or_opposition:keep_3_dr_guerrillas",
+        "factions": [
+          "directorio"
+        ]
+      },
+      {
+        "crit": "acting_base_non_mountain:keep_1_acting_underground_guerrilla",
+        "factions": [
+          "syndicate",
+          "m26",
+          "directorio"
+        ]
+      },
+      {
+        "crit": "acting_base_mountain:keep_1_underground_or_2_active_acting_guerrillas",
+        "factions": [
+          "syndicate",
+          "m26",
+          "directorio"
+        ]
+      },
+      {
+        "crit": "origin_ec:keep_26j_dr_guerrillas_gt_cubes",
+        "factions": [
+          "m26",
+          "directorio"
+        ]
+      },
+      {
+        "crit": "origin_ec:keep_acting_guerrillas_gt_police",
+        "factions": [
+          "syndicate",
+          "m26",
+          "directorio"
+        ]
+      },
+      {
+        "crit": "origin_any_support_or_opposition:keep_1_underground_syn_or_dr_guerrilla",
+        "factions": [
+          "syndicate",
+          "directorio"
+        ]
+      },
+      {
+        "crit": "open_casino_in_origin:keep_1_underground_syn_guerrilla",
+        "factions": [
+          "syndicate"
+        ]
+      }
+    ],
+    "move_to_destination": [
+      {
+        "crit": "get_sufficient_acting_pieces_for_control",
+        "factions": "all"
+      },
+      {
+        "crit": "dest_city_or_province:get_1_police",
+        "factions": [
+          "government"
+        ]
+      },
+      {
+        "crit": "dest_forest:get_2_cubes_per_underground_guerrilla",
+        "factions": [
+          "government"
+        ]
+      },
+      {
+        "crit": "dest_mountain:get_2_troops_per_enemy_piece",
+        "factions": [
+          "government"
+        ]
+      },
+      {
+        "crit": "dest_ec:get_1_cube_per_guerrilla",
+        "factions": [
+          "government"
+        ]
+      },
+      {
+        "crit": "dest_province_with_gov_base:get_2_cubes",
+        "factions": [
+          "government"
+        ]
+      },
+      {
+        "crit": "dest_province_without_gov_base:get_3_cubes",
+        "factions": [
+          "government"
+        ]
+      },
+      {
+        "crit": "dest_not_at_active_opposition:get_1_underground_26j_guerrilla",
+        "factions": [
+          "m26"
+        ]
+      },
+      {
+        "crit": "dest_room_for_base_no_support:get_3_26j_guerrillas",
+        "factions": [
+          "m26"
+        ]
+      },
+      {
+        "crit": "dest_room_for_base_no_active_support_or_opposition:get_3_dr_guerrillas",
+        "factions": [
+          "directorio"
+        ]
+      },
+      {
+        "crit": "dest_adjacent_to_space_without_acting_control:get_1d6_additional_acting_guerrillas",
+        "factions": [
+          "syndicate",
+          "m26",
+          "directorio"
+        ]
+      },
+      {
+        "crit": "dest_ec:get_26j_dr_guerrillas_gt_cubes",
+        "factions": [
+          "m26",
+          "directorio"
+        ]
+      },
+      {
+        "crit": "dest_ec:get_acting_guerrillas_gt_police",
+        "factions": [
+          "syndicate",
+          "m26",
+          "directorio"
+        ]
+      },
+      {
+        "crit": "dest_any_support_or_opposition:get_1_underground_syn_or_dr_guerrilla",
+        "factions": [
+          "syndicate",
+          "directorio"
+        ]
+      },
+      {
+        "crit": "open_casino_in_dest:get_1_underground_syn_guerrilla",
+        "factions": [
+          "syndicate"
+        ]
+      }
+    ],
+    "loop": [
+      {
+        "crit": "dest_was_ec",
+        "action": "goto_A_new_destination"
+      },
+      {
+        "crit": "acting_has_control_in_dest",
+        "action": "goto_A_new_destination",
+        "factions": [
+          "government",
+          "m26",
+          "directorio"
+        ]
+      },
+      {
+        "crit": "acting_no_control_in_dest",
+        "action": "goto_B_new_origin"
+      },
+      {
+        "crit": "otherwise",
+        "action": "goto_A_new_destination",
+        "factions": [
+          "syndicate"
+        ]
+      }
+    ]
   }
 }
