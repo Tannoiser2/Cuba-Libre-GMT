@@ -199,6 +199,30 @@ func _pass(faction: String) -> Dictionary:
 	return {"ok": false, "action": "pass", "log": _log}
 
 
+## Scelta Evento (approssima "Critical/effective" della tabella Eligibility): simula i due
+## lati dell'Evento su una copia dello stato e gioca l'Evento se migliora il margine di
+## vittoria della Fazione di almeno `gain_min`. Restituisce {"play": bool, "side": String}.
+func event_choice(faction: String, card_number: int, gain_min: int = 2) -> Dictionary:
+	if card_number <= 0:
+		return {"play": false}
+	var base: int = int(mod.victory_status(state)[faction].margin)
+	var best := base
+	var best_side := ""
+	for side in ["unshaded", "shaded"]:
+		var copy := GameState.from_dict(state.game_def, state.to_dict())
+		var ev := CubaLibreEvents.new(copy, mod)
+		ev.apply(card_number, side, faction)
+		copy.recompute_all_control()
+		mod._refresh_victory_tracks(copy)
+		var m: int = int(mod.victory_status(copy)[faction].margin)
+		if m > best:
+			best = m
+			best_side = side
+	if best_side != "" and best - base >= gain_min:
+		return {"play": true, "side": best_side}
+	return {"play": false}
+
+
 ## Numero di Attivazione: Governo = livello Alleanza USA (4/3/2); insorti = dado della carta.
 func _activation_number(faction: String, side: Dictionary) -> int:
 	if faction == "government":

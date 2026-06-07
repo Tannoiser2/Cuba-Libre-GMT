@@ -183,6 +183,16 @@ func _bot_take_pending() -> void:
 	var fid := seq.pending_faction()
 	if fid == "":
 		return
+	# Scelta Evento (Calixto): se l'Evento è legale e conviene, giocalo.
+	if use_calixto and seq.is_legal(A.EVENT) and state.current_card > 0:
+		var ec := calixto.event_choice(fid, state.current_card)
+		if ec.get("play", false):
+			var side: String = ec["side"]
+			var eres := events.apply(state.current_card, side, fid)
+			for line in eres.get("log", []):
+				emit_signal("action_logged", "🤖 Evento (%s): %s" % [side, String(line)])
+			seq.act(A.EVENT)
+			return
 	var brain: BotBrain = calixto if use_calixto else bots
 	var br := brain.take_turn(fid)
 	for line in br.get("log", []):

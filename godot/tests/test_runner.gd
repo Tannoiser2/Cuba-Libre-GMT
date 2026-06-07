@@ -953,3 +953,8 @@ func _test_calixto_bot() -> void:
 		if not res2.has("action"):
 			ok = false
 	_check("Calixto bot: turni multipli stabili", ok)
+	# Scelta Evento: restituisce una decisione valida e non corrompe lo stato originale
+	var before := state.to_dict()
+	var ec := bot.event_choice("m26", 5)
+	_check("Calixto event_choice valido", ec.has("play"))
+	_check("Calixto event_choice non muta lo stato", state.to_dict().hash() == before.hash())
