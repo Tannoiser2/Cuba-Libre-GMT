@@ -397,13 +397,50 @@ func _do_rally(faction: String, an: int) -> bool:
 
 
 func _do_march(faction: String) -> bool:
+	# Destinazione: spazi adiacenti a Guerriglie della Fazione, ordinati per priorità march_dest.
+	var dests: Array = []
 	for sid in _ids():
-		if state.space_state(sid).count(faction, "guerrilla") == 0:
-			continue
+		var adj_with_g := false
 		for adj in state.game_def.space(sid).adjacent:
-			if state.space_state(adj).count(faction) == 0:
-				return _run(ops.march({"faction": faction, "moves": [{"from": sid, "to": adj, "count": 1}]}))
+			if state.space_state(adj).count(faction, "guerrilla") > 0:
+				adj_with_g = true
+				break
+		if adj_with_g:
+			dests.append(sid)
+	if dests.is_empty():
+		return false
+	dests = _ordered(faction, "march", dests)
+	for dest in dests:
+		var moves: Array = []
+		for adj in state.game_def.space(dest).adjacent:
+			var surplus := _march_surplus(faction, adj)
+			if surplus > 0:
+				moves.append({"from": adj, "to": dest, "count": surplus})
+		if not moves.is_empty():
+			return _run(ops.march({"faction": faction, "moves": moves}))
 	return false
+
+
+## Guerriglie che possono lasciare l'origine senza perdere Controllo/clandestinità (Move
+## Priorities, "keep in origin": tieni abbastanza per non cambiare Controllo e 1 Clandestina
+## se c'è una Base della Fazione).
+func _march_surplus(faction: String, sid: String) -> int:
+	var st: SpaceState = state.space_state(sid)
+	var g := st.count(faction, "guerrilla")
+	if g == 0:
+		return 0
+	var keep := 0
+	# Tieni almeno 1 Clandestina se la Fazione ha una Base qui.
+	if st.count(faction, "base") > 0 and st.count(faction, "guerrilla", "underground") > 0:
+		keep += 1
+	# Tieni abbastanza per non cedere il Controllo della Fazione.
+	if st.control == faction:
+		var others := 0
+		for e in ["government", "m26", "directorio", "syndicate"]:
+			if e != faction:
+				others += st.count(e)
+		keep = maxi(keep, others + 1 - (st.count(faction) - g))
+	return maxi(0, g - keep)
 
 
 func _do_attack(faction: String, an: int) -> bool:
