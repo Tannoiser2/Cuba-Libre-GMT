@@ -36,7 +36,6 @@ func _initialize() -> void:
 	_test_propaganda_resources()
 	_test_propaganda_support_reset()
 	_test_propaganda_victory()
-	_test_bots()
 	_test_cards_data()
 	_test_events()
 	_test_all_events()
@@ -651,47 +650,6 @@ func _test_propaganda_victory() -> void:
 	# Tot Opp = 2*(2+2+1+1+1+1)=16 ; +1 Base M26 = 17 > 15
 	var vp := prop.victory_phase()
 	_eq("Vincitore M26", vp.winner, "m26")
-
-
-func _test_bots() -> void:
-	print("\n[Bot — cap. 8]")
-	# Sindacato: Rally per piazzare Guerriglie negli spazi con Casinò
-	var r := _new_game()
-	var bots := CubaLibreBots.new(r[2], r[0])
-	var state: GameState = r[2]
-	var res := bots.take_turn("syndicate")
-	_eq("Sindacato sceglie Rally", res.action, "rally")
-	_check("Sindacato ha piazzato Guerriglie", state.count_on_map("syndicate", "guerrilla") > 0)
-
-	# Directorio: Terror a Havana (DR clandestine, Supporto Attivo)
-	var r2 := _new_game()
-	var bots2 := CubaLibreBots.new(r2[2], r2[0])
-	var res2 := bots2.take_turn("directorio")
-	_eq("Directorio sceglie Terror", res2.action, "terror")
-
-	# 26 Luglio: Terror (clandestine in spazi senza Supporto avverso)
-	var r3 := _new_game()
-	var bots3 := CubaLibreBots.new(r3[2], r3[0])
-	var res3 := bots3.take_turn("m26")
-	_eq("26 Luglio sceglie Terror", res3.action, "terror")
-
-	# Governo: Sweep di ripiego (attiva Guerriglie clandestine vicine)
-	var r4 := _new_game()
-	var bots4 := CubaLibreBots.new(r4[2], r4[0])
-	var res4 := bots4.take_turn("government")
-	_eq("Governo sceglie Sweep", res4.action, "sweep")
-
-	# Tutti i bot lasciano lo stato coerente (nessuna Risorsa negativa)
-	var r5 := _new_game()
-	var bots5 := CubaLibreBots.new(r5[2], r5[0])
-	for f in ["syndicate", "directorio", "m26", "government"]:
-		bots5.take_turn(f)
-	var st5: GameState = r5[2]
-	var consistent := true
-	for f in ["syndicate", "directorio", "m26", "government"]:
-		if st5.get_resources(f) < 0:
-			consistent = false
-	_check("Stato coerente dopo un giro completo di bot", consistent)
 
 
 func _test_cards_data() -> void:

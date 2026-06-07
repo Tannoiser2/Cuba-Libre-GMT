@@ -205,6 +205,76 @@ func _pass(faction: String) -> Dictionary:
 	return {"ok": false, "action": "pass", "log": _log}
 
 
+## Azioni della Fase di Supporto della Propaganda NP (Calixto C8.5.9):
+## GOV Azione Civica (verso Supporto Attivo), 26J Agitazione (verso Opposizione Attiva),
+## DR Sostegno Espatriati (Rally). Restituisce il log.
+func propaganda_support() -> Array:
+	_log = []
+	# GOV: shift verso Supporto Attivo, max 1d3 + EC senza Sabotaggio
+	var gbudget := _rng.randi_range(1, 3) + _ecs_without_sabotage()
+	var gd := 0
+	while gd < gbudget:
+		var t := _best_civic_space()
+		if t == "":
+			break
+		var st: SpaceState = state.space_state(t)
+		if st.marker("terror") > 0:
+			st.add_marker("terror", -1)
+		elif st.support < CoinEnums.Support.ACTIVE_SUPPORT:
+			st.support = (st.support + 1) as CoinEnums.Support
+		else:
+			break
+		gd += 1
+	if gd > 0:
+		_log.append("Propaganda GOV: %d verso Supporto Attivo" % gd)
+	# 26J: shift verso Opposizione Attiva, max 1d3 + Basi 26J sulla mappa
+	var mbudget := _rng.randi_range(1, 3) + state.count_on_map("m26", "base")
+	var md := 0
+	while md < mbudget:
+		var t2 := _best_agitation_space()
+		if t2 == "":
+			break
+		var st2: SpaceState = state.space_state(t2)
+		if st2.marker("terror") > 0:
+			st2.add_marker("terror", -1)
+		elif st2.support > CoinEnums.Support.ACTIVE_OPPOSITION:
+			st2.support = (st2.support - 1) as CoinEnums.Support
+		else:
+			break
+		md += 1
+	if md > 0:
+		_log.append("Propaganda 26J: %d verso Opposizione Attiva" % md)
+	# DR: Sostegno Espatriati (Rally)
+	_do_rally("directorio", 3)
+	state.recompute_all_control()
+	mod._refresh_victory_tracks(state)
+	return _log
+
+
+func _ecs_without_sabotage() -> int:
+	var n := 0
+	for sid in _ids():
+		if _is_ec(sid) and state.space_state(sid).marker("sabotage") == 0:
+			n += 1
+	return n
+
+
+func _best_agitation_space() -> String:
+	var cands: Array = []
+	for sid in _ids():
+		var sd: SpaceDef = state.game_def.space(sid)
+		var st: SpaceState = state.space_state(sid)
+		if not sd.has_population() or st.count("m26") == 0:
+			continue
+		if st.support <= CoinEnums.Support.ACTIVE_OPPOSITION and st.marker("terror") == 0:
+			continue
+		cands.append(sid)
+	if cands.is_empty():
+		return ""
+	cands = _ordered_col("m26", "shift_active_opposition", cands)
+	return cands[0]
+
+
 ## Scelta Evento guidata dalla tabella Event Instructions (lato + Critical) con verifica di
 ## beneficio: simula i lati candidati su una copia dello stato e gioca se migliora il margine.
 ## Soglia di guadagno più bassa se la carta è Critical per la Fazione. Restituisce

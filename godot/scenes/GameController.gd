@@ -14,10 +14,7 @@ var ops: CubaLibreOperations
 var specials: CubaLibreSpecials
 var propaganda: CubaLibrePropaganda
 var events: CubaLibreEvents
-var bots: CubaLibreBots
-var calixto: CLCalixto
-## Se true usa il bot Calixto (carte) al posto dei bot cap. 8.
-var use_calixto := false
+var bot: CLCalixto   ## Unico sistema NP: Calixto (sostituisce i bot cap. 8)
 
 ## Sequenza di Gioco della carta Evento corrente (loop di turno giocabile).
 var seq: SequenceOfPlay
@@ -40,8 +37,7 @@ func new_game(scenario: String = "standard") -> void:
 	specials = CubaLibreSpecials.new(state, module)
 	propaganda = CubaLibrePropaganda.new(state, module)
 	events = CubaLibreEvents.new(state, module)
-	bots = CubaLibreBots.new(state, module)
-	calixto = CLCalixto.new(state, module)
+	bot = CLCalixto.new(state, module)
 	build_deck()
 	draw_next()
 	emit_signal("state_changed")
@@ -184,8 +180,8 @@ func _bot_take_pending() -> void:
 	if fid == "":
 		return
 	# Scelta Evento (Calixto): se l'Evento è legale e conviene, giocalo.
-	if use_calixto and seq.is_legal(A.EVENT) and state.current_card > 0:
-		var ec := calixto.event_choice(fid, state.current_card)
+	if seq.is_legal(A.EVENT) and state.current_card > 0:
+		var ec := bot.event_choice(fid, state.current_card)
 		if ec.get("play", false):
 			var side: String = ec["side"]
 			var eres := events.apply(state.current_card, side, fid)
@@ -193,8 +189,7 @@ func _bot_take_pending() -> void:
 				emit_signal("action_logged", "🤖 Evento (%s): %s" % [side, String(line)])
 			seq.act(A.EVENT)
 			return
-	var brain: BotBrain = calixto if use_calixto else bots
-	var br := brain.take_turn(fid)
+	var br := bot.take_turn(fid)
 	for line in br.get("log", []):
 		emit_signal("action_logged", "🤖 " + String(line))
 	if br.get("action", "pass") == "pass":
@@ -345,7 +340,7 @@ func run_event(number: int, side: String, faction: String, params: Dictionary = 
 
 
 func run_bot_turn(faction: String) -> Dictionary:
-	var res := bots.take_turn(faction)
+	var res := bot.take_turn(faction)
 	for line in res.get("log", []):
 		emit_signal("action_logged", "🤖 " + String(line))
 	emit_signal("state_changed")
@@ -373,7 +368,7 @@ func resolve_propaganda() -> Dictionary:
 	var plog: Array = []
 	plog.append_array(propaganda.resources_phase())
 	plog.append_array(propaganda.support_phase())
-	plog.append_array(bots.propaganda_support())
+	plog.append_array(bot.propaganda_support())
 	for line in plog:
 		emit_signal("action_logged", "📣 " + String(line))
 	if is_final:
