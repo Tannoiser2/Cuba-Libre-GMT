@@ -1,249 +1,639 @@
 {
   "_note": "Carte Calixto (NP). Ogni carta ha 'front' e 'back'. flow = sequenza di nodi {cond,t,f}: t=ramo vero (verde ✓), f=ramo falso (rosso ✗). Target: 'next' (scendi), 'draw' (pesca nuova carta), 'flip' (gira), 'op:<id>' (esegui Operazione). Un nodo senza 'cond' va sempre a t. ops: definizione operazioni. special: Attivita Speciali in ordine (prima fattibile).",
-  "_an": {"government": "us_alliance"},
+  "_an": {
+    "government": "us_alliance"
+  },
   "government": {
     "U": {
       "front": {
         "flow": [
-          {"cond": "city_not_active_support", "t": "next", "f": "draw"},
-          {"cond": "underground_guerrilla_at_support", "t": "op:sweep", "f": "flip"}
+          {
+            "cond": "city_not_active_support",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "underground_guerrilla_at_support",
+            "t": "op:sweep",
+            "f": "flip"
+          }
         ],
         "ops": {
-          "sweep": {"type": "sweep", "steps": [
-            {"n": 1, "priorities": "move"},
-            {"note": "Sweep per attivare Guerriglie anche senza muovere Truppe"}
-          ]}
+          "sweep": {
+            "type": "sweep",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Sweep per attivare Guerriglie anche senza muovere Truppe"
+              }
+            ]
+          }
         },
         "special": [
-          {"sa": "air_strike", "target": "vuln_base_casino", "method": "remove"},
-          {"sa": "reprisal", "cond": "coin_control_at_opposition"},
-          {"sa": "transport", "priorities": "move"},
-          {"sa": "air_strike", "method": "remove"}
+          {
+            "sa": "air_strike",
+            "target": "vuln_base_casino",
+            "method": "remove"
+          },
+          {
+            "sa": "reprisal",
+            "cond": "coin_control_at_opposition"
+          },
+          {
+            "sa": "transport",
+            "priorities": "move"
+          },
+          {
+            "sa": "air_strike",
+            "method": "remove"
+          }
         ]
       },
       "back": {
-        "flow": [{"t": "op:train"}],
+        "flow": [
+          {
+            "t": "op:train"
+          }
+        ],
         "ops": {
-          "train": {"type": "train", "steps": [
-            {"n": 1, "do": "place_cubes_sets_of_4"}
-          ], "post": [
-            {"star": true, "do": "civic_action", "shift": "active_support", "max": "1d3"},
-            {"reminder": true, "do": "place_base", "where": "province_without_gov_base"},
-            {"note": "Se non Limitata, Azione Civica/Base puo colpire spazio non scelto per Addestramento"}
-          ]}
+          "train": {
+            "type": "train",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_cubes_sets_of_4"
+              }
+            ],
+            "post": [
+              {
+                "star": true,
+                "do": "civic_action",
+                "shift": "active_support",
+                "max": "1d3"
+              },
+              {
+                "reminder": true,
+                "do": "place_base",
+                "where": "province_without_gov_base"
+              },
+              {
+                "note": "Se non Limitata, Azione Civica/Base puo colpire spazio non scelto per Addestramento"
+              }
+            ]
+          }
         },
         "special": [
-          {"sa": "transport", "priorities": "move"}
+          {
+            "sa": "transport",
+            "priorities": "move"
+          }
         ]
       }
     },
     "Y": {
       "front": {
         "flow": [
-          {"cond": "ec_with_guerrillas", "t": "next", "f": "draw"},
-          {"cond": "underground_guerrilla_at_support", "t": "op:sweep", "f": "flip"}
+          {
+            "cond": "ec_with_guerrillas",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "underground_guerrilla_at_support",
+            "t": "op:sweep",
+            "f": "flip"
+          }
         ],
         "ops": {
-          "sweep": {"type": "sweep", "steps": [
-            {"n": 1, "priorities": "move"},
-            {"note": "Sweep per attivare Guerriglie anche senza muovere Truppe"}
-          ]}
+          "sweep": {
+            "type": "sweep",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Sweep per attivare Guerriglie anche senza muovere Truppe"
+              }
+            ]
+          }
         },
         "special": [
-          {"sa": "air_strike", "target": "vuln_base_casino", "method": "remove"},
-          {"sa": "reprisal"},
-          {"sa": "transport", "priorities": "move"},
-          {"sa": "air_strike", "method": "remove"}
+          {
+            "sa": "air_strike",
+            "target": "vuln_base_casino",
+            "method": "remove"
+          },
+          {
+            "sa": "reprisal"
+          },
+          {
+            "sa": "transport",
+            "priorities": "move"
+          },
+          {
+            "sa": "air_strike",
+            "method": "remove"
+          }
         ]
       },
       "back": {
         "flow": [
-          {"cond": "ec_26j_dr_guerrillas_gt_cubes", "t": "op:garrison", "f": "op:assault"}
+          {
+            "cond": "ec_26j_dr_guerrillas_gt_cubes",
+            "t": "op:garrison",
+            "f": "op:assault"
+          }
         ],
         "ops": {
-          "garrison": {"type": "garrison", "steps": [
-            {"n": 1, "priorities": "move"},
-            {"note": "Nessun tiro AN per selezionare destinazioni aggiuntive"},
-            {"star": true, "do": "assault_one_ec", "method": "remove"}
-          ]},
-          "assault": {"type": "assault", "steps": [
-            {"n": 1, "do": "remove_bases_close_casinos", "method": "remove"},
-            {"n": 2, "method": "remove"}
-          ]}
+          "garrison": {
+            "type": "garrison",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN per selezionare destinazioni aggiuntive"
+              },
+              {
+                "star": true,
+                "do": "assault_one_ec",
+                "method": "remove"
+              }
+            ]
+          },
+          "assault": {
+            "type": "assault",
+            "steps": [
+              {
+                "n": 1,
+                "do": "remove_bases_close_casinos",
+                "method": "remove"
+              },
+              {
+                "n": 2,
+                "method": "remove"
+              }
+            ]
+          }
         },
         "special": [
-          {"sa": "air_strike", "target": "vuln_base_casino", "method": "remove"},
-          {"sa": "transport", "priorities": "move"},
-          {"sa": "air_strike", "method": "remove"},
-          {"sa": "reprisal"}
+          {
+            "sa": "air_strike",
+            "target": "vuln_base_casino",
+            "method": "remove"
+          },
+          {
+            "sa": "transport",
+            "priorities": "move"
+          },
+          {
+            "sa": "air_strike",
+            "method": "remove"
+          },
+          {
+            "sa": "reprisal"
+          }
         ]
       }
     },
     "Z": {
       "front": {
         "flow": [
-          {"cond": "province_2pop_without_gov_control", "t": "next", "f": "draw"},
-          {"cond": "assault_could_remove_3plus_or_base_casino", "t": "op:assault", "f": "flip"}
+          {
+            "cond": "province_2pop_without_gov_control",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "assault_could_remove_3plus_or_base_casino",
+            "t": "op:assault",
+            "f": "flip"
+          }
         ],
         "ops": {
-          "assault": {"type": "assault", "steps": [
-            {"n": 1, "do": "remove_bases_close_casinos", "method": "remove"},
-            {"n": 2, "method": "remove"}
-          ]}
+          "assault": {
+            "type": "assault",
+            "steps": [
+              {
+                "n": 1,
+                "do": "remove_bases_close_casinos",
+                "method": "remove"
+              },
+              {
+                "n": 2,
+                "method": "remove"
+              }
+            ]
+          }
         },
         "special": [
-          {"sa": "air_strike", "target": "vuln_base_casino", "method": "remove"},
-          {"sa": "transport", "priorities": "move"},
-          {"sa": "air_strike", "method": "remove"},
-          {"sa": "reprisal"}
+          {
+            "sa": "air_strike",
+            "target": "vuln_base_casino",
+            "method": "remove"
+          },
+          {
+            "sa": "transport",
+            "priorities": "move"
+          },
+          {
+            "sa": "air_strike",
+            "method": "remove"
+          },
+          {
+            "sa": "reprisal"
+          }
         ]
       },
       "back": {
         "flow": [
-          {"cond": "avail_cubes_4plus", "t": "op:train", "f": "op:sweep"}
+          {
+            "cond": "avail_cubes_4plus",
+            "t": "op:train",
+            "f": "op:sweep"
+          }
         ],
         "ops": {
-          "train": {"type": "train", "steps": [
-            {"n": 1, "do": "place_cubes_sets_of_4"}
-          ], "post": [
-            {"star": true, "do": "civic_action", "shift": "active_support", "max": "1d3"},
-            {"star": true, "do": "place_base", "where": "province_without_gov_base"},
-            {"note": "Se non Limitata, Azione Civica/Base puo colpire spazio non scelto per Addestramento"}
-          ]},
-          "sweep": {"type": "sweep", "steps": [
-            {"n": 1, "priorities": "move"},
-            {"note": "Sweep per attivare Guerriglie anche senza muovere Truppe"}
-          ]}
+          "train": {
+            "type": "train",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_cubes_sets_of_4"
+              }
+            ],
+            "post": [
+              {
+                "star": true,
+                "do": "civic_action",
+                "shift": "active_support",
+                "max": "1d3"
+              },
+              {
+                "star": true,
+                "do": "place_base",
+                "where": "province_without_gov_base"
+              },
+              {
+                "note": "Se non Limitata, Azione Civica/Base puo colpire spazio non scelto per Addestramento"
+              }
+            ]
+          },
+          "sweep": {
+            "type": "sweep",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Sweep per attivare Guerriglie anche senza muovere Truppe"
+              }
+            ]
+          }
         },
         "special": [
-          {"sa": "reprisal", "cond": "op_sweep_and_coin_control_at_opposition"},
-          {"sa": "air_strike", "cond": "op_sweep", "method": "remove"},
-          {"sa": "transport", "priorities": "move"}
+          {
+            "sa": "reprisal",
+            "cond": "op_sweep_and_coin_control_at_opposition"
+          },
+          {
+            "sa": "air_strike",
+            "cond": "op_sweep",
+            "method": "remove"
+          },
+          {
+            "sa": "transport",
+            "priorities": "move"
+          }
         ]
       }
     },
     "X": {
       "front": {
         "flow": [
-          {"cond": "space_gov_forces_and_vulnerable_enemies", "t": "next", "f": "draw"},
-          {"cond": "underground_guerrilla_at_support", "t": "op:sweep", "f": "flip"}
+          {
+            "cond": "space_gov_forces_and_vulnerable_enemies",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "underground_guerrilla_at_support",
+            "t": "op:sweep",
+            "f": "flip"
+          }
         ],
         "ops": {
-          "sweep": {"type": "sweep", "steps": [
-            {"n": 1, "priorities": "move"},
-            {"note": "Sweep per attivare Guerriglie anche senza muovere Truppe"}
-          ]}
+          "sweep": {
+            "type": "sweep",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Sweep per attivare Guerriglie anche senza muovere Truppe"
+              }
+            ]
+          }
         },
         "special": [
-          {"sa": "air_strike", "target": "vuln_base_casino", "method": "remove"},
-          {"sa": "reprisal"},
-          {"sa": "transport", "priorities": "move"},
-          {"sa": "air_strike", "method": "remove"}
+          {
+            "sa": "air_strike",
+            "target": "vuln_base_casino",
+            "method": "remove"
+          },
+          {
+            "sa": "reprisal"
+          },
+          {
+            "sa": "transport",
+            "priorities": "move"
+          },
+          {
+            "sa": "air_strike",
+            "method": "remove"
+          }
         ]
       },
       "back": {
         "flow": [
-          {"cond": "ec_26j_dr_guerrillas_gt_cubes", "t": "op:garrison", "f": "op:assault"}
+          {
+            "cond": "ec_26j_dr_guerrillas_gt_cubes",
+            "t": "op:garrison",
+            "f": "op:assault"
+          }
         ],
         "ops": {
-          "garrison": {"type": "garrison", "steps": [
-            {"n": 1, "priorities": "move"},
-            {"note": "Nessun tiro AN per selezionare destinazioni aggiuntive"},
-            {"star": true, "do": "assault_one_ec", "method": "remove"}
-          ]},
-          "assault": {"type": "assault", "steps": [
-            {"n": 1, "do": "remove_bases_close_casinos", "method": "remove"},
-            {"n": 2, "method": "remove"}
-          ]}
+          "garrison": {
+            "type": "garrison",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN per selezionare destinazioni aggiuntive"
+              },
+              {
+                "star": true,
+                "do": "assault_one_ec",
+                "method": "remove"
+              }
+            ]
+          },
+          "assault": {
+            "type": "assault",
+            "steps": [
+              {
+                "n": 1,
+                "do": "remove_bases_close_casinos",
+                "method": "remove"
+              },
+              {
+                "n": 2,
+                "method": "remove"
+              }
+            ]
+          }
         },
         "special": [
-          {"sa": "air_strike", "target": "vuln_base_casino", "method": "remove"},
-          {"sa": "transport", "priorities": "move"},
-          {"sa": "air_strike", "method": "remove"},
-          {"sa": "reprisal"}
+          {
+            "sa": "air_strike",
+            "target": "vuln_base_casino",
+            "method": "remove"
+          },
+          {
+            "sa": "transport",
+            "priorities": "move"
+          },
+          {
+            "sa": "air_strike",
+            "method": "remove"
+          },
+          {
+            "sa": "reprisal"
+          }
         ]
       }
     },
     "W": {
       "front": {
         "flow": [
-          {"cond": "space_gov_forces_and_vulnerable_enemies", "t": "next", "f": "draw"},
-          {"cond": "city_not_active_support", "t": "op:train", "f": "flip"}
+          {
+            "cond": "space_gov_forces_and_vulnerable_enemies",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "city_not_active_support",
+            "t": "op:train",
+            "f": "flip"
+          }
         ],
         "ops": {
-          "train": {"type": "train", "steps": [
-            {"n": 1, "do": "place_cubes_sets_of_4"}
-          ], "post": [
-            {"star": true, "do": "civic_action", "shift": "active_support", "max": "1d3"},
-            {"star": true, "do": "place_base", "where": "province_without_gov_base"},
-            {"note": "Se non Limitata, Azione Civica/Base puo colpire spazio non scelto per Addestramento"}
-          ]}
+          "train": {
+            "type": "train",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_cubes_sets_of_4"
+              }
+            ],
+            "post": [
+              {
+                "star": true,
+                "do": "civic_action",
+                "shift": "active_support",
+                "max": "1d3"
+              },
+              {
+                "star": true,
+                "do": "place_base",
+                "where": "province_without_gov_base"
+              },
+              {
+                "note": "Se non Limitata, Azione Civica/Base puo colpire spazio non scelto per Addestramento"
+              }
+            ]
+          }
         },
         "special": [
-          {"sa": "transport", "priorities": "move"}
+          {
+            "sa": "transport",
+            "priorities": "move"
+          }
         ]
       },
       "back": {
         "flow": [
-          {"cond": "ec_26j_dr_guerrillas_gt_cubes", "t": "op:garrison", "f": "op:assault"}
+          {
+            "cond": "ec_26j_dr_guerrillas_gt_cubes",
+            "t": "op:garrison",
+            "f": "op:assault"
+          }
         ],
         "ops": {
-          "garrison": {"type": "garrison", "steps": [
-            {"n": 1, "priorities": "move"},
-            {"note": "Nessun tiro AN per selezionare destinazioni aggiuntive"},
-            {"star": true, "do": "assault_one_ec", "method": "remove"}
-          ]},
-          "assault": {"type": "assault", "steps": [
-            {"n": 1, "do": "remove_bases_close_casinos", "method": "remove"},
-            {"n": 2, "method": "remove"}
-          ]}
+          "garrison": {
+            "type": "garrison",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN per selezionare destinazioni aggiuntive"
+              },
+              {
+                "star": true,
+                "do": "assault_one_ec",
+                "method": "remove"
+              }
+            ]
+          },
+          "assault": {
+            "type": "assault",
+            "steps": [
+              {
+                "n": 1,
+                "do": "remove_bases_close_casinos",
+                "method": "remove"
+              },
+              {
+                "n": 2,
+                "method": "remove"
+              }
+            ]
+          }
         },
         "special": [
-          {"sa": "air_strike", "target": "vuln_base_casino", "method": "remove"},
-          {"sa": "transport", "priorities": "move"},
-          {"sa": "reprisal"},
-          {"sa": "air_strike", "method": "remove"}
+          {
+            "sa": "air_strike",
+            "target": "vuln_base_casino",
+            "method": "remove"
+          },
+          {
+            "sa": "transport",
+            "priorities": "move"
+          },
+          {
+            "sa": "reprisal"
+          },
+          {
+            "sa": "air_strike",
+            "method": "remove"
+          }
         ]
       }
     },
     "V": {
       "front": {
         "flow": [
-          {"cond": "troops_3plus_not_needed_for_control", "t": "next", "f": "draw"},
-          {"cond": "available_gov_base", "t": "op:train", "f": "flip"}
+          {
+            "cond": "troops_3plus_not_needed_for_control",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "available_gov_base",
+            "t": "op:train",
+            "f": "flip"
+          }
         ],
         "ops": {
-          "train": {"type": "train", "steps": [
-            {"n": 1, "do": "place_cubes_sets_of_4"},
-            {"star": true, "do": "place_base", "where": "province_without_gov_base"},
-            {"star": true, "do": "civic_action", "shift": "active_support", "max": "1d3"},
-            {"note": "Se non Limitata, Azione Civica/Base puo colpire spazio non scelto per Addestramento"}
-          ]}
+          "train": {
+            "type": "train",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_cubes_sets_of_4"
+              },
+              {
+                "star": true,
+                "do": "place_base",
+                "where": "province_without_gov_base"
+              },
+              {
+                "star": true,
+                "do": "civic_action",
+                "shift": "active_support",
+                "max": "1d3"
+              },
+              {
+                "note": "Se non Limitata, Azione Civica/Base puo colpire spazio non scelto per Addestramento"
+              }
+            ]
+          }
         },
         "special": [
-          {"sa": "transport", "priorities": "move"}
+          {
+            "sa": "transport",
+            "priorities": "move"
+          }
         ]
       },
       "back": {
         "flow": [
-          {"cond": "ec_26j_dr_guerrillas_gt_cubes", "t": "op:garrison", "f": "op:sweep"}
+          {
+            "cond": "ec_26j_dr_guerrillas_gt_cubes",
+            "t": "op:garrison",
+            "f": "op:sweep"
+          }
         ],
         "ops": {
-          "garrison": {"type": "garrison", "steps": [
-            {"n": 1, "priorities": "move"},
-            {"note": "Nessun tiro AN per selezionare destinazioni aggiuntive"},
-            {"star": true, "do": "assault_one_ec", "method": "remove"}
-          ]},
-          "sweep": {"type": "sweep", "steps": [
-            {"n": 1, "priorities": "move"},
-            {"note": "Sweep per attivare Guerriglie anche senza muovere Truppe"}
-          ]}
+          "garrison": {
+            "type": "garrison",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN per selezionare destinazioni aggiuntive"
+              },
+              {
+                "star": true,
+                "do": "assault_one_ec",
+                "method": "remove"
+              }
+            ]
+          },
+          "sweep": {
+            "type": "sweep",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Sweep per attivare Guerriglie anche senza muovere Truppe"
+              }
+            ]
+          }
         },
         "special": [
-          {"sa": "air_strike", "target": "vuln_base_casino", "method": "remove"},
-          {"sa": "reprisal", "cond": "coin_control_at_opposition"},
-          {"sa": "transport", "priorities": "move"},
-          {"sa": "air_strike", "method": "remove"}
+          {
+            "sa": "air_strike",
+            "target": "vuln_base_casino",
+            "method": "remove"
+          },
+          {
+            "sa": "reprisal",
+            "cond": "coin_control_at_opposition"
+          },
+          {
+            "sa": "transport",
+            "priorities": "move"
+          },
+          {
+            "sa": "air_strike",
+            "method": "remove"
+          }
         ]
       }
     }
@@ -252,34 +642,115 @@
   "m26": {
     "G": {
       "front": {
-        "an": null,
+        "an": 2,
         "flow": [
-          {"cond": "underground_26j_not_active_opp", "pact": "ignore_passive", "t": "next", "f": "draw"},
-          {"cond": "d6_le_avail_26j_guerrillas", "t": "op:rally", "f": "flip"}
+          {
+            "cond": "underground_26j_not_active_opp",
+            "pact": "ignore_passive",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "d6_le_avail_26j_guerrillas",
+            "t": "op:rally",
+            "f": "flip"
+          }
         ],
-        "ops": {"rally": {"type": "rally", "steps": [
-          {"n": 1, "do": "place_base", "where": "space_with_3plus_26j_guerrillas"},
-          {"n": 2, "cond": "avail_26j_guerrillas_4plus", "do": "place_guerrillas", "where": "spaces_with_26j_bases"},
-          {"n": 3, "do": "place_guerrillas"},
-          {"n": 4, "do": "flip_guerrillas", "where": "most_active"}
-        ]}},
-        "special": [{"sa": "infiltrate", "method": "replace"}]
+        "ops": {
+          "rally": {
+            "type": "rally",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_base",
+                "where": "space_with_3plus_26j_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "avail_26j_guerrillas_4plus",
+                "do": "place_guerrillas",
+                "where": "spaces_with_26j_bases"
+              },
+              {
+                "n": 3,
+                "do": "place_guerrillas"
+              },
+              {
+                "n": 4,
+                "do": "flip_guerrillas",
+                "where": "most_active"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "infiltrate",
+            "method": "replace"
+          }
+        ]
       },
       "back": {
-        "an": null,
-        "flow": [{"cond": "moveable_2plus_26j_adj_uncontrolled", "t": "op:march", "f": "op:terror"}],
+        "an": 2,
+        "flow": [
+          {
+            "cond": "moveable_2plus_26j_adj_uncontrolled",
+            "t": "op:march",
+            "f": "op:terror"
+          }
+        ],
         "ops": {
-          "march": {"type": "march", "steps": [{"n": 1, "priorities": "move"}, {"note": "Nessun tiro AN dopo March su EC"}]},
-          "terror": {"type": "terror", "steps": [
-            {"n": 1, "do": "shift_toward_active_opposition", "where": "spaces_without_active_opposition"},
-            {"n": 2, "do": "terror_all_ecs", "order": "highest_value_first"},
-            {"note": "26J Base in non-Mountain solo dove 2+ Guerriglie 26J Clandestine"},
-            {"note": "Nessun tiro AN dopo Terror su EC"}
-          ]}
+          "march": {
+            "type": "march",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN dopo March su EC"
+              }
+            ]
+          },
+          "terror": {
+            "type": "terror",
+            "steps": [
+              {
+                "n": 1,
+                "do": "shift_toward_active_opposition",
+                "where": "spaces_without_active_opposition"
+              },
+              {
+                "n": 2,
+                "do": "terror_all_ecs",
+                "order": "highest_value_first"
+              },
+              {
+                "note": "26J Base in non-Mountain solo dove 2+ Guerriglie 26J Clandestine"
+              },
+              {
+                "note": "Nessun tiro AN dopo Terror su EC"
+              }
+            ]
+          }
         },
         "special_by_branch": {
-          "march": [{"sa": "infiltrate", "method": "replace"}],
-          "terror": [{"sa": "kidnap", "notes": ["prima Terror nello spazio scelto per Kidnap", "bersaglio GOV se possibile poi SYN", "prendi Cash prima delle Risorse"]}]
+          "march": [
+            {
+              "sa": "infiltrate",
+              "method": "replace"
+            }
+          ],
+          "terror": [
+            {
+              "sa": "kidnap",
+              "notes": [
+                "prima Terror nello spazio scelto per Kidnap",
+                "bersaglio GOV se possibile poi SYN",
+                "prendi Cash prima delle Risorse"
+              ]
+            }
+          ]
         }
       }
     },
@@ -287,30 +758,99 @@
       "front": {
         "an": 2,
         "flow": [
-          {"cond": "guerrillas_4plus_any_space", "t": "next", "f": "draw"},
-          {"cond": "underground_26j_in_2pop_with_support", "t": "op:terror", "f": "flip"}
+          {
+            "cond": "guerrillas_4plus_any_space",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "underground_26j_in_2pop_with_support",
+            "t": "op:terror",
+            "f": "flip"
+          }
         ],
-        "ops": {"terror": {"type": "terror", "steps": [
-          {"n": 1, "do": "shift_toward_active_opposition", "where": "spaces_without_active_opposition"},
-          {"n": 2, "do": "terror_all_ecs", "order": "highest_value_first"},
-          {"note": "26J Base in non-Mountain solo dove 2+ Guerriglie 26J Clandestine"},
-          {"note": "Nessun tiro AN dopo Terror su EC"}
-        ]}},
-        "special": [{"sa": "kidnap", "notes": ["prima Terror nello spazio scelto per Kidnap", "bersaglio GOV se possibile poi SYN", "prendi Cash prima delle Risorse"]}]
+        "ops": {
+          "terror": {
+            "type": "terror",
+            "steps": [
+              {
+                "n": 1,
+                "do": "shift_toward_active_opposition",
+                "where": "spaces_without_active_opposition"
+              },
+              {
+                "n": 2,
+                "do": "terror_all_ecs",
+                "order": "highest_value_first"
+              },
+              {
+                "note": "26J Base in non-Mountain solo dove 2+ Guerriglie 26J Clandestine"
+              },
+              {
+                "note": "Nessun tiro AN dopo Terror su EC"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "kidnap",
+            "notes": [
+              "prima Terror nello spazio scelto per Kidnap",
+              "bersaglio GOV se possibile poi SYN",
+              "prendi Cash prima delle Risorse"
+            ]
+          }
+        ]
       },
       "back": {
-        "an": null,
-        "flow": [{"cond": "enemy_space_4plus_or_underground", "pact": "ignore_dr", "t": "op:attack", "f": "op:march"}],
+        "an": 3,
+        "flow": [
+          {
+            "cond": "enemy_space_4plus_or_underground",
+            "pact": "ignore_dr",
+            "t": "op:attack",
+            "f": "op:march"
+          }
+        ],
         "ops": {
-          "attack": {"type": "attack", "steps": [
-            {"note": "Negli spazi con 4+ Guerriglie 26J: Attack"},
-            {"note": "Negli spazi dove tutte le Guerriglie 26J sono Attive: Attack"}
-          ]},
-          "march": {"type": "march", "steps": [{"n": 1, "priorities": "move"}, {"note": "Nessun tiro AN dopo March su EC"}]}
+          "attack": {
+            "type": "attack",
+            "steps": [
+              {
+                "note": "Negli spazi con 4+ Guerriglie 26J: Attack"
+              },
+              {
+                "note": "Negli spazi dove tutte le Guerriglie 26J sono Attive: Attack"
+              }
+            ]
+          },
+          "march": {
+            "type": "march",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN dopo March su EC"
+              }
+            ]
+          }
         },
         "special_by_branch": {
-          "attack": [{"sa": "ambush", "method": "remove"}],
-          "march": [{"sa": "infiltrate", "method": "replace"}]
+          "attack": [
+            {
+              "sa": "ambush",
+              "method": "remove"
+            }
+          ],
+          "march": [
+            {
+              "sa": "infiltrate",
+              "method": "replace"
+            }
+          ]
         }
       }
     },
@@ -318,131 +858,1104 @@
       "front": {
         "an": 2,
         "flow": [
-          {"cond": "moveable_26j_adj_uncontrolled", "t": "next", "f": "draw"},
-          {"cond": "underground_26j_in_2pop_not_active_opp", "pact": "ignore_passive", "t": "op:terror", "f": "flip"}
+          {
+            "cond": "moveable_26j_adj_uncontrolled",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "underground_26j_in_2pop_not_active_opp",
+            "pact": "ignore_passive",
+            "t": "op:terror",
+            "f": "flip"
+          }
         ],
-        "ops": {"terror": {"type": "terror", "steps": [
-          {"n": 1, "do": "shift_toward_active_opposition", "where": "spaces_without_active_opposition"},
-          {"n": 2, "do": "terror_all_ecs", "order": "highest_value_first"},
-          {"note": "26J Base in non-Mountain solo dove 2+ Guerriglie 26J Clandestine"},
-          {"note": "Nessun tiro AN dopo Terror su EC"}
-        ]}},
-        "special": [{"sa": "kidnap", "notes": ["prima Terror nello spazio scelto per Kidnap", "bersaglio GOV se possibile poi SYN", "prendi Cash prima delle Risorse"]}]
+        "ops": {
+          "terror": {
+            "type": "terror",
+            "steps": [
+              {
+                "n": 1,
+                "do": "shift_toward_active_opposition",
+                "where": "spaces_without_active_opposition"
+              },
+              {
+                "n": 2,
+                "do": "terror_all_ecs",
+                "order": "highest_value_first"
+              },
+              {
+                "note": "26J Base in non-Mountain solo dove 2+ Guerriglie 26J Clandestine"
+              },
+              {
+                "note": "Nessun tiro AN dopo Terror su EC"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "kidnap",
+            "notes": [
+              "prima Terror nello spazio scelto per Kidnap",
+              "bersaglio GOV se possibile poi SYN",
+              "prendi Cash prima delle Risorse"
+            ]
+          }
+        ]
       },
       "back": {
-        "an": null,
-        "flow": [{"cond": "enemy_space_4plus_or_underground_no_control", "pact": "ignore_dr", "t": "op:attack", "f": "op:march"}],
+        "an": 3,
+        "flow": [
+          {
+            "cond": "enemy_space_4plus_or_underground_no_control",
+            "pact": "ignore_dr",
+            "t": "op:attack",
+            "f": "op:march"
+          }
+        ],
         "ops": {
-          "attack": {"type": "attack", "steps": [
-            {"note": "Negli spazi con 4+ Guerriglie 26J: Attack"},
-            {"note": "Negli spazi dove tutte le Guerriglie 26J sono Attive: Attack"}
-          ]},
-          "march": {"type": "march", "steps": [{"n": 1, "priorities": "move"}, {"note": "Nessun tiro AN dopo March su EC"}]}
+          "attack": {
+            "type": "attack",
+            "steps": [
+              {
+                "note": "Negli spazi con 4+ Guerriglie 26J: Attack"
+              },
+              {
+                "note": "Negli spazi dove tutte le Guerriglie 26J sono Attive: Attack"
+              }
+            ]
+          },
+          "march": {
+            "type": "march",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN dopo March su EC"
+              }
+            ]
+          }
         },
         "special_by_branch": {
-          "attack": [{"sa": "ambush", "method": "remove"}],
-          "march": [{"sa": "infiltrate", "method": "replace"}]
+          "attack": [
+            {
+              "sa": "ambush",
+              "method": "remove"
+            }
+          ],
+          "march": [
+            {
+              "sa": "infiltrate",
+              "method": "replace"
+            }
+          ]
         }
       }
     },
     "K": {
       "front": {
-        "an": null,
+        "an": 2,
         "flow": [
-          {"cond": "avail_26j_guerrillas_lt_d6", "t": "next", "f": "draw"},
-          {"cond": "guerrillas_3plus_no_support_room_for_base", "t": "op:rally", "f": "flip"}
+          {
+            "cond": "avail_26j_guerrillas_lt_d6",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "guerrillas_3plus_no_support_room_for_base",
+            "t": "op:rally",
+            "f": "flip"
+          }
         ],
-        "ops": {"rally": {"type": "rally", "steps": [
-          {"n": 1, "do": "place_base", "where": "space_with_3plus_26j_guerrillas"},
-          {"n": 2, "cond": "avail_26j_guerrillas_4plus", "do": "place_guerrillas", "where": "spaces_with_26j_bases"},
-          {"n": 3, "do": "place_guerrillas"},
-          {"n": 4, "do": "flip_guerrillas", "where": "most_active"}
-        ]}},
-        "special": [{"sa": "infiltrate", "method": "replace"}]
+        "ops": {
+          "rally": {
+            "type": "rally",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_base",
+                "where": "space_with_3plus_26j_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "avail_26j_guerrillas_4plus",
+                "do": "place_guerrillas",
+                "where": "spaces_with_26j_bases"
+              },
+              {
+                "n": 3,
+                "do": "place_guerrillas"
+              },
+              {
+                "n": 4,
+                "do": "flip_guerrillas",
+                "where": "most_active"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "infiltrate",
+            "method": "replace"
+          }
+        ]
       },
       "back": {
-        "an": 3,
-        "flow": [{"cond": "underground_26j_not_active_opp", "pact": "ignore_passive", "t": "op:terror", "f": "op:march"}],
+        "an": 2,
+        "flow": [
+          {
+            "cond": "underground_26j_not_active_opp",
+            "pact": "ignore_passive",
+            "t": "op:terror",
+            "f": "op:march"
+          }
+        ],
         "ops": {
-          "terror": {"type": "terror", "steps": [
-            {"n": 1, "do": "shift_toward_active_opposition", "where": "spaces_without_active_opposition"},
-            {"n": 2, "do": "terror_all_ecs", "order": "highest_value_first"},
-            {"note": "26J Base in non-Mountain solo dove 2+ Guerriglie 26J Clandestine"},
-            {"note": "Nessun tiro AN dopo Terror su EC"}
-          ]},
-          "march": {"type": "march", "steps": [{"n": 1, "priorities": "move"}, {"note": "Nessun tiro AN dopo March su EC"}]}
+          "terror": {
+            "type": "terror",
+            "steps": [
+              {
+                "n": 1,
+                "do": "shift_toward_active_opposition",
+                "where": "spaces_without_active_opposition"
+              },
+              {
+                "n": 2,
+                "do": "terror_all_ecs",
+                "order": "highest_value_first"
+              },
+              {
+                "note": "26J Base in non-Mountain solo dove 2+ Guerriglie 26J Clandestine"
+              },
+              {
+                "note": "Nessun tiro AN dopo Terror su EC"
+              }
+            ]
+          },
+          "march": {
+            "type": "march",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN dopo March su EC"
+              }
+            ]
+          }
         },
         "special_by_branch": {
-          "terror": [{"sa": "kidnap", "notes": ["prima Terror nello spazio scelto per Kidnap", "bersaglio GOV se possibile poi SYN", "prendi Cash prima delle Risorse"]}],
-          "march": [{"sa": "infiltrate", "method": "replace"}]
+          "terror": [
+            {
+              "sa": "kidnap",
+              "notes": [
+                "prima Terror nello spazio scelto per Kidnap",
+                "bersaglio GOV se possibile poi SYN",
+                "prendi Cash prima delle Risorse"
+              ]
+            }
+          ],
+          "march": [
+            {
+              "sa": "infiltrate",
+              "method": "replace"
+            }
+          ]
         }
       }
     },
     "L": {
       "front": {
-        "an": null,
+        "an": 2,
         "flow": [
-          {"cond": "avail_26j_guerrillas_lt_d6", "t": "next", "f": "draw"},
-          {"cond": "guerrillas_3plus_no_support_room_for_base", "t": "op:rally", "f": "flip"}
+          {
+            "cond": "avail_26j_guerrillas_lt_d6",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "guerrillas_3plus_no_support_room_for_base",
+            "t": "op:rally",
+            "f": "flip"
+          }
         ],
-        "ops": {"rally": {"type": "rally", "steps": [
-          {"n": 1, "do": "place_base", "where": "space_with_3plus_26j_guerrillas"},
-          {"n": 2, "cond": "avail_26j_guerrillas_4plus", "do": "place_guerrillas", "where": "spaces_with_26j_bases"},
-          {"n": 3, "do": "place_guerrillas"},
-          {"n": 4, "do": "flip_guerrillas", "where": "most_active"}
-        ]}},
-        "special": [{"sa": "infiltrate", "method": "replace"}]
+        "ops": {
+          "rally": {
+            "type": "rally",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_base",
+                "where": "space_with_3plus_26j_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "avail_26j_guerrillas_4plus",
+                "do": "place_guerrillas",
+                "where": "spaces_with_26j_bases"
+              },
+              {
+                "n": 3,
+                "do": "place_guerrillas"
+              },
+              {
+                "n": 4,
+                "do": "flip_guerrillas",
+                "where": "most_active"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "infiltrate",
+            "method": "replace"
+          }
+        ]
       },
       "back": {
         "an": 3,
-        "flow": [{"cond": "enemy_space_4plus_or_underground", "pact": "ignore_dr", "t": "op:attack", "f": "op:march"}],
+        "flow": [
+          {
+            "cond": "enemy_space_4plus_or_underground",
+            "pact": "ignore_dr",
+            "t": "op:attack",
+            "f": "op:march"
+          }
+        ],
         "ops": {
-          "attack": {"type": "attack", "steps": [
-            {"note": "Negli spazi con 4+ Guerriglie 26J: Attack"},
-            {"note": "Negli spazi dove tutte le Guerriglie 26J sono Attive: Attack"}
-          ]},
-          "march": {"type": "march", "steps": [{"n": 1, "priorities": "move"}, {"note": "Nessun tiro AN dopo March su EC"}]}
+          "attack": {
+            "type": "attack",
+            "steps": [
+              {
+                "note": "Negli spazi con 4+ Guerriglie 26J: Attack"
+              },
+              {
+                "note": "Negli spazi dove tutte le Guerriglie 26J sono Attive: Attack"
+              }
+            ]
+          },
+          "march": {
+            "type": "march",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN dopo March su EC"
+              }
+            ]
+          }
         },
         "special_by_branch": {
-          "attack": [{"sa": "ambush", "method": "remove"}],
-          "march": [{"sa": "infiltrate", "method": "replace"}]
+          "attack": [
+            {
+              "sa": "ambush",
+              "method": "remove"
+            }
+          ],
+          "march": [
+            {
+              "sa": "infiltrate",
+              "method": "replace"
+            }
+          ]
         }
       }
     },
     "M": {
       "front": {
-        "an": null,
+        "an": 2,
         "flow": [
-          {"cond": "any_2pop_without_active_opp", "t": "next", "f": "draw"},
-          {"cond": "d6_le_avail_26j_guerrillas", "t": "op:rally", "f": "flip"}
+          {
+            "cond": "any_2pop_without_active_opp",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "d6_le_avail_26j_guerrillas",
+            "t": "op:rally",
+            "f": "flip"
+          }
         ],
-        "ops": {"rally": {"type": "rally", "steps": [
-          {"n": 1, "do": "place_base", "where": "space_with_3plus_26j_guerrillas"},
-          {"n": 2, "cond": "avail_26j_guerrillas_4plus", "do": "place_guerrillas", "where": "spaces_with_26j_bases"},
-          {"n": 3, "do": "place_guerrillas"},
-          {"n": 4, "do": "flip_guerrillas", "where": "most_active"}
-        ]}},
-        "special": [{"sa": "infiltrate", "method": "replace"}]
+        "ops": {
+          "rally": {
+            "type": "rally",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_base",
+                "where": "space_with_3plus_26j_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "avail_26j_guerrillas_4plus",
+                "do": "place_guerrillas",
+                "where": "spaces_with_26j_bases"
+              },
+              {
+                "n": 3,
+                "do": "place_guerrillas"
+              },
+              {
+                "n": 4,
+                "do": "flip_guerrillas",
+                "where": "most_active"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "infiltrate",
+            "method": "replace"
+          }
+        ]
       },
       "back": {
-        "an": null,
-        "flow": [{"cond": "enemy_space_4plus_or_underground", "pact": "ignore_dr", "t": "op:attack", "f": "op:terror"}],
+        "an": 3,
+        "flow": [
+          {
+            "cond": "enemy_space_4plus_or_underground",
+            "pact": "ignore_dr",
+            "t": "op:attack",
+            "f": "op:terror"
+          }
+        ],
         "ops": {
-          "attack": {"type": "attack", "steps": [
-            {"note": "Negli spazi con 4+ Guerriglie 26J: Attack"},
-            {"note": "Negli spazi dove tutte le Guerriglie 26J sono Attive: Attack"}
-          ]},
-          "terror": {"type": "terror", "steps": [
-            {"n": 1, "do": "shift_toward_active_opposition", "where": "spaces_without_active_opposition"},
-            {"n": 2, "do": "terror_all_ecs", "order": "highest_value_first"},
-            {"note": "26J Base in non-Mountain solo dove 2+ Guerriglie 26J Clandestine"},
-            {"note": "Nessun tiro AN dopo Terror su EC"}
-          ]}
+          "attack": {
+            "type": "attack",
+            "steps": [
+              {
+                "note": "Negli spazi con 4+ Guerriglie 26J: Attack"
+              },
+              {
+                "note": "Negli spazi dove tutte le Guerriglie 26J sono Attive: Attack"
+              }
+            ]
+          },
+          "terror": {
+            "type": "terror",
+            "steps": [
+              {
+                "n": 1,
+                "do": "shift_toward_active_opposition",
+                "where": "spaces_without_active_opposition"
+              },
+              {
+                "n": 2,
+                "do": "terror_all_ecs",
+                "order": "highest_value_first"
+              },
+              {
+                "note": "26J Base in non-Mountain solo dove 2+ Guerriglie 26J Clandestine"
+              },
+              {
+                "note": "Nessun tiro AN dopo Terror su EC"
+              }
+            ]
+          }
         },
         "special_by_branch": {
-          "attack": [{"sa": "ambush", "method": "remove"}],
-          "terror": [{"sa": "kidnap", "notes": ["prima Terror nello spazio scelto per Kidnap", "bersaglio GOV se possibile poi SYN", "prendi Cash prima delle Risorse"]}]
+          "attack": [
+            {
+              "sa": "ambush",
+              "method": "remove"
+            }
+          ],
+          "terror": [
+            {
+              "sa": "kidnap",
+              "notes": [
+                "prima Terror nello spazio scelto per Kidnap",
+                "bersaglio GOV se possibile poi SYN",
+                "prendi Cash prima delle Risorse"
+              ]
+            }
+          ]
         }
+      }
+    }
+  },
+  "_an_dice": {
+    "G": 2,
+    "H": 2,
+    "J": 2,
+    "K": 2,
+    "L": 2,
+    "M": 2,
+    "GG": 2,
+    "HH": 3,
+    "JJ": 3,
+    "KK": 2,
+    "LL": 3,
+    "MM": 3,
+    "A": 3,
+    "B": 2,
+    "C": 2,
+    "D": 3,
+    "E": 2,
+    "F": 2,
+    "AA": 3,
+    "BB": 3,
+    "CC": 3,
+    "DD": 2,
+    "EE": 3,
+    "FF": 3,
+    "N": 3,
+    "P": 2,
+    "Q": 2,
+    "R": 3,
+    "S": 3,
+    "T": 2,
+    "NN": 3,
+    "PP": 3,
+    "QQ": 3,
+    "RR": 3,
+    "SS": 3,
+    "TT": 4
+  },
+  "directorio": {
+    "A": {
+      "front": {
+        "flow": [
+          {
+            "cond": "avail_dr_guerrillas_lt_d6",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "underground_dr_at_active_opp_or_active_support",
+            "pact": "ignore_active_opp",
+            "t": "op:terror",
+            "f": "flip"
+          }
+        ],
+        "ops": {
+          "terror": {
+            "type": "terror",
+            "steps": [
+              {
+                "n": 1,
+                "do": "shift_toward_neutral",
+                "where": "spaces_with_any_support_or_opposition"
+              },
+              {
+                "n": 2,
+                "do": "terror_all_ecs",
+                "order": "highest_value_first"
+              },
+              {
+                "note": "DR Base in non-Mountain solo dove 2+ Guerriglie DR Clandestine"
+              },
+              {
+                "note": "Nessun tiro AN dopo Terror su EC"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "assassinate",
+            "cond": "syn_is_player",
+            "target": "close_casino",
+            "method": "remove"
+          },
+          {
+            "sa": "assassinate",
+            "target": "remove_base",
+            "method": "remove"
+          },
+          {
+            "sa": "assassinate",
+            "method": "remove",
+            "note": "prima Terror nello spazio scelto per Assassinate"
+          }
+        ],
+        "an": 3
+      },
+      "back": {
+        "flow": [
+          {
+            "cond": "enemy_space_4plus_or_underground_no_control",
+            "pact": "ignore_26j",
+            "t": "op:attack",
+            "f": "op:march"
+          }
+        ],
+        "ops": {
+          "attack": {
+            "type": "attack",
+            "steps": [
+              {
+                "note": "Negli spazi con 4+ Guerriglie DR: Attack"
+              },
+              {
+                "note": "Negli spazi dove tutte le Guerriglie DR sono Attive: Remove"
+              }
+            ]
+          },
+          "march": {
+            "type": "march",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN dopo March su EC"
+              }
+            ]
+          }
+        },
+        "special_by_branch": {
+          "attack": [
+            {
+              "sa": "ambush",
+              "method": "remove"
+            }
+          ],
+          "march": [
+            {
+              "sa": "subvert",
+              "do": "shift_toward_neutral",
+              "where": "one_space_with_any_support_or_opposition"
+            }
+          ]
+        },
+        "an": 3
+      }
+    },
+    "B": {
+      "front": {
+        "flow": [
+          {
+            "cond": "any_available_dr_bases",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "any",
+            "of": [
+              "d6_le_avail_dr_guerrillas",
+              "dr_guerrillas_3plus_no_active_supp_opp_room_for_base"
+            ],
+            "t": "op:rally",
+            "f": "flip"
+          }
+        ],
+        "ops": {
+          "rally": {
+            "type": "rally",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_base",
+                "where": "space_with_3plus_dr_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "avail_dr_guerrillas_4plus",
+                "do": "place_guerrillas",
+                "where": "spaces_with_dr_bases"
+              },
+              {
+                "n": 3,
+                "do": "place_guerrillas"
+              },
+              {
+                "n": 4,
+                "do": "flip_guerrillas",
+                "where": "most_active"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "subvert",
+            "do": "shift_toward_neutral",
+            "where": "one_space_with_any_support_or_opposition"
+          }
+        ],
+        "an": 2
+      },
+      "back": {
+        "flow": [
+          {
+            "cond": "enemy_space_4plus_or_underground",
+            "pact": "ignore_26j",
+            "t": "op:attack",
+            "f": "op:march"
+          }
+        ],
+        "ops": {
+          "attack": {
+            "type": "attack",
+            "steps": [
+              {
+                "note": "Negli spazi con 4+ Guerriglie DR: Attack"
+              },
+              {
+                "note": "Negli spazi dove tutte le Guerriglie DR sono Attive: Attack"
+              }
+            ]
+          },
+          "march": {
+            "type": "march",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN dopo March su EC"
+              }
+            ]
+          }
+        },
+        "special_by_branch": {
+          "attack": [
+            {
+              "sa": "ambush",
+              "method": "remove"
+            }
+          ],
+          "march": [
+            {
+              "sa": "subvert",
+              "do": "shift_toward_neutral",
+              "where": "one_space_with_any_support_or_opposition"
+            }
+          ]
+        },
+        "an": 3
+      }
+    },
+    "C": {
+      "front": {
+        "flow": [
+          {
+            "cond": "avail_dr_guerrillas_lt_d6",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "dr_guerrillas_3plus_no_active_supp_opp_room_for_base",
+            "t": "op:rally",
+            "f": "flip"
+          }
+        ],
+        "ops": {
+          "rally": {
+            "type": "rally",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_base",
+                "where": "space_with_3plus_dr_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "avail_dr_guerrillas_4plus",
+                "do": "place_guerrillas",
+                "where": "spaces_with_dr_bases"
+              },
+              {
+                "n": 3,
+                "do": "place_guerrillas"
+              },
+              {
+                "n": 4,
+                "do": "flip_guerrillas",
+                "where": "most_active"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "subvert",
+            "do": "shift_toward_neutral",
+            "where": "one_space_with_any_support_or_opposition"
+          }
+        ],
+        "an": 2
+      },
+      "back": {
+        "flow": [
+          {
+            "cond": "enemy_space_4plus_or_underground",
+            "pact": "ignore_26j",
+            "t": "op:attack",
+            "f": "op:march"
+          }
+        ],
+        "ops": {
+          "attack": {
+            "type": "attack",
+            "steps": [
+              {
+                "note": "Negli spazi con 4+ Guerriglie DR: Attack"
+              },
+              {
+                "note": "Negli spazi dove tutte le Guerriglie DR sono Attive: Attack"
+              }
+            ]
+          },
+          "march": {
+            "type": "march",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN dopo March su EC"
+              }
+            ]
+          }
+        },
+        "special_by_branch": {
+          "attack": [
+            {
+              "sa": "ambush",
+              "method": "remove"
+            }
+          ],
+          "march": [
+            {
+              "sa": "subvert",
+              "do": "shift_toward_neutral",
+              "where": "one_space_with_any_support_or_opposition"
+            }
+          ]
+        },
+        "an": 3
+      }
+    },
+    "D": {
+      "front": {
+        "flow": [
+          {
+            "cond": "d6_le_avail_dr_guerrillas",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "enemy_space_4plus_or_underground",
+            "pact": "ignore_26j",
+            "t": "op:attack",
+            "f": "flip"
+          }
+        ],
+        "ops": {
+          "attack": {
+            "type": "attack",
+            "steps": [
+              {
+                "note": "Negli spazi con 4+ Guerriglie DR: Attack"
+              },
+              {
+                "note": "Negli spazi dove tutte le Guerriglie DR sono Attive: Attack"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "ambush",
+            "method": "remove"
+          }
+        ],
+        "an": 3
+      },
+      "back": {
+        "flow": [
+          {
+            "cond": "moveable_2plus_dr_adj_uncontrolled",
+            "t": "op:march",
+            "f": "op:rally"
+          }
+        ],
+        "ops": {
+          "march": {
+            "type": "march",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN dopo March su EC"
+              }
+            ]
+          },
+          "rally": {
+            "type": "rally",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_base",
+                "where": "space_with_3plus_dr_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "avail_dr_guerrillas_4plus",
+                "do": "place_guerrillas",
+                "where": "spaces_with_dr_bases"
+              },
+              {
+                "n": 3,
+                "do": "place_guerrillas"
+              },
+              {
+                "n": 4,
+                "do": "flip_guerrillas",
+                "where": "most_active"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "subvert",
+            "do": "shift_toward_neutral",
+            "where": "one_space_with_any_support_or_opposition"
+          }
+        ],
+        "an": 2
+      }
+    },
+    "E": {
+      "front": {
+        "flow": [
+          {
+            "cond": "avail_dr_guerrillas_lt_d6",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "dr_guerrillas_3plus_no_active_supp_opp_room_for_base",
+            "t": "op:rally",
+            "f": "flip"
+          }
+        ],
+        "ops": {
+          "rally": {
+            "type": "rally",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_base",
+                "where": "space_with_3plus_dr_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "avail_dr_guerrillas_4plus",
+                "do": "place_guerrillas",
+                "where": "spaces_with_dr_bases"
+              },
+              {
+                "n": 3,
+                "do": "place_guerrillas"
+              },
+              {
+                "n": 4,
+                "do": "flip_guerrillas",
+                "where": "most_active"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "subvert",
+            "do": "shift_toward_neutral",
+            "where": "one_space_with_any_support_or_opposition"
+          }
+        ],
+        "an": 2
+      },
+      "back": {
+        "flow": [
+          {
+            "cond": "underground_dr_at_opp_or_support",
+            "pact": "ignore_opposition",
+            "t": "op:terror",
+            "f": "op:march"
+          }
+        ],
+        "ops": {
+          "terror": {
+            "type": "terror",
+            "steps": [
+              {
+                "n": 1,
+                "do": "shift_toward_neutral",
+                "where": "spaces_with_any_support_or_opposition"
+              },
+              {
+                "n": 2,
+                "do": "terror_all_ecs",
+                "order": "highest_value_first"
+              },
+              {
+                "note": "DR Base in non-Mountain solo dove 2+ Guerriglie DR Clandestine"
+              },
+              {
+                "note": "Nessun tiro AN dopo Terror su EC"
+              }
+            ]
+          },
+          "march": {
+            "type": "march",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN dopo March su EC"
+              }
+            ]
+          }
+        },
+        "special_by_branch": {
+          "terror": [
+            {
+              "sa": "assassinate",
+              "cond": "syn_is_player",
+              "target": "close_casino",
+              "method": "remove"
+            },
+            {
+              "sa": "assassinate",
+              "target": "remove_base",
+              "method": "remove"
+            },
+            {
+              "sa": "assassinate",
+              "method": "remove",
+              "note": "prima Terror nello spazio scelto per Assassinate"
+            }
+          ],
+          "march": [
+            {
+              "sa": "subvert",
+              "do": "shift_toward_neutral",
+              "where": "one_space_with_any_support_or_opposition"
+            }
+          ]
+        },
+        "an": 3
+      }
+    },
+    "F": {
+      "front": {
+        "flow": [
+          {
+            "cond": "any_2pop_without_dr_control",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "d6_le_avail_dr_guerrillas",
+            "t": "op:rally",
+            "f": "flip"
+          }
+        ],
+        "ops": {
+          "rally": {
+            "type": "rally",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_base",
+                "where": "space_with_3plus_dr_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "avail_dr_guerrillas_4plus",
+                "do": "place_guerrillas",
+                "where": "spaces_with_dr_bases"
+              },
+              {
+                "n": 3,
+                "do": "place_guerrillas"
+              },
+              {
+                "n": 4,
+                "do": "flip_guerrillas",
+                "where": "most_active"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "subvert",
+            "do": "shift_toward_neutral",
+            "where": "one_space_with_any_support_or_opposition"
+          }
+        ],
+        "an": 2
+      },
+      "back": {
+        "flow": [
+          {
+            "cond": "moveable_dr_adj_uncontrolled",
+            "t": "op:march",
+            "f": "op:attack"
+          }
+        ],
+        "ops": {
+          "march": {
+            "type": "march",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN dopo March su EC"
+              }
+            ]
+          },
+          "attack": {
+            "type": "attack",
+            "steps": [
+              {
+                "note": "Negli spazi con 4+ Guerriglie DR: Attack"
+              },
+              {
+                "note": "Negli spazi dove tutte le Guerriglie DR sono Attive: Attack"
+              }
+            ]
+          }
+        },
+        "special_by_branch": {
+          "march": [
+            {
+              "sa": "subvert",
+              "do": "shift_toward_neutral",
+              "where": "one_space_with_any_support_or_opposition"
+            }
+          ],
+          "attack": [
+            {
+              "sa": "ambush",
+              "method": "remove"
+            }
+          ]
+        },
+        "an": 3
       }
     }
   }
