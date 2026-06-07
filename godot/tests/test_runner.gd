@@ -39,6 +39,7 @@ func _initialize() -> void:
 	_test_bots()
 	_test_cards_data()
 	_test_events()
+	_test_all_events()
 
 	print("\n-- Risultato: %d passati, %d falliti --" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
@@ -743,11 +744,36 @@ func _test_events() -> void:
 	var res5 := ev5.apply(18, "unshaded", "m26")
 	_check("Pact of Caracas registra Capacità", st5.active_capabilities.has("Pact of Caracas"))
 
-	# Evento senza gestore -> manuale
+	# Tutti i 48 eventi ora sono automatizzati (nessun fallback manuale)
 	var r6 := _new_game()
 	var ev6 := CubaLibreEvents.new(r6[2], r6[0])
 	var res6 := ev6.apply(25, "unshaded", "directorio")
-	_check("Evento non automatizzato è 'manuale'", res6.get("manual", false))
+	_check("Evento #25 ora automatizzato (non manuale)", not res6.get("manual", false))
+
+
+func _test_all_events() -> void:
+	print("\n[Eventi — smoke test 1..48 entrambi i lati]")
+	var auto_count := 0
+	var manual_count := 0
+	var fail := 0
+	for n in range(1, 49):
+		for side in ["unshaded", "shaded"]:
+			var r := _new_game()
+			var mod: CubaLibreModule = r[0]
+			var st: GameState = r[2]
+			var ev := CubaLibreEvents.new(st, mod)
+			var first := mod.build_game_def().card(n).faction_order[0]
+			var res := ev.apply(n, side, first)
+			if not res.get("ok", false):
+				fail += 1
+				print("  [FAIL] #%d %s: %s" % [n, side, res.get("log", [])])
+			elif res.get("manual", false):
+				manual_count += 1
+			else:
+				auto_count += 1
+	_check("Tutti gli eventi eseguono senza errori (fail=%d)" % fail, fail == 0)
+	_eq("Eventi automatizzati (96 lati attesi)", auto_count, 96)
+	print("  (automatizzati=%d, manuali=%d)" % [auto_count, manual_count])
 
 
 func _test_victory_initial() -> void:
