@@ -41,6 +41,7 @@ func _initialize() -> void:
 	_test_events()
 	_test_all_events()
 	_test_capabilities()
+	_test_game_loop()
 
 	print("\n-- Risultato: %d passati, %d falliti --" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
@@ -828,6 +829,17 @@ func _test_capabilities() -> void:
 	st5.space_state("la_habana").add_piece("m26", "guerrilla", 3, "underground")  # ora 4
 	ops5.march({"faction": "m26", "moves": [{"from": "la_habana", "to": "havana", "count": 3}]})
 	_eq("El Che: Guerriglie restano Clandestine a Havana", st5.space_state("havana").count("m26", "guerrilla", "active"), 0)
+
+
+func _test_game_loop() -> void:
+	print("\n[Loop di gioco — partita automatica]")
+	var gc = load("res://scenes/GameController.gd").new()
+	gc.new_game()
+	_eq("Carte rimaste dopo la prima pesca", gc.cards_left(), 51)
+	gc.run_full_game()
+	_check("La partita automatica termina (game_over)", gc.game_over)
+	_check("Al più 4 Propaganda giocate", gc.propaganda_played <= 4)
+	gc.free()
 
 
 func _test_victory_initial() -> void:
