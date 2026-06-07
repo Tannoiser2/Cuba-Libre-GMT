@@ -46,6 +46,7 @@ func _initialize() -> void:
 	_test_calixto_data()
 	_test_calixto_deck()
 	_test_calixto_engine()
+	_test_calixto_bot()
 
 	print("\n-- Risultato: %d passati, %d falliti --" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
@@ -933,3 +934,22 @@ func _test_calixto_engine() -> void:
 	# special_by_branch
 	var side2 := {"special_by_branch": {"march": [{"sa": "infiltrate"}], "terror": [{"sa": "kidnap"}]}}
 	_eq("Engine: specials ramo march", CalixtoEngine.specials_for(side2, "march")[0]["sa"], "infiltrate")
+
+
+func _test_calixto_bot() -> void:
+	print("\n[Calixto Bot]")
+	var r := _new_game()
+	var mod: CubaLibreModule = r[0]
+	var state: GameState = r[2]
+	var bot := CLCalixto.new(state, mod)
+	for fac in ["government", "m26", "directorio", "syndicate"]:
+		var res := bot.take_turn(fac)
+		_check("Calixto bot %s azione valida" % fac,
+			res.has("action") and res.has("log") and String(res["action"]) != "")
+	# Una manciata di turni non deve generare errori
+	var ok := true
+	for i in range(8):
+		var res2 := bot.take_turn(["government", "m26", "directorio", "syndicate"][i % 4])
+		if not res2.has("action"):
+			ok = false
+	_check("Calixto bot: turni multipli stabili", ok)

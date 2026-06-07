@@ -230,6 +230,11 @@ func _build_action_bar() -> HFlowContainer:
 	btn_bots.pressed.connect(_on_all_bots)
 	bar.add_child(btn_bots)
 
+	var chk_calixto := CheckButton.new()
+	chk_calixto.text = "Bot Calixto"
+	chk_calixto.toggled.connect(func(on): GameController.use_calixto = on)
+	bar.add_child(chk_calixto)
+
 	var btn_prop := Button.new()
 	btn_prop.text = "Round Propaganda"
 	btn_prop.pressed.connect(func(): GameController.run_propaganda())

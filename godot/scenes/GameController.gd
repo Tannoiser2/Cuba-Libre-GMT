@@ -15,6 +15,9 @@ var specials: CubaLibreSpecials
 var propaganda: CubaLibrePropaganda
 var events: CubaLibreEvents
 var bots: CubaLibreBots
+var calixto: CLCalixto
+## Se true usa il bot Calixto (carte) al posto dei bot cap. 8.
+var use_calixto := false
 
 ## Sequenza di Gioco della carta Evento corrente (loop di turno giocabile).
 var seq: SequenceOfPlay
@@ -38,6 +41,7 @@ func new_game(scenario: String = "standard") -> void:
 	propaganda = CubaLibrePropaganda.new(state, module)
 	events = CubaLibreEvents.new(state, module)
 	bots = CubaLibreBots.new(state, module)
+	calixto = CLCalixto.new(state, module)
 	build_deck()
 	draw_next()
 	emit_signal("state_changed")
@@ -179,7 +183,8 @@ func _bot_take_pending() -> void:
 	var fid := seq.pending_faction()
 	if fid == "":
 		return
-	var br := bots.take_turn(fid)
+	var brain: BotBrain = calixto if use_calixto else bots
+	var br := brain.take_turn(fid)
 	for line in br.get("log", []):
 		emit_signal("action_logged", "🤖 " + String(line))
 	if br.get("action", "pass") == "pass":
