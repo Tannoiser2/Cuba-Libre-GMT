@@ -1,0 +1,438 @@
+{
+  "_note": "48 carte Evento + 4 carte Propaganda (49-52). Ordine fazioni, testo non-ombreggiato/ombreggiato, flag Capacità/Momentum DA COMPLETARE leggendo le immagini delle carte (sources/vassal -> images/Card_XX.png).",
+  "propagandaCards": 4,
+  "events": [
+    {
+      "number": 1,
+      "title": "Armored Cars",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 2,
+      "title": "Guantánamo Bay",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 3,
+      "title": "Eulogio Cantillo",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 4,
+      "title": "S.I.M.",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 5,
+      "title": "Rolando Masferrer",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 6,
+      "title": "Sánchez Mosquera",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 7,
+      "title": "Election",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 8,
+      "title": "General Strike",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 9,
+      "title": "Coup",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 10,
+      "title": "MAP",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 11,
+      "title": "Batista Flees",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 12,
+      "title": "BRAC",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 13,
+      "title": "El Che",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 14,
+      "title": "Operation Fisherman",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 15,
+      "title": "Come Comerades!",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 16,
+      "title": "Larrazábal",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 17,
+      "title": "Alberto Bayo",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 18,
+      "title": "Pact of Caracas",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 19,
+      "title": "Sierra Maestra Manifesto",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 20,
+      "title": "The Twelve",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 21,
+      "title": "Fangio",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 22,
+      "title": "Raúl",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 23,
+      "title": "Radio Rebelde",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 24,
+      "title": "Vilma Espín",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 25,
+      "title": "Escapade",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 26,
+      "title": "Rodríguez Loeches",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 27,
+      "title": "Echeverría",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 28,
+      "title": "Morgan",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 29,
+      "title": "Fauré Chomón",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 30,
+      "title": "The Guerrilla Life",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 31,
+      "title": "Escopeteros",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 32,
+      "title": "Resistencia Cívica",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 33,
+      "title": "Carlos Prío",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 34,
+      "title": "US Speaking Tour",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 35,
+      "title": "Defections",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 36,
+      "title": "Eloy Gutiérrez Menoyo",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 37,
+      "title": "Herbert Matthews",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 38,
+      "title": "Meyer Lansky",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 39,
+      "title": "Turismo",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 40,
+      "title": "Ambassador Smith",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 41,
+      "title": "Fat Butcher",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 42,
+      "title": "Llano",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 43,
+      "title": "Mafia Offensive",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 44,
+      "title": "Rebel Air Force",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 45,
+      "title": "Anastasia",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 46,
+      "title": "Sinatra",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 47,
+      "title": "Pact of Miami",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    },
+    {
+      "number": 48,
+      "title": "Santo Trafficante Jr",
+      "factionOrder": [],
+      "capability": false,
+      "momentum": false,
+      "unshaded": "",
+      "shaded": ""
+    }
+  ]
+}

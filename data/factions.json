@@ -1,0 +1,61 @@
+{
+  "_note": "Le 4 Fazioni di Cuba Libre, con forze disponibili totali, operazioni, attività speciali e condizioni di vittoria.",
+  "factions": [
+    {
+      "id": "government",
+      "name": "Governo",
+      "shortName": "Govt",
+      "color": "blue",
+      "type": "counterinsurgent",
+      "forces": { "troops": 15, "police": 15, "bases": 2 },
+      "operations": ["train", "garrison", "sweep", "assault"],
+      "specialActivities": ["transport", "air_strike", "reprisal"],
+      "victory": { "metric": "total_support", "threshold": 18, "formula": "Totale Supporto > 18 e tutte le Città a Supporto Attivo" },
+      "victoryMargin": "total_support - 18"
+    },
+    {
+      "id": "m26",
+      "name": "Movimento 26 Luglio",
+      "shortName": "26July",
+      "color": "red",
+      "type": "insurgent",
+      "forces": { "guerrillas": 15, "bases": 4 },
+      "operations": ["rally", "march", "attack", "terror"],
+      "specialActivities": ["infiltrate", "ambush", "kidnap"],
+      "victory": { "metric": "opposition_plus_bases", "threshold": 15, "formula": "Totale Opposizione + Basi M26 > 15" },
+      "victoryMargin": "opposition_plus_bases - 15"
+    },
+    {
+      "id": "directorio",
+      "name": "Directorio Revolucionario",
+      "shortName": "DR",
+      "color": "yellow",
+      "type": "insurgent",
+      "forces": { "guerrillas": 15, "bases": 4 },
+      "operations": ["rally", "march", "attack", "terror"],
+      "specialActivities": ["subvert", "ambush", "assassinate"],
+      "victory": { "metric": "dr_pop_plus_bases", "threshold": 9, "formula": "Popolazione controllata dal DR + Basi DR > 9" },
+      "victoryMargin": "dr_pop_plus_bases - 9"
+    },
+    {
+      "id": "syndicate",
+      "name": "Sindacato",
+      "shortName": "Syndicate",
+      "color": "green",
+      "type": "insurgent",
+      "forces": { "guerrillas": 6, "bases_casinos": 10 },
+      "operations": ["rally", "march", "terror", "build"],
+      "specialActivities": ["profit", "muscle", "bribe"],
+      "victory": { "metric": "open_casinos_and_resources", "thresholds": { "open_casinos": 7, "resources": 30 }, "formula": "Casinò aperti > 7 E Risorse > 30" },
+      "victoryMargin": "min(open_casinos - 7, resources - 30)"
+    }
+  ],
+  "globalMarkers": {
+    "usAlliance": ["solid", "wavering", "embargo"],
+    "coinOpCost": { "solid": 2, "wavering": 3, "embargo": 4 },
+    "resourceLimit": 49,
+    "terrorSabotageMarkers": 20,
+    "cashTokens": 4,
+    "totalEcon": 8
+  }
+}
