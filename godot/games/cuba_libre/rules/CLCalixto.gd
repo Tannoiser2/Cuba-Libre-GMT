@@ -38,6 +38,9 @@ func _init(p_state: GameState, p_module: CubaLibreModule) -> void:
 	deck = CalixtoDeck.new(LETTERS, _rng)
 
 
+var _ss := {}   # space_selection per fazione
+
+
 func _load_data() -> void:
 	var f := FileAccess.open("res://games/cuba_libre/data/calixto_cards.json", FileAccess.READ)
 	if f != null:
@@ -45,6 +48,112 @@ func _load_data() -> void:
 		if d is Dictionary:
 			_cards = d
 			_an_dice = d.get("_an_dice", {})
+	var ft := FileAccess.open("res://games/cuba_libre/data/calixto_tables.json", FileAccess.READ)
+	if ft != null:
+		var dt = JSON.parse_string(ft.get_as_text())
+		if dt is Dictionary:
+			_ss = dt.get("space_selection", {})
+
+
+# Colonna della tabella Space Selection da usare per ogni Operazione.
+const OP_COLUMN := {
+	"government": {"train": "place_cubes", "sweep": "sweep_dest", "assault": "remove_or_replace", "garrison": "garrison_dest"},
+	"m26": {"rally": "place_guerrillas", "march": "march_dest", "attack": "attack", "terror": "shift_active_opposition"},
+	"directorio": {"rally": "place_guerrillas", "march": "march_dest", "attack": "attack", "terror": "shift_neutral"},
+	"syndicate": {"construct": "place_open_casinos", "rally": "place_guerrillas", "march": "march_dest", "terror": "shift_neutral"},
+}
+
+
+## Ordina i candidati secondo la matrice Space Selection (C8.5.6) per l'Operazione.
+func _ordered(faction: String, op_type: String, candidates: Array) -> Array:
+	return _ordered_col(faction, String(OP_COLUMN.get(faction, {}).get(op_type, "")), candidates)
+
+
+## Ordina i candidati per una specifica colonna della matrice Space Selection.
+func _ordered_col(faction: String, col: String, candidates: Array) -> Array:
+	var tbl: Dictionary = _ss.get(faction, {})
+	if col == "" or tbl.is_empty():
+		return candidates
+	var rows: Array = tbl.get("rows", [])
+	# Righe applicabili a questa colonna (in ordine di priorità).
+	var applicable: Array = []
+	for row in rows:
+		var cols: Array = row.get("cols", [])
+		if cols.has(col) or cols.has("all"):
+			applicable.append(String(row["crit"]))
+	# Vettore-punteggio per ogni spazio; ordina decrescente lessicografico, pareggio casuale.
+	var scored: Array = []
+	for sid in candidates:
+		var vec: Array = []
+		for crit in applicable:
+			vec.append(_crit_value(crit, sid, faction))
+		scored.append({"sid": sid, "vec": vec, "r": _rng.randf()})
+	scored.sort_custom(func(a, b):
+		for i in range(min(a["vec"].size(), b["vec"].size())):
+			if a["vec"][i] != b["vec"][i]:
+				return a["vec"][i] > b["vec"][i]
+		return a["r"] < b["r"])
+	var out: Array = []
+	for e in scored:
+		out.append(e["sid"])
+	return out
+
+
+## Valore di un criterio per uno spazio (più alto = preferito). 0 se non applicabile.
+func _crit_value(crit: String, sid: String, faction: String) -> float:
+	var st: SpaceState = state.space_state(sid)
+	var sd: SpaceDef = state.game_def.space(sid)
+	match crit:
+		"havana": return 1.0 if sid == "havana" else 0.0
+		"city": return 1.0 if sd.type == CoinEnums.SpaceType.CITY else 0.0
+		"province": return 1.0 if sd.type == CoinEnums.SpaceType.PROVINCE else 0.0
+		"not_at_active_support": return 1.0 if st.support < CoinEnums.Support.ACTIVE_SUPPORT else 0.0
+		"not_at_active_opposition": return 1.0 if st.support > CoinEnums.Support.ACTIVE_OPPOSITION else 0.0
+		"gov_base_without_police": return 1.0 if st.count("government", "base") > 0 and st.count("government", "police") == 0 else 0.0
+		"underground_guerrillas": return float(st.count("m26", "guerrilla", "underground") + st.count("directorio", "guerrilla", "underground") + st.count("syndicate", "guerrilla", "underground"))
+		"most_support": return float(max(0, st.support) * sd.pop)
+		"most_population": return float(sd.pop)
+		"highest_econ": return float(sd.econ)
+		"fewest_enemy_forces": return float(-_enemy_count(faction, st))
+		"fewest_enemy_forces_ignore_closed_casinos": return float(-(_enemy_count(faction, st) - st.count("syndicate", "casino", "closed")))
+		"enemy_base_open_casino":
+			return 1.0 if st.count("m26", "base") + st.count("directorio", "base") + st.count("syndicate", "casino", "open") > 0 else 0.0
+		"enemy_piece_with_cash":
+			for e in ["government", "m26", "directorio", "syndicate"]:
+				if e != faction and st.cash_for(e) > 0 and st.count(e) > 0:
+					return 1.0
+			return 0.0
+		"open_casino": return 1.0 if st.count("syndicate", "casino", "open") > 0 else 0.0
+		"open_casino_or_cash": return 1.0 if st.count("syndicate", "casino", "open") > 0 or st.cash_for("syndicate") > 0 else 0.0
+		"syn_control": return 1.0 if st.control == "syndicate" else 0.0
+		"underground_syn_guerrilla": return float(st.count("syndicate", "guerrilla", "underground"))
+		"underground_26j_dr_at_open_casino":
+			var ug := st.count("m26", "guerrilla", "underground") + st.count("directorio", "guerrilla", "underground")
+			return 1.0 if st.count("syndicate", "casino", "open") > 0 and ug > 0 else 0.0
+		"vulnerable_26j_base": return 1.0 if st.count("m26", "base") > 0 and st.count("m26", "guerrilla", "underground") == 0 else 0.0
+		"vulnerable_dr_base": return 1.0 if st.count("directorio", "base") > 0 and st.count("directorio", "guerrilla", "underground") == 0 else 0.0
+		"vulnerable_open_casino": return 1.0 if st.count("syndicate", "casino", "open") > 0 and st.count("syndicate", "guerrilla", "underground") == 0 else 0.0
+		"most_26j_guerrillas": return float(st.count("m26", "guerrilla"))
+		"most_dr_guerrillas": return float(st.count("directorio", "guerrilla"))
+		"most_underground_26j_guerrillas": return float(st.count("m26", "guerrilla", "underground"))
+		"most_underground_dr_guerrillas": return float(st.count("directorio", "guerrilla", "underground"))
+		"province_or_city_without_gov_control": return 1.0 if sd.has_population() and st.control != "government" else 0.0
+		"province_or_city_without_26j_control": return 1.0 if sd.has_population() and st.control != "m26" else 0.0
+		"province_or_city_without_dr_control": return 1.0 if sd.has_population() and st.control != "directorio" else 0.0
+		"adjacent_to_province_or_city_without_dr_control":
+			for adj in sd.adjacent:
+				if state.game_def.space(adj).has_population() and state.space_state(adj).control != "directorio":
+					return 1.0
+			return 0.0
+		"province_room_for_available_gov_base":
+			return 1.0 if sd.type == CoinEnums.SpaceType.PROVINCE and state.available("government", "base") > 0 and mod.can_place_base(state, sid, false) else 0.0
+		"guerrillas_1_2_and_room_for_26j_base":
+			var g := st.count("m26", "guerrilla")
+			return 1.0 if g >= 1 and g <= 2 and mod.can_place_base(state, sid, false) else 0.0
+		"guerrillas_1_2_and_room_for_dr_base":
+			var g2 := st.count("directorio", "guerrilla")
+			return 1.0 if g2 >= 1 and g2 <= 2 and mod.can_place_base(state, sid, false) else 0.0
+	return 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -90,6 +199,30 @@ func _pass(faction: String) -> Dictionary:
 	return {"ok": false, "action": "pass", "log": _log}
 
 
+## Scelta Evento (approssima "Critical/effective" della tabella Eligibility): simula i due
+## lati dell'Evento su una copia dello stato e gioca l'Evento se migliora il margine di
+## vittoria della Fazione di almeno `gain_min`. Restituisce {"play": bool, "side": String}.
+func event_choice(faction: String, card_number: int, gain_min: int = 2) -> Dictionary:
+	if card_number <= 0:
+		return {"play": false}
+	var base: int = int(mod.victory_status(state)[faction].margin)
+	var best := base
+	var best_side := ""
+	for side in ["unshaded", "shaded"]:
+		var copy := GameState.from_dict(state.game_def, state.to_dict())
+		var ev := CubaLibreEvents.new(copy, mod)
+		ev.apply(card_number, side, faction)
+		copy.recompute_all_control()
+		mod._refresh_victory_tracks(copy)
+		var m: int = int(mod.victory_status(copy)[faction].margin)
+		if m > best:
+			best = m
+			best_side = side
+	if best_side != "" and best - base >= gain_min:
+		return {"play": true, "side": best_side}
+	return {"play": false}
+
+
 ## Numero di Attivazione: Governo = livello Alleanza USA (4/3/2); insorti = dado della carta.
 func _activation_number(faction: String, side: Dictionary) -> int:
 	if faction == "government":
@@ -114,7 +247,7 @@ func _spaces_allowed(an: int, candidates: int) -> int:
 func _execute_op(faction: String, op_def: Dictionary, an: int, _letter: String) -> bool:
 	var t := String(op_def.get("type", ""))
 	match t:
-		"train": return _do_train(an)
+		"train": return _do_train(an, op_def)
 		"sweep": return _do_sweep(an)
 		"assault": return _do_assault(an)
 		"garrison": return _do_garrison()
@@ -144,7 +277,7 @@ func _run(res: Dictionary) -> bool:
 	return true
 
 
-func _do_train(an: int) -> bool:
+func _do_train(an: int, op_def: Dictionary = {}) -> bool:
 	var spaces: Array = []
 	for sid in _ids():
 		var sd: SpaceDef = state.game_def.space(sid)
@@ -153,6 +286,7 @@ func _do_train(an: int) -> bool:
 			spaces.append(sid)
 	if spaces.is_empty():
 		return false
+	spaces = _ordered("government", "train", spaces)
 	var n := _spaces_allowed(an, spaces.size())
 	var chosen := spaces.slice(0, n)
 	var place := {}
@@ -163,7 +297,70 @@ func _do_train(an: int) -> bool:
 		var police: int = mini(need, state.available("government", "police"))
 		var troops: int = mini(need - police, state.available("government", "troops"))
 		place[sid] = {"police": police, "troops": troops}
-	return _run(ops.train({"spaces": chosen, "place": place}))
+	var ok := _run(ops.train({"spaces": chosen, "place": place}))
+	if ok:
+		_gov_train_post(op_def)
+	return ok
+
+
+## Istruzioni "post" dell'Addestramento (Governo): Azione Civica (Shift verso Supporto
+## Attivo, max 1d3) e piazzamento Base in una Provincia senza Base GOV.
+func _gov_train_post(op_def: Dictionary) -> void:
+	var has_civic := false
+	var has_base := false
+	for step in op_def.get("post", []):
+		var do := String(step.get("do", ""))
+		if do == "civic_action":
+			has_civic = true
+		elif do == "place_base":
+			has_base = true
+	if has_civic:
+		var budget := _rng.randi_range(1, 3)
+		var done := 0
+		while done < budget:
+			var target := _best_civic_space()
+			if target == "":
+				break
+			var st: SpaceState = state.space_state(target)
+			if st.marker("terror") > 0:
+				st.add_marker("terror", -1)
+			elif st.support < CoinEnums.Support.ACTIVE_SUPPORT:
+				st.support = (st.support + 1) as CoinEnums.Support
+			else:
+				break
+			done += 1
+		if done > 0:
+			_log.append("Azione Civica: %d shift verso Supporto Attivo" % done)
+	if has_base and state.available("government", "base") > 0:
+		var provs: Array = []
+		for sid in _ids():
+			var sd: SpaceDef = state.game_def.space(sid)
+			if sd.type == CoinEnums.SpaceType.PROVINCE and state.space_state(sid).count("government", "base") == 0 \
+					and mod.can_place_base(state, sid, false):
+				provs.append(sid)
+		provs = _ordered_col("government", "place_bases", provs)
+		if not provs.is_empty():
+			state.place_from_available("government", "base", provs[0], 1)
+			_log.append("Governo piazza una Base in %s" % provs[0])
+
+
+## Migliore spazio per l'Azione Civica: Controllato dal Governo, con Truppe e Polizia,
+## non già a Supporto Attivo (o con Terrore), ordinato per priorità Shift verso Supporto.
+func _best_civic_space() -> String:
+	var cands: Array = []
+	for sid in _ids():
+		var st: SpaceState = state.space_state(sid)
+		if st.control != "government":
+			continue
+		if st.count("government", "troops") == 0 or st.count("government", "police") == 0:
+			continue
+		if st.support >= CoinEnums.Support.ACTIVE_SUPPORT and st.marker("terror") == 0:
+			continue
+		cands.append(sid)
+	if cands.is_empty():
+		return ""
+	cands = _ordered_col("government", "shift_active_support", cands)
+	return cands[0]
 
 
 func _do_sweep(an: int) -> bool:
@@ -175,6 +372,7 @@ func _do_sweep(an: int) -> bool:
 			spaces.append(sid)
 	if spaces.is_empty():
 		return false
+	spaces = _ordered("government", "sweep", spaces)
 	return _run(ops.sweep({"spaces": spaces.slice(0, _spaces_allowed(an, spaces.size()))}))
 
 
@@ -188,6 +386,7 @@ func _do_assault(an: int) -> bool:
 			spaces.append(sid)
 	if spaces.is_empty():
 		return false
+	spaces = _ordered("government", "assault", spaces)
 	return _run(ops.assault({"spaces": spaces.slice(0, _spaces_allowed(an, spaces.size()))}))
 
 
@@ -207,6 +406,7 @@ func _do_rally(faction: String, an: int) -> bool:
 	var spaces := _insurgent_rally_spaces(faction)
 	if spaces.is_empty():
 		return false
+	spaces = _ordered(faction, "rally", spaces)
 	var chosen := spaces.slice(0, _spaces_allowed(an, spaces.size()))
 	var choices := {}
 	for sid in chosen:
@@ -221,13 +421,50 @@ func _do_rally(faction: String, an: int) -> bool:
 
 
 func _do_march(faction: String) -> bool:
+	# Destinazione: spazi adiacenti a Guerriglie della Fazione, ordinati per priorità march_dest.
+	var dests: Array = []
 	for sid in _ids():
-		if state.space_state(sid).count(faction, "guerrilla") == 0:
-			continue
+		var adj_with_g := false
 		for adj in state.game_def.space(sid).adjacent:
-			if state.space_state(adj).count(faction) == 0:
-				return _run(ops.march({"faction": faction, "moves": [{"from": sid, "to": adj, "count": 1}]}))
+			if state.space_state(adj).count(faction, "guerrilla") > 0:
+				adj_with_g = true
+				break
+		if adj_with_g:
+			dests.append(sid)
+	if dests.is_empty():
+		return false
+	dests = _ordered(faction, "march", dests)
+	for dest in dests:
+		var moves: Array = []
+		for adj in state.game_def.space(dest).adjacent:
+			var surplus := _march_surplus(faction, adj)
+			if surplus > 0:
+				moves.append({"from": adj, "to": dest, "count": surplus})
+		if not moves.is_empty():
+			return _run(ops.march({"faction": faction, "moves": moves}))
 	return false
+
+
+## Guerriglie che possono lasciare l'origine senza perdere Controllo/clandestinità (Move
+## Priorities, "keep in origin": tieni abbastanza per non cambiare Controllo e 1 Clandestina
+## se c'è una Base della Fazione).
+func _march_surplus(faction: String, sid: String) -> int:
+	var st: SpaceState = state.space_state(sid)
+	var g := st.count(faction, "guerrilla")
+	if g == 0:
+		return 0
+	var keep := 0
+	# Tieni almeno 1 Clandestina se la Fazione ha una Base qui.
+	if st.count(faction, "base") > 0 and st.count(faction, "guerrilla", "underground") > 0:
+		keep += 1
+	# Tieni abbastanza per non cedere il Controllo della Fazione.
+	if st.control == faction:
+		var others := 0
+		for e in ["government", "m26", "directorio", "syndicate"]:
+			if e != faction:
+				others += st.count(e)
+		keep = maxi(keep, others + 1 - (st.count(faction) - g))
+	return maxi(0, g - keep)
 
 
 func _do_attack(faction: String, an: int) -> bool:
@@ -244,6 +481,7 @@ func _do_attack(faction: String, an: int) -> bool:
 			spaces.append(sid)
 	if spaces.is_empty():
 		return false
+	spaces = _ordered(faction, "attack", spaces)
 	return _run(ops.attack({"faction": faction, "spaces": spaces.slice(0, _spaces_allowed(an, spaces.size()))}))
 
 
@@ -254,6 +492,7 @@ func _do_terror(faction: String, an: int) -> bool:
 			spaces.append(sid)
 	if spaces.is_empty():
 		return false
+	spaces = _ordered(faction, "terror", spaces)
 	return _run(ops.terror({"faction": faction, "spaces": spaces.slice(0, _spaces_allowed(an, spaces.size()))}))
 
 
@@ -267,6 +506,7 @@ func _do_build() -> bool:
 			spaces.append(sid)
 	if spaces.is_empty() or state.get_resources("syndicate") < 5:
 		return false
+	spaces = _ordered("syndicate", "construct", spaces)
 	var choices := {}
 	for sid in spaces.slice(0, 1):
 		choices[sid] = "new"
