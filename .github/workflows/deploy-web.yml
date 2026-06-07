@@ -1,0 +1,72 @@
+name: Deploy Web (Godot)
+
+# Compila l'export Web del progetto Godot e lo pubblica su GitHub Pages.
+# Per attivarlo: Settings -> Pages -> Source: "GitHub Actions".
+
+on:
+  push:
+    branches:
+      - main
+      - claude/digital-game-version-sCnb6
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.3-stable"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scarica Godot headless
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+
+      - name: Installa i template di export
+        run: |
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.3.stable"
+          unzip -q templates.tpz
+          mv templates/* "$HOME/.local/share/godot/export_templates/4.3.stable/"
+
+      - name: Import del progetto
+        run: godot --headless --path godot --import || true
+
+      - name: Test (headless)
+        run: godot --headless --path godot -s res://tests/test_runner.gd
+
+      - name: Export Web
+        run: |
+          mkdir -p web
+          godot --headless --path godot --export-release "Web"
+          # GitHub Pages: assicura che non venga processato da Jekyll
+          touch web/.nojekyll
+
+      - name: Carica artifact Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy su GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

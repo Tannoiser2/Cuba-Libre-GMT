@@ -28,6 +28,19 @@ docs/           Documentazione
   ROADMAP.md        piano di sviluppo
 ```
 
+## Giocare nel browser (iPad/PC, senza installare nulla)
+
+Il progetto include una GitHub Action che compila l'export Web e lo pubblica su
+**GitHub Pages**. Per attivarlo una volta sola:
+1. Vai su **Settings → Pages**.
+2. In **Source** seleziona **GitHub Actions**.
+
+Al push successivo, l'Action compila ed espone il gioco a un URL pubblico (visibile
+nell'output del workflow), apribile anche da **Safari su iPad**.
+
+In locale: aprire la cartella `godot/` con **Godot 4.3** (gratuito) ed eseguire (F5),
+oppure i test con `godot4 --headless --path godot -s res://tests/test_runner.gd`.
+
 ## Riferimenti
 
 - Regolamento: `sources/rules/Cuba_Libre_Regolamento_ITA.pdf`

@@ -19,3 +19,6 @@ venv/
 
 # Estrazioni temporanee del modulo VASSAL
 /tmp_vmod/
+
+# Build Web locale (generata dalla GitHub Action)
+/web/
