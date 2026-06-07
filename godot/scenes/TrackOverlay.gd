@@ -1,13 +1,13 @@
 class_name TrackOverlay
 extends Control
 
-## Disegna i segnalini sui tracciati di bordo mappa: Risorse delle 4 Fazioni, Aiuti,
-## i 4 marcatori di vittoria (Totale Supporto, Opp+Basi, DR Pop+Basi, Casinò aperti)
-## sul tracciato perimetrale 0–49, e il marcatore dell'Alleanza USA nella sua casella.
-## I segnalini con lo stesso valore vengono impilati leggermente per non sovrapporsi.
+## Disegna i segnalini originali sui tracciati di bordo mappa: cilindri Risorse delle 4
+## Fazioni, Aiuti, i 4 marcatori di vittoria sul tracciato perimetrale 0–49, e il marcatore
+## dell'Alleanza USA nella sua casella. I segnalini con lo stesso valore vengono sfalsati.
 
-const BASE_OFF := 20.0   # scostamento dei segnalini sotto la riga dei numeri
-const STACK := 15.0      # scostamento per segnalini sulla stessa cella
+const BASE_OFF := 18.0   # scostamento sotto la riga dei numeri
+const STACK := 22.0      # scostamento per segnalini sulla stessa cella
+const MK := 26.0         # dimensione segnalino
 
 
 func _track_norm(value: int) -> Vector2:
@@ -22,47 +22,41 @@ func _draw() -> void:
 	if s == null:
 		return
 	var mod: CubaLibreModule = GameController.module
-	# Elenco segnalini (valore, colore, etichetta)
 	var chips := [
-		[s.get_resources("government"), GameController.faction_color("government"), "G"],
-		[s.get_resources("m26"), GameController.faction_color("m26"), "26"],
-		[s.get_resources("directorio"), GameController.faction_color("directorio"), "DR"],
-		[s.get_resources("syndicate"), GameController.faction_color("syndicate"), "S"],
-		[int(s.tracks.get("aid", 0)), Color("e67e22"), "Ai"],
-		[s.total_support(), Color("5dade2"), "Su"],
-		[mod.opposition_plus_bases(s), Color("a93226"), "OB"],
-		[mod.dr_pop_plus_bases(s), Color("d4ac0d"), "Dp"],
-		[mod.open_casinos(s), Color("27ae60"), "Ca"],
+		[s.get_resources("government"), CLAssets.res_token("government")],
+		[s.get_resources("m26"), CLAssets.res_token("m26")],
+		[s.get_resources("directorio"), CLAssets.res_token("directorio")],
+		[s.get_resources("syndicate"), CLAssets.res_token("syndicate")],
+		[int(s.tracks.get("aid", 0)), CLAssets.aid_marker()],
+		[s.total_support(), CLAssets.vic_support()],
+		[mod.opposition_plus_bases(s), CLAssets.vic_opp_bases()],
+		[mod.dr_pop_plus_bases(s), CLAssets.vic_dr()],
+		[mod.open_casinos(s), CLAssets.vic_casinos()],
 	]
-	# Raggruppa per valore per impilare solo i segnalini sulla stessa cella
 	var counts := {}
 	for ch in chips:
 		var v := clampi(int(ch[0]), 0, 49)
 		var idx := int(counts.get(v, 0))
 		counts[v] = idx + 1
-		_chip(v, idx, ch[1], ch[2])
+		_marker(v, idx, ch[1])
 
-	# Alleanza USA nella sua casella
+	# Alleanza USA nella sua casella (Firm/Reluctant/Embargoed)
 	var ai := int(s.tracks.get("us_alliance", 0))
 	var ay: float = [0.135, 0.185, 0.235][ai]
-	var ac := Vector2(0.145 * size.x, ay * size.y)
-	draw_circle(ac, 10.0, Color("2c3e50"))
-	draw_arc(ac, 10.0, 0, TAU, 16, Color("f1c40f"), 2.0)
-	_label(ac, "USA")
+	_blit(CLAssets.alliance_marker(), Vector2(0.145 * size.x, ay * size.y))
 
 
-func _chip(value: int, stack_idx: int, col: Color, label: String) -> void:
+func _marker(value: int, stack_idx: int, t: Texture2D) -> void:
 	var n := _track_norm(value)
 	var c := Vector2(n.x * size.x, n.y * size.y)
 	if value <= 30:
 		c.y += BASE_OFF + stack_idx * STACK
 	else:
 		c.x -= BASE_OFF + stack_idx * STACK
-	draw_circle(c, 8.5, col)
-	draw_arc(c, 8.5, 0, TAU, 16, Color(0, 0, 0, 0.7), 1.5)
-	_label(c, label)
+	_blit(t, c)
 
 
-func _label(c: Vector2, t: String) -> void:
-	var font := ThemeDB.fallback_font
-	draw_string(font, c + Vector2(-9, 4), t, HORIZONTAL_ALIGNMENT_CENTER, 18, 10, Color.WHITE)
+func _blit(t: Texture2D, center: Vector2) -> void:
+	if t == null:
+		return
+	draw_texture_rect(t, Rect2(center - Vector2(MK, MK) * 0.5, Vector2(MK, MK)), false)
