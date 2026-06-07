@@ -270,6 +270,52 @@ func step_card() -> void:
 		draw_next()
 
 
+var _busy := false
+
+
+## Risolve la carta corrente con i bot facendo una PAUSA tra le mosse (per vederle una alla
+## volta, con il flash), poi pesca la carta successiva.
+func run_card_paced(delay: float = 0.7) -> void:
+	if _busy or game_over or state.current_card == -1:
+		return
+	_busy = true
+	if state.current_card == 0:
+		resolve_propaganda()
+		if not game_over:
+			draw_next()
+		_busy = false
+		return
+	if seq == null:
+		_start_card_sequence()
+	var guard := 0
+	while seq != null and not seq.is_done() and guard < 8:
+		guard += 1
+		_bot_take_pending()
+		emit_signal("state_changed")
+		await get_tree().create_timer(delay).timeout
+	if seq != null:
+		seq.finish()
+	state.recompute_all_control()
+	module._refresh_victory_tracks(state)
+	emit_signal("state_changed")
+	if not game_over:
+		draw_next()
+	_busy = false
+
+
+## Gioca l'intera partita con i bot, a ritmo (pausa tra le mosse e tra le carte).
+func run_full_game_paced(delay: float = 0.5) -> void:
+	if _busy:
+		return
+	if state.current_card == -1:
+		draw_next()
+	var steps := 0
+	while not game_over and state.current_card != -1 and steps < 200:
+		await run_card_paced(delay)
+		await get_tree().create_timer(delay * 0.5).timeout
+		steps += 1
+
+
 func current_card_text() -> String:
 	if game_over:
 		return "Partita conclusa" + ("" if winner == "" else " — vince %s" % winner)
