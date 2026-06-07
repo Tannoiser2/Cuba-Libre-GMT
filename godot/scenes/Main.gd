@@ -112,7 +112,13 @@ func _build_ui() -> void:
 		var sd: SpaceDef = GameController.game_def.space(sid)
 		var rv := RegionView.new()
 		var r: Dictionary = regions[sid]
-		rv.setup(sd, r.get("polygon", []), Vector2(r["anchor"][0], r["anchor"][1]))
+		var cbox := Vector2(-1, -1)
+		var sbox := Vector2(-1, -1)
+		if r.has("cbox"):
+			cbox = Vector2(r["cbox"][0], r["cbox"][1])
+		if r.has("sbox"):
+			sbox = Vector2(r["sbox"][0], r["sbox"][1])
+		rv.setup(sd, r.get("polygon", []), Vector2(r["anchor"][0], r["anchor"][1]), cbox, sbox)
 		rv.space_clicked.connect(_on_space_clicked)
 		rv.piece_dropped.connect(_on_piece_dropped)
 		_map.add_child(rv)

@@ -13,16 +13,22 @@ var space_id: String
 var space_def: SpaceDef
 var _poly_norm: PackedVector2Array = PackedVector2Array()
 var _anchor_norm := Vector2(0.5, 0.5)
+var _cbox := Vector2(-1, -1)
+var _sbox := Vector2(-1, -1)
 var _highlight := false
 var _control := ""
 
 var _stack: VBoxContainer
+var _ctrl_tr: TextureRect
+var _sup_tr: TextureRect
 
 
-func setup(sd: SpaceDef, poly: Array, anchor: Vector2) -> void:
+func setup(sd: SpaceDef, poly: Array, anchor: Vector2, cbox := Vector2(-1, -1), sbox := Vector2(-1, -1)) -> void:
 	space_id = sd.id
 	space_def = sd
 	_anchor_norm = anchor
+	_cbox = cbox
+	_sbox = sbox
 	for p in poly:
 		_poly_norm.append(Vector2(p[0], p[1]))
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -33,6 +39,21 @@ func setup(sd: SpaceDef, poly: Array, anchor: Vector2) -> void:
 	_stack.add_theme_constant_override("separation", 0)
 	_stack.mouse_filter = Control.MOUSE_FILTER_PASS
 	add_child(_stack)
+
+	# Marcatori Controllo/Supporto nelle caselle stampate
+	_ctrl_tr = _make_marker_rect()
+	_sup_tr = _make_marker_rect()
+
+
+func _make_marker_rect() -> TextureRect:
+	var tr := TextureRect.new()
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tr.custom_minimum_size = Vector2(22, 22)
+	tr.size = Vector2(22, 22)
+	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(tr)
+	return tr
 
 
 func _scaled_poly() -> PackedVector2Array:
@@ -52,6 +73,13 @@ func relayout() -> void:
 	_stack.reset_size()
 	var a := Vector2(_anchor_norm.x * size.x, _anchor_norm.y * size.y)
 	_stack.position = a - _stack.size * 0.5
+	# Marcatori Controllo/Supporto nelle caselle (o sull'anchor se non definite)
+	if _ctrl_tr != null:
+		var cp := _cbox if _cbox.x >= 0 else Vector2(_anchor_norm.x - 0.012, _anchor_norm.y - 0.03)
+		_ctrl_tr.position = Vector2(cp.x * size.x, cp.y * size.y) - _ctrl_tr.size * 0.5
+	if _sup_tr != null:
+		var sp := _sbox if _sbox.x >= 0 else Vector2(_anchor_norm.x + 0.012, _anchor_norm.y - 0.03)
+		_sup_tr.position = Vector2(sp.x * size.x, sp.y * size.y) - _sup_tr.size * 0.5
 	queue_redraw()
 
 
@@ -61,15 +89,18 @@ func refresh(state: GameState) -> void:
 	for c in _stack.get_children():
 		c.queue_free()
 
-	# Marcatori
+	# Controllo/Supporto nelle rispettive caselle
+	_ctrl_tr.texture = CLAssets.control(st.control) if st.control != "" else null
+	if space_def.has_population() and st.support != 0:
+		_sup_tr.texture = CLAssets.support(st.support)
+	else:
+		_sup_tr.texture = null
+
+	# Terrore/Sabotaggio restano vicino allo spazio (con i pezzi)
 	var mrow := HBoxContainer.new()
 	mrow.add_theme_constant_override("separation", 1)
 	mrow.mouse_filter = Control.MOUSE_FILTER_PASS
 	_stack.add_child(mrow)
-	if st.control != "":
-		_add_marker(mrow, CLAssets.control(st.control))
-	if space_def.has_population() and st.support != 0:
-		_add_marker(mrow, CLAssets.support(st.support))
 	for i in range(st.marker("terror")):
 		_add_marker(mrow, CLAssets.terror())
 	if st.marker("sabotage") > 0:

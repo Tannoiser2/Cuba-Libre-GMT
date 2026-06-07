@@ -1,18 +1,18 @@
 {
-  "_note": "Poligoni (normalizzati 0..1 rispetto all'immagine mappa) che sagomano le zone cliccabili, e 'anchor' = punto dove impilare i pezzi. Ricalibrati su mappa pulita; il contorno disegnato consente la rifinitura fine.",
+  "_note": "Poligoni (sagoma zona), anchor (impilamento pezzi), cbox (casella Controllo), sbox (casella Supporto/Opposizione). Coordinate normalizzate 0..1 sull'immagine mappa. cbox/sbox stimati: da rifinire.",
   "regions": {
-    "pinar_del_rio": {"anchor": [0.085, 0.40], "polygon": [[0.035,0.345],[0.135,0.34],[0.15,0.45],[0.05,0.465]]},
+    "pinar_del_rio": {"anchor": [0.085, 0.40], "cbox": [0.085, 0.455], "sbox": [0.118, 0.455], "polygon": [[0.035,0.345],[0.135,0.34],[0.15,0.45],[0.05,0.465]]},
     "ec_pinar_habana": {"anchor": [0.135, 0.305], "polygon": [[0.105,0.275],[0.165,0.275],[0.165,0.335],[0.105,0.335]]},
-    "havana": {"anchor": [0.165, 0.25], "polygon": [[0.13,0.205],[0.205,0.205],[0.205,0.295],[0.13,0.295]]},
-    "la_habana": {"anchor": [0.19, 0.39], "polygon": [[0.135,0.34],[0.245,0.335],[0.25,0.44],[0.145,0.455]]},
-    "matanzas": {"anchor": [0.275, 0.40], "polygon": [[0.245,0.34],[0.33,0.345],[0.335,0.45],[0.25,0.45]]},
+    "havana": {"anchor": [0.165, 0.25], "cbox": [0.265, 0.305], "sbox": [0.305, 0.305], "polygon": [[0.13,0.205],[0.205,0.205],[0.205,0.295],[0.13,0.295]]},
+    "la_habana": {"anchor": [0.19, 0.39], "cbox": [0.165, 0.40], "sbox": [0.205, 0.40], "polygon": [[0.135,0.34],[0.245,0.335],[0.25,0.44],[0.145,0.455]]},
+    "matanzas": {"anchor": [0.275, 0.40], "cbox": [0.295, 0.435], "sbox": [0.335, 0.435], "polygon": [[0.245,0.34],[0.33,0.345],[0.335,0.45],[0.25,0.45]]},
     "ec_lasvillas_camaguey": {"anchor": [0.45, 0.385], "polygon": [[0.42,0.355],[0.48,0.355],[0.48,0.415],[0.42,0.415]]},
-    "las_villas": {"anchor": [0.40, 0.45], "polygon": [[0.33,0.345],[0.49,0.36],[0.49,0.49],[0.335,0.47]]},
-    "camaguey_province": {"anchor": [0.56, 0.43], "polygon": [[0.49,0.37],[0.645,0.40],[0.645,0.50],[0.49,0.49]]},
-    "camaguey_city": {"anchor": [0.565, 0.52], "polygon": [[0.53,0.485],[0.605,0.485],[0.605,0.565],[0.53,0.565]]},
-    "oriente": {"anchor": [0.70, 0.46], "polygon": [[0.645,0.40],[0.795,0.43],[0.815,0.53],[0.66,0.51]]},
+    "las_villas": {"anchor": [0.40, 0.45], "cbox": [0.40, 0.43], "sbox": [0.44, 0.43], "polygon": [[0.33,0.345],[0.49,0.36],[0.49,0.49],[0.335,0.47]]},
+    "camaguey_province": {"anchor": [0.56, 0.43], "cbox": [0.605, 0.43], "sbox": [0.645, 0.43], "polygon": [[0.49,0.37],[0.645,0.40],[0.645,0.50],[0.49,0.49]]},
+    "camaguey_city": {"anchor": [0.565, 0.52], "cbox": [0.515, 0.59], "sbox": [0.555, 0.59], "polygon": [[0.53,0.485],[0.605,0.485],[0.605,0.565],[0.53,0.565]]},
+    "oriente": {"anchor": [0.70, 0.46], "cbox": [0.78, 0.435], "sbox": [0.82, 0.435], "polygon": [[0.645,0.40],[0.795,0.43],[0.815,0.53],[0.66,0.51]]},
     "ec_oriente_sierra": {"anchor": [0.80, 0.495], "polygon": [[0.77,0.465],[0.83,0.465],[0.83,0.525],[0.77,0.525]]},
-    "sierra_maestra": {"anchor": [0.785, 0.565], "polygon": [[0.66,0.515],[0.85,0.535],[0.875,0.63],[0.675,0.60]]},
-    "santiago_de_cuba": {"anchor": [0.86, 0.65], "polygon": [[0.82,0.61],[0.905,0.61],[0.905,0.70],[0.82,0.70]]}
+    "sierra_maestra": {"anchor": [0.785, 0.565], "cbox": [0.685, 0.565], "sbox": [0.725, 0.565], "polygon": [[0.66,0.515],[0.85,0.535],[0.875,0.63],[0.675,0.60]]},
+    "santiago_de_cuba": {"anchor": [0.86, 0.65], "cbox": [0.755, 0.72], "sbox": [0.795, 0.72], "polygon": [[0.82,0.61],[0.905,0.61],[0.905,0.70],[0.82,0.70]]}
   }
 }
