@@ -96,7 +96,8 @@ func _draw_available(s: GameState) -> void:
 		var cfg: Dictionary = AVAIL[box_name]
 		var r := _box_rect(box_name)
 		var x := r.position.x + 10.0
-		var y := r.position.y + 8.0
+		# Sotto il titolo del riquadro (non sopra le scritte).
+		var y := r.position.y + maxf(30.0, r.size.y * 0.34)
 		for t in cfg["types"]:
 			var n := s.available(cfg["faction"], t)
 			if n <= 0:
@@ -115,18 +116,26 @@ const ELIG_SZ := 24.0
 
 
 func _draw_eligibility(s: GameState) -> void:
-	var ok_r := _box_rect("eligible")
-	var no_r := _box_rect("ineligible")
-	var ok := 0
-	var no := 0
+	# I cilindri vanno: nelle caselle azione (1ª/2ª Op/Op+SA/Evento/LimOp/Pass) se la Fazione
+	# ha agito su questa carta; altrimenti in Eligible/Ineligible Factions.
+	var seq = GameController.seq
+	var counts := {}
 	for fid in ["government", "m26", "directorio", "syndicate"]:
-		var elig: bool = int(s.eligibility.get(fid, 0)) == 0
+		var key := ""
+		if seq != null and seq.action_box.has(fid):
+			key = String(seq.action_box[fid])
+		elif int(s.eligibility.get(fid, 0)) == 0:
+			key = "eligible"
+		else:
+			key = "ineligible"
+		var r := _box_rect(key)
+		if r.size == Vector2.ZERO:
+			continue
 		var t := CLAssets.res_token(fid)
 		if t == null:
 			continue
-		var r := ok_r if elig else no_r
-		var idx := ok if elig else no
-		var pos := Vector2(r.get_center().x - ELIG_SZ * 0.5, r.position.y + 14.0 + idx * (ELIG_SZ + 8.0))
+		var idx := int(counts.get(key, 0))
+		counts[key] = idx + 1
+		var pos := Vector2(r.position.x + 6.0 + idx * (ELIG_SZ + 3.0),
+			r.position.y + r.size.y * 0.5 - ELIG_SZ * 0.5)
 		draw_texture_rect(t, Rect2(pos, Vector2(ELIG_SZ, ELIG_SZ)), false)
-		if elig: ok += 1
-		else: no += 1

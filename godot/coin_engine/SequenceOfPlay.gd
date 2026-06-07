@@ -106,6 +106,10 @@ func is_legal(action: int) -> bool:
 # Applicazione delle decisioni
 # ---------------------------------------------------------------------------
 
+## Casella della Sequenza di Gioco dove mostrare il cilindro di ogni Fazione (per la UI).
+var action_box: Dictionary = {}
+
+
 ## La Fazione in sospeso Passa: riceve Risorse e resta Disponibile.
 func act_pass() -> bool:
 	var fid := pending_faction()
@@ -113,6 +117,7 @@ func act_pass() -> bool:
 		return false
 	state.add_resources(fid, module.pass_resources(fid))
 	_passers.append(fid)
+	action_box[fid] = "pass"
 	_idx += 1
 	_check_done()
 	return true
@@ -124,8 +129,10 @@ func act(action: int) -> bool:
 	var fid := pending_faction()
 	if fid == "" or action == A.PASS or not is_legal(action):
 		return false
-	if is_first_slot():
+	var first := is_first_slot()
+	if first:
 		_first_action = action
+	action_box[fid] = _box_for(action, first)
 	_actors.append(fid)
 	_idx += 1
 	# Dopo 2 Fazioni che hanno agito, la carta è conclusa.
@@ -134,6 +141,19 @@ func act(action: int) -> bool:
 	else:
 		_check_done()
 	return true
+
+
+func _box_for(action: int, first: bool) -> String:
+	if first:
+		match action:
+			A.OPERATION: return "1st_op_only"
+			A.OPERATION_WITH_SPECIAL: return "1st_op_sa"
+			A.EVENT: return "1st_event"
+			_: return "1st_op_only"
+	match action:
+		A.LIMITED_OPERATION: return "2nd_limop"
+		A.EVENT: return "2nd_limop_or_event"
+		_: return "2nd_op_sa"
 
 
 func _check_done() -> void:
