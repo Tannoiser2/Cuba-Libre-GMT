@@ -49,8 +49,8 @@ func _make_marker_rect() -> TextureRect:
 	var tr := TextureRect.new()
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	tr.custom_minimum_size = Vector2(22, 22)
-	tr.size = Vector2(22, 22)
+	tr.custom_minimum_size = Vector2(30, 30)
+	tr.size = Vector2(30, 30)
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(tr)
 	return tr
@@ -108,9 +108,9 @@ func refresh(state: GameState) -> void:
 
 	# Pezzi (sprite trascinabili)
 	var prow := HFlowContainer.new()
-	prow.add_theme_constant_override("h_separation", 1)
-	prow.add_theme_constant_override("v_separation", 1)
-	prow.custom_minimum_size = Vector2(72, 0)
+	prow.add_theme_constant_override("h_separation", 0)
+	prow.add_theme_constant_override("v_separation", 0)
+	prow.custom_minimum_size = Vector2(50, 0)
 	prow.mouse_filter = Control.MOUSE_FILTER_PASS
 	_stack.add_child(prow)
 	for fid in ["government", "m26", "directorio", "syndicate"]:
