@@ -45,6 +45,62 @@ func _draw() -> void:
 	var ay: float = [0.135, 0.185, 0.235][ai]
 	_blit(CLAssets.alliance_marker(), Vector2(0.145 * size.x, ay * size.y))
 
+	_draw_available(s)
+	_draw_eligibility(s)
+
+
+# Riquadri "Available Forces": origine (normalizzata) e larghezza riga per fazione.
+const AVAIL := {
+	"government": {"types": ["troops", "police", "base"], "o": [0.295, 0.125], "w": 0.27},
+	"syndicate": {"types": ["guerrilla", "casino"], "o": [0.635, 0.12], "w": 0.30},
+	"directorio": {"types": ["guerrilla", "base"], "o": [0.03, 0.915], "w": 0.26},
+	"m26": {"types": ["guerrilla", "base"], "o": [0.635, 0.915], "w": 0.30},
+}
+const AV_PC := 16.0   # dimensione pezzo in riserva
+
+
+func _draw_available(s: GameState) -> void:
+	for fid in AVAIL:
+		var cfg: Dictionary = AVAIL[fid]
+		var ox: float = cfg["o"][0] * size.x
+		var oy: float = cfg["o"][1] * size.y
+		var maxw: float = cfg["w"] * size.x
+		var x := ox
+		var y := oy
+		for t in cfg["types"]:
+			var st := "closed" if t == "casino" else ("underground" if t == "guerrilla" else "")
+			var tex := CLAssets.piece(fid, t, st)
+			for i in range(s.available(fid, t)):
+				if x - ox + AV_PC > maxw:
+					x = ox
+					y += AV_PC + 1
+				if tex != null:
+					draw_texture_rect(tex, Rect2(Vector2(x, y), Vector2(AV_PC, AV_PC)), false)
+				x += AV_PC + 1
+
+
+# Sequenza di Gioco: colonne Disponibili / Non Disponibili (cilindri fazione).
+const ELIG_OK := [0.235, 0.625]
+const ELIG_NO := [0.44, 0.625]
+const ELIG_STEP := 26.0
+const ELIG_SZ := 22.0
+
+
+func _draw_eligibility(s: GameState) -> void:
+	var ok := 0
+	var no := 0
+	for fid in ["government", "m26", "directorio", "syndicate"]:
+		var elig: bool = int(s.eligibility.get(fid, 0)) == 0  # 0 = ELIGIBLE
+		var base: Array = ELIG_OK if elig else ELIG_NO
+		var idx := ok if elig else no
+		var c := Vector2(base[0] * size.x, base[1] * size.y + idx * ELIG_STEP)
+		var t := CLAssets.res_token(fid)
+		if t != null:
+			draw_texture_rect(t, Rect2(c, Vector2(ELIG_SZ, ELIG_SZ)), false)
+		if elig: ok += 1
+		else: no += 1
+
+
 
 func _marker(value: int, stack_idx: int, t: Texture2D) -> void:
 	var n := _track_norm(value)
