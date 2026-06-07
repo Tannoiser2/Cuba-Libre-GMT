@@ -60,8 +60,12 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [ ] Hotseat multi-giocatore locale.
 
 ### Fase 4 — Bot (Non-Giocatore)
-- [ ] Formalizzare i flowchart Bot per fazione (cap. 8 + schede `Chart_*.jpg`).
-- [ ] Implementare l'IA deterministica e l'opzione gioco in solitario.
+- [x] Interfaccia generica `BotBrain` nel motore.
+- [x] Bot ufficiali cap. 8 (Sindacato/Directorio/26 Luglio/Governo): scelta Operazione
+      + Attività Speciale secondo i flowchart, validati da test.
+- [ ] Aggancio alla scelta dell'Evento (richiede gli effetti delle carte, Fase 2).
+- [ ] Rifinitura tie-breaker e tabella Spazi Casuali (8.2-8.3).
+- [ ] Integrazione dei bot nella UI (turni automatici) e gioco in solitario.
 
 ### Fase 5 — Rifinitura
 - [ ] Scenari (Standard / Variabile / gioco breve), opzioni (Inganno, ecc.).
