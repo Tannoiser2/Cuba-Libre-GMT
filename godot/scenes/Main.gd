@@ -238,7 +238,7 @@ func _build_action_bar() -> VBoxContainer:
 
 	row2.add_child(_mk_label("Partita:"))
 	row2.add_child(_mk_btn("Avanza carta", func(): GameController.step_card()))
-	row2.add_child(_mk_btn("Auto: tutta la partita", func(): GameController.run_full_game()))
+	row2.add_child(_mk_btn("Auto: tutta la partita", func(): GameController.run_full_game_paced()))
 	row2.add_child(_mk_btn("Tutti i Bot (questa carta)", _on_all_bots))
 	row2.add_child(_mk_btn("Nuova Partita", func(): GameController.new_game()))
 	row2.add_child(VSeparator.new())
@@ -610,8 +610,8 @@ func _on_event(side: String) -> void:
 
 
 func _on_all_bots() -> void:
-	# Risolve la carta corrente con i bot secondo la Sequenza di Gioco, poi pesca la prossima.
-	GameController.step_card()
+	# Risolve la carta corrente con i bot, una mossa alla volta (con pausa/flash).
+	GameController.run_card_paced()
 
 
 func _on_cancel() -> void:
