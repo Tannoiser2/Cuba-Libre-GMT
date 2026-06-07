@@ -52,9 +52,11 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [ ] Capacità Insorgenti e Momentum Governo.
 
 ### Fase 3 — Interfaccia utente
-- [ ] Mappa interattiva con pezzi trascinabili e stato leggibile.
-- [ ] Pannelli Fazione, tracciati, mazzo/carta corrente, log delle azioni.
-- [ ] Flussi guidati per Operazioni/Attività Speciali/Eventi.
+- [x] Mappa interattiva (schematica) con pezzi trascinabili e stato leggibile.
+- [x] Pannelli Fazione, tracciati, log delle azioni.
+- [x] Flusso guidato per le Operazioni (selezione spazi + drag-and-drop) + Round Propaganda.
+- [ ] Flussi guidati per le Attività Speciali ed Eventi nella UI.
+- [ ] Grafica della mappa reale (sprite) e rifinitura visiva.
 - [ ] Hotseat multi-giocatore locale.
 
 ### Fase 4 — Bot (Non-Giocatore)
