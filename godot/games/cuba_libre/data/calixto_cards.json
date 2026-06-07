@@ -1,0 +1,251 @@
+{
+  "_note": "Carte Calixto (NP). Ogni carta ha 'front' e 'back'. flow = sequenza di nodi {cond,t,f}: t=ramo vero (verde ✓), f=ramo falso (rosso ✗). Target: 'next' (scendi), 'draw' (pesca nuova carta), 'flip' (gira), 'op:<id>' (esegui Operazione). Un nodo senza 'cond' va sempre a t. ops: definizione operazioni. special: Attivita Speciali in ordine (prima fattibile).",
+  "_an": {"government": "us_alliance"},
+  "government": {
+    "U": {
+      "front": {
+        "flow": [
+          {"cond": "city_not_active_support", "t": "next", "f": "draw"},
+          {"cond": "underground_guerrilla_at_support", "t": "op:sweep", "f": "flip"}
+        ],
+        "ops": {
+          "sweep": {"type": "sweep", "steps": [
+            {"n": 1, "priorities": "move"},
+            {"note": "Sweep per attivare Guerriglie anche senza muovere Truppe"}
+          ]}
+        },
+        "special": [
+          {"sa": "air_strike", "target": "vuln_base_casino", "method": "remove"},
+          {"sa": "reprisal", "cond": "coin_control_at_opposition"},
+          {"sa": "transport", "priorities": "move"},
+          {"sa": "air_strike", "method": "remove"}
+        ]
+      },
+      "back": {
+        "flow": [{"t": "op:train"}],
+        "ops": {
+          "train": {"type": "train", "steps": [
+            {"n": 1, "do": "place_cubes_sets_of_4"}
+          ], "post": [
+            {"star": true, "do": "civic_action", "shift": "active_support", "max": "1d3"},
+            {"reminder": true, "do": "place_base", "where": "province_without_gov_base"},
+            {"note": "Se non Limitata, Azione Civica/Base puo colpire spazio non scelto per Addestramento"}
+          ]}
+        },
+        "special": [
+          {"sa": "transport", "priorities": "move"}
+        ]
+      }
+    },
+    "Y": {
+      "front": {
+        "flow": [
+          {"cond": "ec_with_guerrillas", "t": "next", "f": "draw"},
+          {"cond": "underground_guerrilla_at_support", "t": "op:sweep", "f": "flip"}
+        ],
+        "ops": {
+          "sweep": {"type": "sweep", "steps": [
+            {"n": 1, "priorities": "move"},
+            {"note": "Sweep per attivare Guerriglie anche senza muovere Truppe"}
+          ]}
+        },
+        "special": [
+          {"sa": "air_strike", "target": "vuln_base_casino", "method": "remove"},
+          {"sa": "reprisal"},
+          {"sa": "transport", "priorities": "move"},
+          {"sa": "air_strike", "method": "remove"}
+        ]
+      },
+      "back": {
+        "flow": [
+          {"cond": "ec_26j_dr_guerrillas_gt_cubes", "t": "op:garrison", "f": "op:assault"}
+        ],
+        "ops": {
+          "garrison": {"type": "garrison", "steps": [
+            {"n": 1, "priorities": "move"},
+            {"note": "Nessun tiro AN per selezionare destinazioni aggiuntive"},
+            {"star": true, "do": "assault_one_ec", "method": "remove"}
+          ]},
+          "assault": {"type": "assault", "steps": [
+            {"n": 1, "do": "remove_bases_close_casinos", "method": "remove"},
+            {"n": 2, "method": "remove"}
+          ]}
+        },
+        "special": [
+          {"sa": "air_strike", "target": "vuln_base_casino", "method": "remove"},
+          {"sa": "transport", "priorities": "move"},
+          {"sa": "air_strike", "method": "remove"},
+          {"sa": "reprisal"}
+        ]
+      }
+    },
+    "Z": {
+      "front": {
+        "flow": [
+          {"cond": "province_2pop_without_gov_control", "t": "next", "f": "draw"},
+          {"cond": "assault_could_remove_3plus_or_base_casino", "t": "op:assault", "f": "flip"}
+        ],
+        "ops": {
+          "assault": {"type": "assault", "steps": [
+            {"n": 1, "do": "remove_bases_close_casinos", "method": "remove"},
+            {"n": 2, "method": "remove"}
+          ]}
+        },
+        "special": [
+          {"sa": "air_strike", "target": "vuln_base_casino", "method": "remove"},
+          {"sa": "transport", "priorities": "move"},
+          {"sa": "air_strike", "method": "remove"},
+          {"sa": "reprisal"}
+        ]
+      },
+      "back": {
+        "flow": [
+          {"cond": "avail_cubes_4plus", "t": "op:train", "f": "op:sweep"}
+        ],
+        "ops": {
+          "train": {"type": "train", "steps": [
+            {"n": 1, "do": "place_cubes_sets_of_4"}
+          ], "post": [
+            {"star": true, "do": "civic_action", "shift": "active_support", "max": "1d3"},
+            {"star": true, "do": "place_base", "where": "province_without_gov_base"},
+            {"note": "Se non Limitata, Azione Civica/Base puo colpire spazio non scelto per Addestramento"}
+          ]},
+          "sweep": {"type": "sweep", "steps": [
+            {"n": 1, "priorities": "move"},
+            {"note": "Sweep per attivare Guerriglie anche senza muovere Truppe"}
+          ]}
+        },
+        "special": [
+          {"sa": "reprisal", "cond": "op_sweep_and_coin_control_at_opposition"},
+          {"sa": "air_strike", "cond": "op_sweep", "method": "remove"},
+          {"sa": "transport", "priorities": "move"}
+        ]
+      }
+    },
+    "X": {
+      "front": {
+        "flow": [
+          {"cond": "space_gov_forces_and_vulnerable_enemies", "t": "next", "f": "draw"},
+          {"cond": "underground_guerrilla_at_support", "t": "op:sweep", "f": "flip"}
+        ],
+        "ops": {
+          "sweep": {"type": "sweep", "steps": [
+            {"n": 1, "priorities": "move"},
+            {"note": "Sweep per attivare Guerriglie anche senza muovere Truppe"}
+          ]}
+        },
+        "special": [
+          {"sa": "air_strike", "target": "vuln_base_casino", "method": "remove"},
+          {"sa": "reprisal"},
+          {"sa": "transport", "priorities": "move"},
+          {"sa": "air_strike", "method": "remove"}
+        ]
+      },
+      "back": {
+        "flow": [
+          {"cond": "ec_26j_dr_guerrillas_gt_cubes", "t": "op:garrison", "f": "op:assault"}
+        ],
+        "ops": {
+          "garrison": {"type": "garrison", "steps": [
+            {"n": 1, "priorities": "move"},
+            {"note": "Nessun tiro AN per selezionare destinazioni aggiuntive"},
+            {"star": true, "do": "assault_one_ec", "method": "remove"}
+          ]},
+          "assault": {"type": "assault", "steps": [
+            {"n": 1, "do": "remove_bases_close_casinos", "method": "remove"},
+            {"n": 2, "method": "remove"}
+          ]}
+        },
+        "special": [
+          {"sa": "air_strike", "target": "vuln_base_casino", "method": "remove"},
+          {"sa": "transport", "priorities": "move"},
+          {"sa": "air_strike", "method": "remove"},
+          {"sa": "reprisal"}
+        ]
+      }
+    },
+    "W": {
+      "front": {
+        "flow": [
+          {"cond": "space_gov_forces_and_vulnerable_enemies", "t": "next", "f": "draw"},
+          {"cond": "city_not_active_support", "t": "op:train", "f": "flip"}
+        ],
+        "ops": {
+          "train": {"type": "train", "steps": [
+            {"n": 1, "do": "place_cubes_sets_of_4"}
+          ], "post": [
+            {"star": true, "do": "civic_action", "shift": "active_support", "max": "1d3"},
+            {"star": true, "do": "place_base", "where": "province_without_gov_base"},
+            {"note": "Se non Limitata, Azione Civica/Base puo colpire spazio non scelto per Addestramento"}
+          ]}
+        },
+        "special": [
+          {"sa": "transport", "priorities": "move"}
+        ]
+      },
+      "back": {
+        "flow": [
+          {"cond": "ec_26j_dr_guerrillas_gt_cubes", "t": "op:garrison", "f": "op:assault"}
+        ],
+        "ops": {
+          "garrison": {"type": "garrison", "steps": [
+            {"n": 1, "priorities": "move"},
+            {"note": "Nessun tiro AN per selezionare destinazioni aggiuntive"},
+            {"star": true, "do": "assault_one_ec", "method": "remove"}
+          ]},
+          "assault": {"type": "assault", "steps": [
+            {"n": 1, "do": "remove_bases_close_casinos", "method": "remove"},
+            {"n": 2, "method": "remove"}
+          ]}
+        },
+        "special": [
+          {"sa": "air_strike", "target": "vuln_base_casino", "method": "remove"},
+          {"sa": "transport", "priorities": "move"},
+          {"sa": "reprisal"},
+          {"sa": "air_strike", "method": "remove"}
+        ]
+      }
+    },
+    "V": {
+      "front": {
+        "flow": [
+          {"cond": "troops_3plus_not_needed_for_control", "t": "next", "f": "draw"},
+          {"cond": "available_gov_base", "t": "op:train", "f": "flip"}
+        ],
+        "ops": {
+          "train": {"type": "train", "steps": [
+            {"n": 1, "do": "place_cubes_sets_of_4"},
+            {"star": true, "do": "place_base", "where": "province_without_gov_base"},
+            {"star": true, "do": "civic_action", "shift": "active_support", "max": "1d3"},
+            {"note": "Se non Limitata, Azione Civica/Base puo colpire spazio non scelto per Addestramento"}
+          ]}
+        },
+        "special": [
+          {"sa": "transport", "priorities": "move"}
+        ]
+      },
+      "back": {
+        "flow": [
+          {"cond": "ec_26j_dr_guerrillas_gt_cubes", "t": "op:garrison", "f": "op:sweep"}
+        ],
+        "ops": {
+          "garrison": {"type": "garrison", "steps": [
+            {"n": 1, "priorities": "move"},
+            {"note": "Nessun tiro AN per selezionare destinazioni aggiuntive"},
+            {"star": true, "do": "assault_one_ec", "method": "remove"}
+          ]},
+          "sweep": {"type": "sweep", "steps": [
+            {"n": 1, "priorities": "move"},
+            {"note": "Sweep per attivare Guerriglie anche senza muovere Truppe"}
+          ]}
+        },
+        "special": [
+          {"sa": "air_strike", "target": "vuln_base_casino", "method": "remove"},
+          {"sa": "reprisal", "cond": "coin_control_at_opposition"},
+          {"sa": "transport", "priorities": "move"},
+          {"sa": "air_strike", "method": "remove"}
+        ]
+      }
+    }
+  }
+}

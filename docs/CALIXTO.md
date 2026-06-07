@@ -7,47 +7,79 @@ regolamento base. Materiali sorgente nel repo:
 - `sources/rules/Tabelle_Calixto.pdf` (+ `Calixto_Tabelle_OCR.txt`) — Priorità, Disponibilità, Eventi, Propaganda
 
 ## Come funziona (dalle regole)
-- Ogni fazione NP ha **6 carte Calixto** (mazzo unico mescolato a faccia in su).
-- Ogni carta è un **flowchart**: una serie di domande; la prima vera seleziona
-  l'**Operazione**; poi si sceglie **1 Attività Speciale** da una lista di priorità; STOP.
-- Tabelle condivise: **Priorità Movimento**, **Priorità Pezzi**; per fazione: **Priorità
-  Selezione Spazi**. Tabella **Disponibilità** (Evento vs Operazione). Tabelle **Eventi**.
+- Ogni fazione NP ha **6 carte Calixto** fronte/retro (mazzo unico mescolato a faccia in su).
+  Nel PDF carte: pagine **dispari = fronti**, **pari = retri** delle stesse carte.
+- **Lettura di una carta** (regola "Reading Calixto Cards"): si parte dal **primo box blu** in
+  alto. Condizione **vera → freccia verde (✓)**, **falsa → freccia rossa (✗)**. Una freccia può
+  puntare a:
+  - icona **"pesca nuova carta"** → abbandona la carta e pescane un'altra della fazione attiva;
+  - icona **"gira la carta"** → passa al retro e continua a leggere;
+  - il **box successivo** (scendi), oppure direttamente al blocco **Operazione**.
+- Le condizioni in alto sono **filtri**: se la carta non è adatta, si pesca/gira per trovare
+  l'azione giusta. In fondo: blocco **Operazione** (istruzioni numerate) + **lista Attività Speciali** → STOP.
+- **Operazione**: esegui le istruzioni ①②… in ordine, il più possibile. **Grassetto** = colonna
+  della tabella Priorità Selezione Spazi da usare. ★ = eseguita subito, niente tiro AN. Freccia
+  → = promemoria. Un'istruzione dopo una condizione rossa si esegue solo se la condizione è vera.
+  Se non ci sono spazi legali per l'Operazione, **pesca una nuova carta**.
+- **Attività Speciale**: esegui la **prima fattibile** in ordine di lettera (Ⓐ, Ⓑ, …). Salta
+  quelle non eseguibili o con condizione rossa falsa. Mai eseguirla in una **Operazione Limitata**.
+- **Activation Number (AN)**: in alto a destra (dado). Per il **Governo = livello Alleanza USA**.
+  Dopo ogni spazio: tira 1d6; ≤ AN → stop (più eventuali ★); > AN → seleziona un altro spazio.
+  Eccezioni (niente tiro): Guarnigione GOV, March insorti su EC, Terror insorti su EC.
 - Regole d'oro: gli NP non rimuovono pezzi per pagare; **solo il Sindacato NP traccia le
-  Risorse** (Governo/26L/DR le ignorano); si tira un **Activation Number** (AN) per limitare
-  il numero di spazi; le istruzioni si eseguono "il più possibile", saltando l'illegale.
+  Risorse** (Governo/26L/DR le ignorano); le istruzioni si eseguono "il più possibile", saltando
+  l'illegale. Se tutte le carte di una fazione vengono pescate senza un'Operazione legale, si
+  passa alla riga successiva della tabella Idoneità (o Pass se in fondo).
 
 ## Architettura prevista
 - `coin_engine/`: estendere `BotBrain` con un'interfaccia per i "priority/condition" generici.
 - `games/cuba_libre/rules/CalixtoBot.gd`: interprete delle carte + tabelle.
-- `games/cuba_libre/data/calixto_cards.json`: le 24 carte come dati (condizioni → operazione,
-  dettagli operazione, priorità attività speciali).
+- `games/cuba_libre/data/calixto_cards.json`: le 24 carte (fronte/retro) come dati.
 - `games/cuba_libre/data/calixto_tables.json`: Priorità Spazi/Movimento/Pezzi, Disponibilità, Eventi.
 - Selezionabile in alternativa ai bot cap. 8 esistenti.
 
-## Trascrizione carte GOVERNO (prima passata — DA CONFERMARE)
-AN (Activation Number) = livello Alleanza USA per tutte.
+### Modello dati carta (esempio GOV-U / GOV-UU)
+```json
+"U": {
+  "an": "us_alliance",
+  "front": {
+    "flow": [
+      {"cond": "city_not_active_support",        "true": "next", "false": "draw"},
+      {"cond": "underground_guerrilla_at_support","true": "op",  "false": "flip"}
+    ],
+    "op": {"type": "sweep",
+           "instructions": [{"n":1, "priorities":"move"},
+                            {"note":"Sweep per attivare Guerriglie anche senza muovere Truppe"}],
+           "special": ["air_strike_vuln_remove",
+                       {"cond":"coin_control_at_opposition","do":"reprisal"},
+                       "transport_move", "air_strike_remove"]}
+  },
+  "back": {  // GOV-UU: incondizionata
+    "op": {"type": "train",
+           "instructions": [{"n":1, "do":"place_cubes_sets_of_4"}],
+           "special": ["transport_move"],
+           "post": [{"star":true, "do":"civic_action_shift_active_support", "max":"1d3"},
+                    {"do":"place_base_province_without_gov_base"}]}
+  }
+}
+```
+Target dei rami: `next` (scendi), `draw` (pesca), `flip` (retro), `op` (esegui Operazione).
 
-- **GOV-U** — Q1 *Città non a Supporto Attivo?* → Addestramento · Q2 *Guerriglia Clandestina a
-  Supporto?* → Perlustrazione (Sweep: usa Priorità Movimento; attiva Guerriglie anche senza
-  muovere Truppe). Att. Speciale: 1) Attacco Aereo su spazio con Base/Casinò Vulnerabile (Remove)
-  2) se Controllo COIN a Opposizione: Rappresaglia 3) Trasporto (Priorità Movimento) 4) Attacco Aereo (Remove).
-- **GOV-Y** — Q1 *EC con Guerriglie?* → Guarnigione · Q2 *Guerriglia Clandestina a Supporto?* →
-  Perlustrazione. Att. Speciale: 1) Attacco Aereo vulnerabile (Remove) 2) Rappresaglia 3) Trasporto 4) Attacco Aereo.
-- **GOV-Z** — Q1 *Provincia 2-Pop senza Controllo GOV?* → (Operazione) · Q2 *Assalto in 1 spazio
-  può rimuovere 3+ Guerriglie o 1 Base/Casinò?* → Assalto (rimuovi Basi e chiudi Casinò, Remove).
-  Att. Speciale: 1) Attacco Aereo vulnerabile 2) Trasporto 3) Attacco Aereo 4) Rappresaglia.
-- **GOV-X** — Q1 *Spazio con forze GOV e nemici vulnerabili?* → Assalto · Q2 *Guerriglia
-  Clandestina a Supporto?* → Perlustrazione. Att. Speciale: come GOV-U/Y.
-- **GOV-W** — Q1 *Spazio con forze GOV e nemici vulnerabili?* → Assalto · Q2 *Città non a Supporto
-  Attivo?* → Addestramento (piazza cubi solo a gruppi di 4; Azione Civica con Shift verso Supporto
-  Attivo per max 1d3 marker rimossi + shift; piazza Base in Provincia senza Base GOV). Att. Speciale: Trasporto.
-- **GOV-V** — Q1 *3+ Truppe non necessarie al Controllo in una Città o Provincia con Base GOV?* →
-  Trasporto · Q2 *Base GOV disponibile?* → Addestramento (cubi a gruppi di 4; piazza Base in
-  Provincia senza Base GOV; Azione Civica…). Att. Speciale: Trasporto.
+## Trascrizione carte GOVERNO (AN = Alleanza USA)
+- **GOV-U** (fronte, Operazione **Perlustrazione**): D1 *Città non a Supporto Attivo?* ✓→scendi /
+  ✗→**pesca**. D2 *Guerriglia Clandestina in spazio a Supporto?* ✓→Operazione / ✗→**gira**.
+  Op Perlustrazione: ① Priorità Movimento; → attiva Guerriglie anche senza muovere Truppe.
+  Att. Speciale: Ⓐ Attacco Aereo su Base/Casinò Vulnerabile (Remove); Ⓑ se Controllo COIN a
+  Opposizione: Rappresaglia; Ⓒ Trasporto (Priorità Movimento); Ⓓ Attacco Aereo (Remove).
+  **GOV-UU** (retro, incondizionata): **Addestramento** ① piazza cubi solo a gruppi di 4.
+  Att. Speciale: Ⓐ Trasporto (Priorità Movimento). Poi Addestramento: ★ Azione Civica con
+  *Shift verso Supporto Attivo* (max 1d3 marker rimossi + shift); → piazza Base in Provincia
+  senza Base GOV; → se non Limitata, Azione Civica/Base può colpire spazio non scelto per Addestramento.
+- **GOV-Y / GOV-Z / GOV-X / GOV-W / GOV-V**: in trascrizione (fronti pag.1, retri pag.2).
 
-> NB: l'identificazione esatta dell'Operazione di ciascun ramo (dalle icone) e i dettagli vanno
-> verificati con le sezioni C8.6/C8.7 del regolamento. Le carte di 26 Luglio, Directorio e
-> Sindacato e le tabelle di Priorità/Disponibilità/Eventi seguono.
+> Carte di 26 Luglio (pag.3-4), Directorio (pag.5-6), Sindacato (pag.7-8) e tabelle di
+> Priorità/Disponibilità/Eventi seguono.
+
 
 ## Piano incrementale
 1. Confermare la lettura delle carte Governo (sopra).
