@@ -64,9 +64,13 @@ const OP_COLUMN := {
 }
 
 
-## Ordina i candidati secondo la matrice Space Selection (C8.5.6) per la colonna data.
+## Ordina i candidati secondo la matrice Space Selection (C8.5.6) per l'Operazione.
 func _ordered(faction: String, op_type: String, candidates: Array) -> Array:
-	var col: String = OP_COLUMN.get(faction, {}).get(op_type, "")
+	return _ordered_col(faction, String(OP_COLUMN.get(faction, {}).get(op_type, "")), candidates)
+
+
+## Ordina i candidati per una specifica colonna della matrice Space Selection.
+func _ordered_col(faction: String, col: String, candidates: Array) -> Array:
 	var tbl: Dictionary = _ss.get(faction, {})
 	if col == "" or tbl.is_empty():
 		return candidates
@@ -219,7 +223,7 @@ func _spaces_allowed(an: int, candidates: int) -> int:
 func _execute_op(faction: String, op_def: Dictionary, an: int, _letter: String) -> bool:
 	var t := String(op_def.get("type", ""))
 	match t:
-		"train": return _do_train(an)
+		"train": return _do_train(an, op_def)
 		"sweep": return _do_sweep(an)
 		"assault": return _do_assault(an)
 		"garrison": return _do_garrison()
@@ -249,7 +253,7 @@ func _run(res: Dictionary) -> bool:
 	return true
 
 
-func _do_train(an: int) -> bool:
+func _do_train(an: int, op_def: Dictionary = {}) -> bool:
 	var spaces: Array = []
 	for sid in _ids():
 		var sd: SpaceDef = state.game_def.space(sid)
@@ -269,7 +273,70 @@ func _do_train(an: int) -> bool:
 		var police: int = mini(need, state.available("government", "police"))
 		var troops: int = mini(need - police, state.available("government", "troops"))
 		place[sid] = {"police": police, "troops": troops}
-	return _run(ops.train({"spaces": chosen, "place": place}))
+	var ok := _run(ops.train({"spaces": chosen, "place": place}))
+	if ok:
+		_gov_train_post(op_def)
+	return ok
+
+
+## Istruzioni "post" dell'Addestramento (Governo): Azione Civica (Shift verso Supporto
+## Attivo, max 1d3) e piazzamento Base in una Provincia senza Base GOV.
+func _gov_train_post(op_def: Dictionary) -> void:
+	var has_civic := false
+	var has_base := false
+	for step in op_def.get("post", []):
+		var do := String(step.get("do", ""))
+		if do == "civic_action":
+			has_civic = true
+		elif do == "place_base":
+			has_base = true
+	if has_civic:
+		var budget := _rng.randi_range(1, 3)
+		var done := 0
+		while done < budget:
+			var target := _best_civic_space()
+			if target == "":
+				break
+			var st: SpaceState = state.space_state(target)
+			if st.marker("terror") > 0:
+				st.add_marker("terror", -1)
+			elif st.support < CoinEnums.Support.ACTIVE_SUPPORT:
+				st.support = (st.support + 1) as CoinEnums.Support
+			else:
+				break
+			done += 1
+		if done > 0:
+			_log.append("Azione Civica: %d shift verso Supporto Attivo" % done)
+	if has_base and state.available("government", "base") > 0:
+		var provs: Array = []
+		for sid in _ids():
+			var sd: SpaceDef = state.game_def.space(sid)
+			if sd.type == CoinEnums.SpaceType.PROVINCE and state.space_state(sid).count("government", "base") == 0 \
+					and mod.can_place_base(state, sid, false):
+				provs.append(sid)
+		provs = _ordered_col("government", "place_bases", provs)
+		if not provs.is_empty():
+			state.place_from_available("government", "base", provs[0], 1)
+			_log.append("Governo piazza una Base in %s" % provs[0])
+
+
+## Migliore spazio per l'Azione Civica: Controllato dal Governo, con Truppe e Polizia,
+## non già a Supporto Attivo (o con Terrore), ordinato per priorità Shift verso Supporto.
+func _best_civic_space() -> String:
+	var cands: Array = []
+	for sid in _ids():
+		var st: SpaceState = state.space_state(sid)
+		if st.control != "government":
+			continue
+		if st.count("government", "troops") == 0 or st.count("government", "police") == 0:
+			continue
+		if st.support >= CoinEnums.Support.ACTIVE_SUPPORT and st.marker("terror") == 0:
+			continue
+		cands.append(sid)
+	if cands.is_empty():
+		return ""
+	cands = _ordered_col("government", "shift_active_support", cands)
+	return cands[0]
 
 
 func _do_sweep(an: int) -> bool:
