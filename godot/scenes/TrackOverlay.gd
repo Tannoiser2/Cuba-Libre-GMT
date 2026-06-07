@@ -49,39 +49,41 @@ func _draw() -> void:
 	_draw_eligibility(s)
 
 
-# Riquadri "Available Forces": origine (normalizzata) e larghezza riga per fazione.
+# Riquadri "Available Forces": origine (normalizzata) della riga "pezzo + xN" per fazione.
 const AVAIL := {
-	"government": {"types": ["troops", "police", "base"], "o": [0.295, 0.125], "w": 0.27},
-	"syndicate": {"types": ["guerrilla", "casino"], "o": [0.635, 0.12], "w": 0.30},
-	"directorio": {"types": ["guerrilla", "base"], "o": [0.03, 0.915], "w": 0.26},
-	"m26": {"types": ["guerrilla", "base"], "o": [0.635, 0.915], "w": 0.30},
+	"government": {"types": ["troops", "police", "base"], "o": [0.27, 0.135]},
+	"syndicate": {"types": ["guerrilla", "casino"], "o": [0.625, 0.115]},
+	"directorio": {"types": ["guerrilla", "base"], "o": [0.025, 0.885]},
+	"m26": {"types": ["guerrilla", "base"], "o": [0.655, 0.90]},
 }
-const AV_PC := 16.0   # dimensione pezzo in riserva
+const AV_PC := 20.0   # dimensione pezzo in riserva
+const AV_STEP := 62.0 # passo orizzontale tra i tipi
 
 
 func _draw_available(s: GameState) -> void:
+	var font := ThemeDB.fallback_font
 	for fid in AVAIL:
 		var cfg: Dictionary = AVAIL[fid]
-		var ox: float = cfg["o"][0] * size.x
-		var oy: float = cfg["o"][1] * size.y
-		var maxw: float = cfg["w"] * size.x
-		var x := ox
-		var y := oy
+		var x: float = cfg["o"][0] * size.x
+		var y: float = cfg["o"][1] * size.y
 		for t in cfg["types"]:
+			var n := s.available(fid, t)
+			if n <= 0:
+				continue
 			var st := "closed" if t == "casino" else ("underground" if t == "guerrilla" else "")
 			var tex := CLAssets.piece(fid, t, st)
-			for i in range(s.available(fid, t)):
-				if x - ox + AV_PC > maxw:
-					x = ox
-					y += AV_PC + 1
-				if tex != null:
-					draw_texture_rect(tex, Rect2(Vector2(x, y), Vector2(AV_PC, AV_PC)), false)
-				x += AV_PC + 1
+			if tex != null:
+				draw_texture_rect(tex, Rect2(Vector2(x, y), Vector2(AV_PC, AV_PC)), false)
+			var label := "x%d" % n
+			var lp := Vector2(x + AV_PC + 3, y + AV_PC - 3)
+			draw_string(font, lp + Vector2(1, 1), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.BLACK)
+			draw_string(font, lp, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
+			x += AV_STEP
 
 
 # Sequenza di Gioco: colonne Disponibili / Non Disponibili (cilindri fazione).
-const ELIG_OK := [0.235, 0.625]
-const ELIG_NO := [0.44, 0.625]
+const ELIG_OK := [0.225, 0.60]
+const ELIG_NO := [0.44, 0.60]
 const ELIG_STEP := 26.0
 const ELIG_SZ := 22.0
 
