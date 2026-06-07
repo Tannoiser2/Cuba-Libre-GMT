@@ -240,10 +240,6 @@ func _build_action_bar() -> VBoxContainer:
 	row2.add_child(_mk_btn("Avanza carta", func(): GameController.step_card()))
 	row2.add_child(_mk_btn("Auto: tutta la partita", func(): GameController.run_full_game()))
 	row2.add_child(_mk_btn("Tutti i Bot (questa carta)", _on_all_bots))
-	var chk_calixto := CheckButton.new()
-	chk_calixto.text = "Bot Calixto"
-	chk_calixto.toggled.connect(func(on): GameController.use_calixto = on)
-	row2.add_child(chk_calixto)
 	row2.add_child(_mk_btn("Nuova Partita", func(): GameController.new_game()))
 	row2.add_child(VSeparator.new())
 	row2.add_child(_mk_label("Vista:"))
