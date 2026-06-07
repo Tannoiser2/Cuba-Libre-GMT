@@ -1958,5 +1958,811 @@
         "an": 3
       }
     }
+  },
+  "syndicate": {
+    "N": {
+      "front": {
+        "flow": [
+          {
+            "cond": "any_available_casinos",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "syn_resources_gt5_and_construct_possible",
+            "t": "op:construct",
+            "f": "flip"
+          }
+        ],
+        "ops": {
+          "construct": {
+            "type": "construct",
+            "steps": [
+              {
+                "n": 1,
+                "cond": "final_campaign",
+                "do": "open_casinos_until_8"
+              },
+              {
+                "n": 2,
+                "do": "place_casinos"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "profit",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_cash_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "not_final_campaign",
+                "do": "close_all_casinos"
+              },
+              {
+                "n": 3,
+                "cond": "syn_resources_le_5",
+                "do": "remove_all_cash"
+              }
+            ],
+            "cond": "available_cash_markers"
+          },
+          {
+            "sa": "bribe",
+            "cond": "syn_resources_gt_8",
+            "method": "remove"
+          },
+          {
+            "sa": "muscle",
+            "destination": "muscle_destination",
+            "steps": [
+              {
+                "n": 1,
+                "do": "move_police_from_ecs_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "do": "from_spaces_with_open_casinos_and_gov_control"
+              },
+              {
+                "n": 3,
+                "do": "from_spaces",
+                "method": "remove"
+              }
+            ]
+          }
+        ],
+        "an": 3
+      },
+      "back": {
+        "flow": [
+          {
+            "cond": "moveable_syn_guerrilla_with_cash",
+            "t": "op:march",
+            "f": "op:rally"
+          }
+        ],
+        "ops": {
+          "march": {
+            "type": "march",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN dopo March su EC"
+              }
+            ]
+          },
+          "rally": {
+            "type": "rally",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_guerrillas"
+              },
+              {
+                "note": "Se nessuna Guerriglia SYN Disponibile, gira 1 Guerriglia SYN Attiva in Clandestina in ogni spazio scelto"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "profit",
+            "cond": "op_rally",
+            "variant": "place_cash_only"
+          },
+          {
+            "sa": "bribe",
+            "cond": "syn_resources_gt_8",
+            "method": "remove"
+          },
+          {
+            "sa": "profit",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_cash_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "not_final_campaign",
+                "do": "close_all_casinos"
+              },
+              {
+                "n": 3,
+                "cond": "syn_resources_le_5",
+                "do": "remove_all_cash"
+              }
+            ]
+          },
+          {
+            "sa": "muscle",
+            "destination": "muscle_destination",
+            "steps": [
+              {
+                "n": 1,
+                "do": "move_police_from_ecs_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "do": "from_spaces_with_open_casinos_and_gov_control"
+              },
+              {
+                "n": 3,
+                "do": "from_spaces",
+                "method": "remove"
+              }
+            ]
+          }
+        ],
+        "an": 3
+      }
+    },
+    "P": {
+      "front": {
+        "flow": [
+          {
+            "cond": "open_casinos_lt_8",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "syn_resources_gt5_and_construct_possible",
+            "t": "op:construct",
+            "f": "flip"
+          }
+        ],
+        "ops": {
+          "construct": {
+            "type": "construct",
+            "steps": [
+              {
+                "n": 1,
+                "cond": "final_campaign",
+                "do": "open_casinos_until_8"
+              },
+              {
+                "n": 2,
+                "do": "place_casinos"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "profit",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_cash_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "not_final_campaign",
+                "do": "close_all_casinos"
+              },
+              {
+                "n": 3,
+                "cond": "syn_resources_le_5",
+                "do": "remove_all_cash"
+              }
+            ],
+            "cond": "available_cash_markers"
+          },
+          {
+            "sa": "bribe",
+            "cond": "syn_resources_gt_8",
+            "method": "remove"
+          },
+          {
+            "sa": "muscle",
+            "destination": "muscle_destination",
+            "steps": [
+              {
+                "n": 1,
+                "do": "move_police_from_ecs_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "do": "from_spaces_with_open_casinos_and_gov_control"
+              },
+              {
+                "n": 3,
+                "do": "from_spaces",
+                "method": "remove"
+              }
+            ]
+          }
+        ],
+        "an": 2
+      },
+      "back": {
+        "flow": [
+          {
+            "cond": "space_2plus_underground_syn",
+            "t": "op:march",
+            "f": "op:rally"
+          }
+        ],
+        "ops": {
+          "march": {
+            "type": "march",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN dopo March su EC"
+              }
+            ]
+          },
+          "rally": {
+            "type": "rally",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_guerrillas"
+              },
+              {
+                "note": "Se nessuna Guerriglia SYN Disponibile, gira 1 Guerriglia SYN Attiva in Clandestina in ogni spazio scelto"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "profit",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_cash_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "not_final_campaign",
+                "do": "close_all_casinos"
+              },
+              {
+                "n": 3,
+                "cond": "syn_resources_le_5",
+                "do": "remove_all_cash"
+              }
+            ]
+          },
+          {
+            "sa": "bribe",
+            "cond": "syn_resources_gt_8",
+            "method": "remove"
+          },
+          {
+            "sa": "muscle",
+            "destination": "muscle_destination",
+            "steps": [
+              {
+                "n": 1,
+                "do": "move_police_from_ecs_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "do": "from_spaces_with_open_casinos_and_gov_control"
+              },
+              {
+                "n": 3,
+                "do": "from_spaces",
+                "method": "remove"
+              }
+            ]
+          }
+        ],
+        "an": 3
+      }
+    },
+    "Q": {
+      "front": {
+        "flow": [
+          {
+            "cond": "any_available_cash_markers",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "syn_resources_gt5_and_construct_possible",
+            "t": "op:construct",
+            "f": "flip"
+          }
+        ],
+        "ops": {
+          "construct": {
+            "type": "construct",
+            "steps": [
+              {
+                "n": 1,
+                "cond": "final_campaign",
+                "do": "open_casinos_until_8"
+              },
+              {
+                "n": 2,
+                "do": "place_casinos"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "profit",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_cash_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "not_final_campaign",
+                "do": "close_all_casinos"
+              },
+              {
+                "n": 3,
+                "cond": "syn_resources_le_5",
+                "do": "remove_all_cash"
+              }
+            ]
+          },
+          {
+            "sa": "bribe",
+            "cond": "syn_resources_gt_8",
+            "method": "remove"
+          },
+          {
+            "sa": "muscle",
+            "destination": "muscle_destination",
+            "steps": [
+              {
+                "n": 1,
+                "do": "move_police_from_ecs_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "do": "from_spaces_with_open_casinos_and_gov_control"
+              },
+              {
+                "n": 3,
+                "do": "from_spaces",
+                "method": "remove"
+              }
+            ]
+          }
+        ],
+        "an": 2
+      },
+      "back": {
+        "flow": [
+          {
+            "cond": "underground_syn_in_support_or_opp",
+            "t": "op:terror",
+            "f": "op:rally"
+          }
+        ],
+        "ops": {
+          "terror": {
+            "type": "terror",
+            "steps": [
+              {
+                "n": 1,
+                "do": "shift_toward_neutral",
+                "where": "spaces_with_any_support_or_opposition"
+              },
+              {
+                "note": "Apri Casino in non-Mountain solo dove 2+ Guerriglie SYN Clandestine"
+              }
+            ]
+          },
+          "rally": {
+            "type": "rally",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_guerrillas"
+              },
+              {
+                "note": "Se nessuna Guerriglia SYN Disponibile, gira 1 Guerriglia SYN Attiva in Clandestina in ogni spazio scelto"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "bribe",
+            "cond": "op_terror",
+            "method": "remove"
+          },
+          {
+            "sa": "profit",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_cash_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "not_final_campaign",
+                "do": "close_all_casinos"
+              },
+              {
+                "n": 3,
+                "cond": "syn_resources_le_5",
+                "do": "remove_all_cash"
+              }
+            ]
+          },
+          {
+            "sa": "muscle",
+            "destination": "muscle_destination",
+            "steps": [
+              {
+                "n": 1,
+                "do": "move_police_from_ecs_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "do": "from_spaces_with_open_casinos_and_gov_control"
+              },
+              {
+                "n": 3,
+                "do": "from_spaces",
+                "method": "remove"
+              }
+            ]
+          }
+        ],
+        "an": 3
+      }
+    },
+    "R": {
+      "front": {
+        "flow": [
+          {
+            "cond": "d3_le_avail_or_active_syn_guerrillas",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "underground_syn_in_support_or_opp_no_open_casino",
+            "t": "op:terror",
+            "f": "flip"
+          }
+        ],
+        "ops": {
+          "terror": {
+            "type": "terror",
+            "steps": [
+              {
+                "n": 1,
+                "do": "shift_toward_neutral",
+                "where": "spaces_with_any_support_or_opposition"
+              },
+              {
+                "note": "Apri Casino in non-Mountain solo dove 2+ Guerriglie SYN Clandestine"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "bribe",
+            "method": "remove"
+          }
+        ],
+        "an": 3
+      },
+      "back": {
+        "flow": [
+          {
+            "t": "op:rally"
+          }
+        ],
+        "ops": {
+          "rally": {
+            "type": "rally",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_guerrillas"
+              },
+              {
+                "note": "Se nessuna Guerriglia SYN Disponibile, gira 1 Guerriglia SYN Attiva in Clandestina in ogni spazio scelto"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "profit",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_cash_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "not_final_campaign",
+                "do": "close_all_casinos"
+              },
+              {
+                "n": 3,
+                "cond": "syn_resources_le_5",
+                "do": "remove_all_cash"
+              }
+            ]
+          },
+          {
+            "sa": "bribe",
+            "cond": "syn_resources_gt_8",
+            "method": "remove"
+          },
+          {
+            "sa": "muscle",
+            "destination": "muscle_destination",
+            "steps": [
+              {
+                "n": 1,
+                "do": "move_police_from_ecs_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "do": "from_spaces_with_open_casinos_and_gov_control"
+              },
+              {
+                "n": 3,
+                "do": "from_spaces",
+                "method": "remove"
+              }
+            ]
+          }
+        ],
+        "an": 3
+      }
+    },
+    "S": {
+      "front": {
+        "flow": [
+          {
+            "cond": "underground_syn_in_support_or_opp",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "d3_le_avail_or_active_syn_guerrillas",
+            "t": "op:rally",
+            "f": "flip"
+          }
+        ],
+        "ops": {
+          "rally": {
+            "type": "rally",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_guerrillas"
+              },
+              {
+                "note": "Se nessuna Guerriglia SYN Disponibile, gira 1 Guerriglia SYN Attiva in Clandestina in ogni spazio scelto"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "profit",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_cash_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "cond": "not_final_campaign",
+                "do": "close_all_casinos"
+              },
+              {
+                "n": 3,
+                "cond": "syn_resources_le_5",
+                "do": "remove_all_cash"
+              }
+            ]
+          },
+          {
+            "sa": "bribe",
+            "cond": "syn_resources_gt_8",
+            "method": "remove"
+          },
+          {
+            "sa": "muscle",
+            "destination": "muscle_destination",
+            "steps": [
+              {
+                "n": 1,
+                "do": "move_police_from_ecs_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "do": "from_spaces_with_open_casinos_and_gov_control"
+              },
+              {
+                "n": 3,
+                "do": "from_spaces",
+                "method": "remove"
+              }
+            ]
+          }
+        ],
+        "an": 3
+      },
+      "back": {
+        "flow": [
+          {
+            "t": "op:terror"
+          }
+        ],
+        "ops": {
+          "terror": {
+            "type": "terror",
+            "steps": [
+              {
+                "n": 1,
+                "do": "shift_toward_neutral",
+                "where": "spaces_with_any_support_or_opposition"
+              },
+              {
+                "note": "Apri Casino in non-Mountain solo dove 2+ Guerriglie SYN Clandestine"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "bribe",
+            "method": "remove"
+          }
+        ],
+        "an": 3
+      }
+    },
+    "T": {
+      "front": {
+        "flow": [
+          {
+            "cond": "syn_resources_lt_6",
+            "t": "next",
+            "f": "draw"
+          },
+          {
+            "cond": "syn_resources_gt5_and_construct_possible",
+            "t": "op:construct",
+            "f": "flip"
+          }
+        ],
+        "ops": {
+          "construct": {
+            "type": "construct",
+            "steps": [
+              {
+                "n": 1,
+                "cond": "final_campaign",
+                "do": "open_casinos_until_8"
+              },
+              {
+                "n": 2,
+                "do": "place_casinos"
+              }
+            ]
+          }
+        },
+        "special": [
+          {
+            "sa": "profit",
+            "steps": [
+              {
+                "n": 1,
+                "cond": "not_final_campaign",
+                "do": "close_all_casinos"
+              },
+              {
+                "n": 2,
+                "do": "remove_all_cash"
+              },
+              {
+                "n": 3,
+                "do": "place_cash_with_syn_guerrillas"
+              }
+            ]
+          },
+          {
+            "sa": "muscle",
+            "destination": "muscle_destination",
+            "steps": [
+              {
+                "n": 1,
+                "do": "move_police_from_ecs_with_syn_guerrillas"
+              },
+              {
+                "n": 2,
+                "do": "from_spaces_with_open_casinos_and_gov_control"
+              },
+              {
+                "n": 3,
+                "do": "from_spaces",
+                "method": "remove"
+              }
+            ]
+          }
+        ],
+        "an": 2
+      },
+      "back": {
+        "flow": [
+          {
+            "cond": "any_avail_or_active_syn_guerrillas",
+            "t": "op:rally",
+            "f": "op:march"
+          }
+        ],
+        "ops": {
+          "rally": {
+            "type": "rally",
+            "steps": [
+              {
+                "n": 1,
+                "do": "place_guerrillas"
+              },
+              {
+                "note": "Se nessuna Guerriglia SYN Disponibile, gira 1 Guerriglia SYN Attiva in Clandestina in ogni spazio scelto"
+              }
+            ]
+          },
+          "march": {
+            "type": "march",
+            "steps": [
+              {
+                "n": 1,
+                "priorities": "move"
+              },
+              {
+                "note": "Nessun tiro AN dopo March su EC"
+              }
+            ]
+          }
+        },
+        "special": [],
+        "an": 4
+      }
+    }
   }
 }
