@@ -33,10 +33,31 @@ regolamento base. Materiali sorgente nel repo:
 
 ## Architettura prevista
 - `coin_engine/`: estendere `BotBrain` con un'interfaccia per i "priority/condition" generici.
-- `games/cuba_libre/rules/CalixtoBot.gd`: interprete delle carte + tabelle.
-- `games/cuba_libre/data/calixto_cards.json`: le 24 carte (fronte/retro) come dati.
+### Motore generico riusabile (Calixto è usato da molti giochi COIN)
+Calixto va costruito come **componente generico in `coin_engine/`**, indipendente dal gioco, così
+da poter essere riusato da altri titoli COIN fornendo solo i propri dati e implementazioni.
+
+- `coin_engine/calixto/CalixtoEngine.gd` (game-agnostic): legge la struttura carta
+  (`flow`/`ops`/`special`), valuta le condizioni tramite un **registro di predicati pluggable**,
+  esegue Operazioni/Attività Speciali tramite un **registro di azioni pluggable**, gestisce il
+  tiro **AN**, pesca/gira, e il fallback sulla tabella **Idoneità**.
+- `coin_engine/calixto/CalixtoDeck.gd`: mazzo (pesca con rotazione fino alla fazione attiva,
+  rimescolo solo a inizio partita e nel Reset di Propaganda).
+- Interfacce che il gioco implementa: `CalixtoPredicates` (condizioni come
+  `city_not_active_support`, `enemy_space_4plus_or_underground`, …) e `CalixtoActions`
+  (operazioni `sweep/train/rally/march/attack/terror/assault/garrison/construct` e attività
+  speciali) + le tabelle Priorità.
+
+Strato specifico Cuba Libre:
+- `games/cuba_libre/rules/CLCalixto.gd`: implementa predicati/azioni mappandoli sulle operazioni
+  CL esistenti, e carica le tabelle Priorità.
+- `games/cuba_libre/data/calixto_cards.json`: le 24 carte (fronte/retro) come dati. ✔ FATTO
 - `games/cuba_libre/data/calixto_tables.json`: Priorità Spazi/Movimento/Pezzi, Disponibilità, Eventi.
 - Selezionabile in alternativa ai bot cap. 8 esistenti.
+
+### Stato trascrizione carte
+✔ Governo (U,Y,Z,X,W,V) · ✔ 26 Luglio (G,H,J,K,L,M) · ✔ Directorio (A,B,C,D,E,F) ·
+✔ Sindacato (N,P,Q,R,S,T) — tutte fronte/retro con valori AN. Resta: tabelle + interprete.
 
 ### Modello dati carta (esempio GOV-U / GOV-UU)
 ```json

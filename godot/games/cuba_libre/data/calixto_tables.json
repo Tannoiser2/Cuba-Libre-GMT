@@ -1,0 +1,106 @@
+{
+  "_note": "Tabelle Calixto. eligibility (C8.5.2), piece_priorities (C8.5.8), effective_events (C8.5.5), propaganda (C8.5.9). space_selection (C8.5.6) e move_priorities (C8.5.7) sono matrici dense: in trascrizione con lettura ad alto zoom.",
+
+  "eligibility": {
+    "first": [
+      {"cond": "gov_acting_and_underground_dr_or_26j_in_havana", "result": "op_sa"},
+      {"cond": "current_event_critical_and_effective", "result": "event"},
+      {"cond": "next_eligible_could_choose_effective_critical_event", "result": "op_only"},
+      {"cond": "acting_faction_first_eligible_on_upcoming_critical_event", "result": "pass"},
+      {"cond": "otherwise", "result": "op_and_sa"}
+    ],
+    "second": [
+      {"cond": "first_eligible_on_upcoming_critical_and_cannot_execute_current_critical_effective", "result": "pass"},
+      {"cond": "first_eligible_chose_event", "result": "op_sa"},
+      {"cond": "first_eligible_chose_op_sa_and_current_event_critical_or_performed_and_effective", "result": "event"},
+      {"cond": "acting_faction_first_eligible_on_upcoming_event", "result": "pass"},
+      {"cond": "otherwise", "result": "lim_op"}
+    ]
+  },
+
+  "piece_priorities": {
+    "_note": "C8.5.8. Lettura: (A) muovi/rimuovi/sostituisci/attiva pezzi del giocatore prima di quelli NP. (B) dall'alto in basso e da sx a dx per muovere/rimuovere/sostituire/attivare pezzi nemici e piazzare/muovere pezzi amici. (C) dal basso in alto e da dx a sx per rimuovere pezzi amici.",
+    "groups": [
+      {"when": "acting_faction_is_syn", "label": "forces_with_cash", "order": [["26j", "dr", "gov"], ["underground", "active"]]},
+      {"label": "bases_casinos", "order": [["syn", "dr", "26j"]]},
+      {"when": "assault", "label": "guerrillas_of_faction_with_vulnerable_base_casino", "order": [["syn", "dr", "26j"]]},
+      {"when": "attack_or_ambush", "label": "faction_with_base_or_open_casino_with_only_1_guerrilla_or_cube", "order": [["26j", "dr"]]},
+      {"label": "cubes", "order": [["with_cash"], ["police", "troops"]], "note": "se NP GOV: alterna piazzando Police prima, poi Troops"},
+      {"label": "guerrillas", "order": [["with_cash"], ["underground", "active"], ["syn", "26j", "dr"]]}
+    ],
+    "reading": {"A": "pezzi giocatore prima dei pezzi NP", "B": "alto->basso, sx->dx: nemici e piazza/muovi amici", "C": "basso->alto, dx->sx: rimuovi amici"}
+  },
+
+  "effective_events": {
+    "government": {
+      "is": ["gov_op_sa_or_limop", "first_three_cards_of_campaign_momentum"],
+      "adds_increases": ["support", "gov_forces", "cash_with_cubes", "us_alliance"],
+      "removes_reduces": ["enemy_forces_from_map_or_close_casinos", "opposition", "np_syn_or_player_resources"]
+    },
+    "syndicate": {
+      "is": ["syn_op_sa_or_limop", "not_final_campaign_capability"],
+      "adds_increases": ["syn_resources", "syn_forces", "open_casinos", "cash_with_syn_guerrillas"],
+      "removes_reduces": ["enemy_forces_from_map", "support_or_opposition", "player_resources"]
+    },
+    "directorio": {
+      "is": ["dr_op_sa_or_limop", "not_final_campaign_capability"],
+      "adds_increases": ["dr_forces", "cash_with_dr_guerrillas"],
+      "removes_reduces": ["enemy_forces_from_map_or_close_casinos", "support_or_opposition", "np_syn_or_player_resources", "player_gov_aid", "us_alliance"]
+    },
+    "m26": {
+      "is": ["m26_op_sa_or_limop", "not_final_campaign_capability"],
+      "adds_increases": ["opposition", "m26_forces", "cash_with_26j_guerrillas"],
+      "removes_reduces": ["enemy_forces_from_map_or_close_casinos", "support", "np_syn_or_player_resources", "player_gov_aid", "us_alliance"]
+    }
+  },
+
+  "propaganda": {
+    "victory": "In solitario contro 3 NP, l'umano puo vincere solo nell'ultimo Round di Propaganda.",
+    "resources": {
+      "ignore_earnings": ["government", "directorio", "m26"],
+      "skim": "Le Risorse trasferite alle fazioni NP sono comunque rimosse dal totale Risorse SYN.",
+      "cash_deposits": {
+        "government": "Usa Cash per piazzare Basi in Province senza Base GOV se possibile, poi +1 al tiro Azione Civica nella Fase Supporto per ogni Cash riportato a Disponibile.",
+        "directorio": "Usa Cash per piazzare Basi se possibile, poi riporta il Cash extra a Disponibile.",
+        "m26": "Usa Cash per piazzare Basi se possibile, poi riporta il Cash extra a Disponibile.",
+        "syndicate": "Usa Cash per piazzare Casino, poi (solo ultimo Round) per aprire Casino fino a 8 Aperti, poi per guadagnare Risorse."
+      }
+    },
+    "support": {
+      "government_civic_action": "NP GOV: shift verso Supporto Attivo, max marker Terror rimossi e shift = 1d3 + n. EC senza Sabotaggio.",
+      "m26_agitation": "NP 26J: shift verso Opposizione Attiva, max = 1d3 + n. Basi 26J sulla mappa.",
+      "directorio_expat_backing": "NP DR: pesca una carta Calixto per Rally, ma tratta le Guerriglie DR Attive come Clandestine nel controllo Basi DR Vulnerabili."
+    },
+    "redeploy": [
+      "Get 1 Police in ogni spazio con Controllo GOV.",
+      "Move Police per superare le forze insorti (inclusi Casino chiusi) in ogni Provincia con Controllo GOV e senza Base GOV.",
+      "Move Police per eguagliare le Guerriglie negli EC, prima quelli con Econ piu alto.",
+      "Move Troops da Province senza Base GOV e dagli EC verso spazi con Controllo GOV (solo Citta e Province con Base GOV)."
+    ],
+    "reset": "Rimescola il mazzo Calixto."
+  },
+
+  "space_selection": {
+    "_todo": "Matrici dense C8.5.6 per 4 fazioni: in lettura ad alto zoom.",
+    "government": {
+      "_status": "bozza da verificare",
+      "columns": ["shift_active_support", "place_bases", "place_cubes", "sweep_dest", "transport_dest", "garrison_dest", "reprisal", "remove_or_replace"],
+      "event": "esegui l'azione efficace piu a sinistra",
+      "rows": [
+        {"crit": "not_at_active_support", "cols": ["shift_active_support", "place_cubes"]},
+        {"crit": "gov_base_without_police", "cols": ["shift_active_support", "place_cubes"]},
+        {"crit": "havana", "cols": ["shift_active_support", "sweep_dest", "garrison_dest", "remove_or_replace"]},
+        {"crit": "underground_guerrillas", "cols": ["place_cubes", "sweep_dest", "garrison_dest", "reprisal"]},
+        {"crit": "most_support", "cols": ["sweep_dest", "garrison_dest"]},
+        {"crit": "enemy_base_open_casino", "cols": ["place_cubes", "sweep_dest", "remove_or_replace"]},
+        {"crit": "most_population", "cols": ["shift_active_support", "place_bases", "place_cubes", "sweep_dest", "transport_dest", "garrison_dest", "reprisal", "remove_or_replace"]},
+        {"crit": "fewest_enemy_forces_ignore_closed_casinos", "cols": ["all"]},
+        {"crit": "select_at_random_from_remaining", "cols": ["all"]}
+      ]
+    }
+  },
+
+  "move_priorities": {
+    "_todo": "Matrice densa C8.5.7 per 4 fazioni: in lettura ad alto zoom."
+  }
+}
