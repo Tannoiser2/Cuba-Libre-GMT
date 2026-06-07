@@ -46,6 +46,14 @@ var _instr: Label
 var _mode := "idle"                   # idle | select_spaces | moves
 var _faction_select: OptionButton
 var _action_select: OptionButton
+var _special_select: OptionButton
+
+const SA_NAMES := {
+	"transport": "Trasporto", "air_strike": "Attacco Aereo", "reprisal": "Rappresaglia",
+	"infiltrate": "Infiltrazione", "ambush": "Imboscata", "kidnap": "Sequestro",
+	"subvert": "Sovversione", "assassinate": "Assassinio",
+	"profit": "Profitto", "muscle": "Muscle", "bribe": "Corruzione",
+}
 var _cur_faction := "government"
 var _cur_action := ""
 var _selected: Array = []
@@ -133,6 +141,26 @@ func _build_action_bar() -> Control:
 	btn_cancel.text = "Annulla"
 	btn_cancel.pressed.connect(_on_cancel)
 	bar.add_child(btn_cancel)
+
+	bar.add_child(VSeparator.new())
+
+	# Attività Speciale
+	_special_select = OptionButton.new()
+	bar.add_child(_special_select)
+	var btn_sa := Button.new()
+	btn_sa.text = "Att. Speciale"
+	btn_sa.pressed.connect(_on_special)
+	bar.add_child(btn_sa)
+
+	# Evento della carta corrente (chiaro / ombreggiato)
+	var btn_ev_u := Button.new()
+	btn_ev_u.text = "Evento ▸ chiaro"
+	btn_ev_u.pressed.connect(func(): _on_event("unshaded"))
+	bar.add_child(btn_ev_u)
+	var btn_ev_s := Button.new()
+	btn_ev_s.text = "Evento ▸ ombr."
+	btn_ev_s.pressed.connect(func(): _on_event("shaded"))
+	bar.add_child(btn_ev_s)
 
 	var sep := VSeparator.new()
 	bar.add_child(sep)
@@ -287,6 +315,10 @@ func _on_faction_changed(idx: int) -> void:
 	for op in GameController.game_def.faction(_cur_faction).operations:
 		_action_select.add_item(OP_NAMES.get(op, op))
 		_action_select.set_item_metadata(_action_select.item_count - 1, op)
+	_special_select.clear()
+	for sa in GameController.game_def.faction(_cur_faction).special_activities:
+		_special_select.add_item(SA_NAMES.get(sa, sa))
+		_special_select.set_item_metadata(_special_select.item_count - 1, sa)
 	_on_cancel()
 
 
@@ -332,6 +364,52 @@ func _on_execute() -> void:
 		return
 	var params := _build_params()
 	GameController.run_operation(_cur_action, params)
+	_on_cancel()
+
+
+## Esegue l'Attività Speciale selezionata, con parametri ricavati dalla selezione/spostamenti.
+func _on_special() -> void:
+	if _special_select.item_count == 0:
+		return
+	var sa: String = _special_select.get_item_metadata(_special_select.selected)
+	var sa_id := sa
+	if sa == "ambush":
+		sa_id = "ambush_m26" if _cur_faction == "m26" else "ambush_dr"
+	GameController.run_special(sa_id, _build_special_params(sa))
+
+
+func _build_special_params(sa: String) -> Dictionary:
+	var first: String = _selected[0] if _selected.size() > 0 else ""
+	match sa:
+		"transport", "muscle":
+			if _pending_moves.size() > 0:
+				var m: Dictionary = _pending_moves[0]
+				var p := {"from": m["from"], "to": m["to"], "count": int(m["count"])}
+				if sa == "muscle":
+					var dest: SpaceDef = GameController.game_def.space(m["to"])
+					p["type"] = "police" if dest.type == CoinEnums.SpaceType.CITY else "troops"
+				return p
+			return {}
+		"profit":
+			return {"mode": "cash", "spaces": _selected}
+		"reprisal":
+			return {"space": first, "move": {}}
+		"kidnap":
+			return {"space": first, "target": "government"}
+		_:
+			return {"space": first, "faction": _cur_faction}
+
+
+## Gioca l'Evento della carta corrente (lato chiaro/ombreggiato) per la Fazione selezionata.
+func _on_event(side: String) -> void:
+	var n: int = GameController.state.current_card
+	if n <= 0:
+		_instr.text = "Nessuna carta Evento corrente"
+		return
+	var params := {"faction": _cur_faction}
+	if _selected.size() > 0:
+		params["space"] = _selected[0]
+	GameController.run_event(n, side, _cur_faction, params)
 	_on_cancel()
 
 
