@@ -35,6 +35,7 @@ const OP_KIND := {
 
 var _space_views: Dictionary = {}     # space_id -> SpaceView
 var _board: ScrollContainer
+var _map_wrap: Control
 var _map: TextureRect
 var _bar: HFlowContainer
 var _side: PanelContainer
@@ -103,6 +104,11 @@ func _build_ui() -> void:
 	_board.position = Vector2(8, 96)
 	add_child(_board)
 
+	# Wrapper che definisce l'area scrollabile (= mappa * zoom); il nodo mappa viene scalato.
+	_map_wrap = Control.new()
+	_map_wrap.mouse_filter = Control.MOUSE_FILTER_PASS
+	_board.add_child(_map_wrap)
+
 	# Sfondo: immagine reale della mappa
 	_map = TextureRect.new()
 	_map.texture = CLAssets.map()
@@ -111,7 +117,7 @@ func _build_ui() -> void:
 	_map.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_map.size_flags_horizontal = 0
 	_map.size_flags_vertical = 0
-	_board.add_child(_map)
+	_map_wrap.add_child(_map)
 
 	# Zone poligonali sagomate sui contorni (figlie della mappa).
 	var regions: Dictionary = _load_regions()
@@ -357,18 +363,24 @@ func _layout_board() -> void:
 	if mh0 > vh:
 		mh0 = vh
 		mw0 = mh0 / aspect
-	var msize := Vector2(mw0, mh0) * _zoom
+	# Dimensione base (zoom=1); lo zoom è applicato come SCALA al nodo mappa, così tutto
+	# (mappa, pedine, segnalini) scala in modo uniforme. Il wrapper definisce l'area scrollabile.
+	var base := Vector2(mw0, mh0)
 	if _map != null:
-		_map.custom_minimum_size = msize
-		_map.size = msize
+		_map.custom_minimum_size = base
+		_map.size = base
+		_map.scale = Vector2(_zoom, _zoom)
+	if _map_wrap != null:
+		_map_wrap.custom_minimum_size = base * _zoom
+		_map_wrap.size = base * _zoom
 	for sid in _space_views.keys():
 		var rv: RegionView = _space_views[sid]
 		rv.position = Vector2.ZERO
-		rv.size = msize
+		rv.size = base
 		rv.relayout()
 	if _track_overlay != null:
 		_track_overlay.position = Vector2.ZERO
-		_track_overlay.size = msize
+		_track_overlay.size = base
 		_track_overlay.queue_redraw()
 
 
