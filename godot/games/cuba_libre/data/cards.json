@@ -1,438 +1,726 @@
 {
-  "_note": "48 carte Evento + 4 carte Propaganda (49-52). Ordine fazioni, testo non-ombreggiato/ombreggiato, flag Capacità/Momentum DA COMPLETARE leggendo le immagini delle carte (sources/vassal -> images/Card_XX.png).",
+  "_note": "48 carte Evento + 4 Propaganda. factionOrder derivato dai simboli; text_raw da OCR (da rifinire in unshaded/shaded). momentum/capability rilevati da OCR.",
   "propagandaCards": 4,
   "events": [
     {
       "number": 1,
       "title": "Armored Cars",
-      "factionOrder": [],
+      "factionOrder": [
+        "government",
+        "m26",
+        "directorio",
+        "syndicate"
+      ],
+      "momentum": true,
       "capability": false,
-      "momentum": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Armored Cars\n\nIn rebel service:\n26July or DR free Marches\ninto a space and free Ambushes there\n(even if Active).\n\nDelivered:\nUntil Propaganda, before Assault,\nmove Troops to Assault spaces\nfrom other spaces.\n\nGOVERNMENT MOMENTUM"
     },
     {
       "number": 2,
       "title": "Guantánamo Bay",
-      "factionOrder": [],
-      "capability": false,
-      "momentum": false,
+      "factionOrder": [
+        "government",
+        "m26",
+        "directorio",
+        "syndicate"
+      ],
+      "momentum": true,
+      "capability": true,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Guantanamo Bay\n\nINSURGENT CAPABILITY\n\nBase personnel targeted:\n26July may Kidnap in\nSierra Maestra as if City.\n\nUS airfield:\n\nUntil Propaganda,\n\nAir Strike removes 2 pieces and\nGOVERNMENT MOMENTUM"
     },
     {
       "number": 3,
       "title": "Eulogio Cantillo",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "government",
+        "m26",
+        "syndicate",
+        "directorio"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Eulogio Cantillo\n\nGeneral seals truce:\n\nSelect a space with Troops. A Faction\nfree Marches all its Guerrillas out,\nthen flips them Underground.\n\nDictator backs general's offensive:\nSelect a Province or City with\n\nTroops. They free Sweep in place,\nthen free Assault."
     },
     {
       "number": 4,
       "title": "S.I.M.",
-      "factionOrder": [],
+      "factionOrder": [
+        "government",
+        "m26",
+        "syndicate",
+        "directorio"
+      ],
+      "momentum": true,
       "capability": false,
-      "momentum": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Word of torture:\nRemove Support from\na space with no Police.\n\nMilitary intelligence gleans leads:\nUntil next Propaganda,\nPolice Sweep and Assault as if Troops.\nGOVERNMENT MOMENTUM"
     },
     {
       "number": 5,
       "title": "Rolando Masferrer",
-      "factionOrder": [],
+      "factionOrder": [
+        "government",
+        "directorio",
+        "m26",
+        "syndicate"
+      ],
+      "momentum": true,
       "capability": false,
-      "momentum": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Rolando Masferrer\n\nBrutal commander:\n\nSet a Province with Troops\nand 1 adjacent Province to\n\nPassive Opposition.\n\nParamulitaries:\nSweep may free Assault 1 space as its\nSpecial Activity (until Propaganda).\nGOVERNMENT MOMENTUM"
     },
     {
       "number": 6,
       "title": "Sánchez Mosquera",
-      "factionOrder": [],
+      "factionOrder": [
+        "government",
+        "directorio",
+        "m26",
+        "syndicate"
+      ],
+      "momentum": true,
       "capability": false,
-      "momentum": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Sanchez Mosquera\n\nPopular colonel wounded:\n\nRemove all Troops from\n\na Mountain space (to available).\n\nEffective army commander:\nUntil next Propaganda,\nAssault treats Mountain as City.\nGOVERNMENT MOMENTUM"
     },
     {
       "number": 7,
       "title": "Election",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "government",
+        "directorio",
+        "syndicate",
+        "m26"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Election\nPostponed! Rebel ranks grow:\nPlace 1 Guerrilla\nin each City.\n\nScheduled!\nBatista bows to US pressure:\nSet a City to Neutral.\nAid +10."
     },
     {
       "number": 8,
       "title": "General Strike",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "government",
+        "directorio",
+        "syndicate",
+        "m26"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "General Strike\n\nWidespread disruption:\nIn each City,\nshift 1 level toward Neutral\nand place any 1 Guerrilla.\n\nStrike fails, shops open:\nSet a City to Active Support and\nActivate all Guerrillas there.\nOpen any 1 closed Casino."
     },
     {
       "number": 9,
       "title": "Coup",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "government",
+        "syndicate",
+        "m26",
+        "directorio"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Batista ousted!:\nShift all Govt Control\n\nspaces 1 level toward Neutral.\nUS Alliance up 1 box.\n\nUS-backed plot discovered:\nActivate and free Assault all\n\nDR pieces in Cities with cubes.\nUS Alliance down 1 box."
     },
     {
       "number": 10,
       "title": "MAP",
-      "factionOrder": [],
+      "factionOrder": [
+        "government",
+        "syndicate",
+        "m26",
+        "directorio"
+      ],
+      "momentum": true,
       "capability": false,
-      "momentum": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Arms shipment stolen:\nReplace a cube with\nany 2 Guerrillas.\n\nUS training:\n\nUntil Propaganda, Govt may\naccompany LimOps with a free\nSpecial Activity.\nGOVERNMENT MOMENTUM"
     },
     {
       "number": 11,
       "title": "Batista Flees",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "government",
+        "syndicate",
+        "directorio",
+        "m26"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Batista Flees\n\nUS forces dictator out:\nGovernment Resources -10.\nSelect and remove a die roll of Troops.\nUS Alliance 1 box up.\n\nAid +10. Government Redeploys\nas in Propaganda round."
     },
     {
       "number": 12,
       "title": "BRAC",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "government",
+        "syndicate",
+        "directorio",
+        "m26"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "BRAC\n\nAnti-subversion agency:\nRemove any 2 Guerrillas.\n\nCIA trains political police:\nPlace 1 Police anywhere.\nAdd lesser of +6 or Aid to\n\nGovernment Resources."
     },
     {
       "number": 13,
       "title": "El Che",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "m26",
+        "government",
+        "directorio",
+        "syndicate"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Inspired military leader:\nThe first group of Guerrillas\nto move on each 26July March\noperation flips Underground."
     },
     {
       "number": 14,
       "title": "Operation Fisherman",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "m26",
+        "government",
+        "directorio",
+        "syndicate"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Operation Fisherman\n\n2\"4 Invasion:\n\nPlace a 26July Base and Guerrilla in\nPinar del Rio.\n\nLocals resent being drawn in:\nShift Pinar del Rio 2 levels toward\nActive Support."
     },
     {
       "number": 15,
       "title": "Come Comerades!",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "m26",
+        "government",
+        "syndicate",
+        "directorio"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Communist recruits:\nPlace 3 26July Guerrillas anywhere.\n\nSoviet influence suspected:\nAdd lesser of Aid or +10 to\n\nGovernment Resources.\n\nThen Aid +5."
     },
     {
       "number": 16,
       "title": "Larrazábal",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "m26",
+        "government",
+        "syndicate",
+        "directorio"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Larrazabal\n\nVenezuelan junta supplies arms:\n\nPlace a 26July Base where there is a\n26July piece.\n\nCaracas cuts off shipments:\nRemove one 26July Base.\n26July Resources -3."
     },
     {
       "number": 17,
       "title": "Alberto Bayo",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "m26",
+        "directorio",
+        "government",
+        "syndicate"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Alberto Bayo\nVet trains guerrillas:\n26July or DR free Rallies in each space\nit has a Base (as if spaces Neutral).\n\nMexico blocks training\nby Cuban expat:\nAll 26July Guerrillas Active. 26July\nIneligible through next card."
     },
     {
       "number": 18,
       "title": "Pact of Caracas",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "m26",
+        "directorio",
+        "government",
+        "syndicate"
+      ],
       "momentum": false,
+      "capability": true,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Pact of Caracas\nINSURGENT CAPABILITY\n\nNo 26July or DR Ops or Special\nActivities that remove the other’s\npieces or affect placed Opposition.\n\nIf same player, mutual transfers\nallowed. If either removes 2? of its Bases\nat once, cancel Capability.\nExecuting Faction stays Eligible."
     },
     {
       "number": 19,
       "title": "Sierra Maestra Manifesto",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "m26",
+        "directorio",
+        "syndicate",
+        "government"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Sierra Maestra Manifesto\n\nFidel disdains elections or compromise:\n\nIn card Faction order,\neach Faction may place\n2 non-Casino pieces in a space\nwhere they already have a piece.\nExecuting Faction stays Eligible."
     },
     {
       "number": 20,
       "title": "The Twelve",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "m26",
+        "directorio",
+        "syndicate",
+        "government"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "The Twelve\n\nTale of survivors inspires movement:\nA Faction free Marches then free Rallies\nat a March destination.\n\nGranma travail presages\nsupply challenge:\nRemove 42 rounded up of any Guerrillas\nfrom the space with the most Guerrillas."
     },
     {
       "number": 21,
       "title": "Fangio",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "m26",
+        "syndicate",
+        "government",
+        "directorio"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Fangio\n26July seizes racer:\nShift a City\n1 level toward Active Opposition,\n2 levels if a 26July piece is there.\n\nFamous driver popularizes Cuba:\nIn 2 spaces with any Casinos, open a\nclosed Casino or place 1 Cash with a\n\nGuerrilla or cube."
     },
     {
       "number": 22,
       "title": "Raúl",
-      "factionOrder": [],
+      "factionOrder": [
+        "m26",
+        "syndicate",
+        "government",
+        "directorio"
+      ],
+      "momentum": true,
       "capability": false,
-      "momentum": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "5 Se A= OS —_\nSe es\n7, 4 ee\n4\nay\n\nYounger Castro an ace:\n\n26July may reroll each\nAttack or Kidnap.\n\nUS hostage-taking backfires:\nUntil Propaganda, add to Aid twice\nany Resources from Kidnap.\nGOVERNMENT MOMENTUM"
     },
     {
       "number": 23,
       "title": "Radio Rebelde",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "m26",
+        "syndicate",
+        "directorio",
+        "government"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Clandestine radio reaches masses:\nShift ? Provinces each 1 level toward\nActive Opposition.\n\nTransmitter pinpointed:\nRemove a 26July Base from a Province."
     },
     {
       "number": 24,
       "title": "Vilma Espín",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "m26",
+        "syndicate",
+        "directorio",
+        "government"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Vilma Espin\nRevolutionary interlocutor:\n\nSet Sierra Maestra or an adjacent space\nto Active Opposition.\n\nRail's fiancé betrays urban guerrilla:\nRemove all 26July pieces from\na City other than Havana."
     },
     {
       "number": 25,
       "title": "Escapade",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "directorio",
+        "government",
+        "m26",
+        "syndicate"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Escapade\n\nYacht brings fighters:\nPlace a DR Guerrilla and Base in either\nCamagtiey Province or Oriente.\n\nResupply yacht intercepted:\nRemove a Directorio Base."
     },
     {
       "number": 26,
       "title": "Rodríguez Loeches",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "directorio",
+        "government",
+        "m26",
+        "syndicate"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Rodriguez Loeches\n\nDR Leader:\n\nDR places 1 Guerrilla anywhere\nand free Marches to, Rallies,\nor Ambushes there.\n\nInefficient administrator:\nRemove 1 DR Guerrilla.\nDR Resources -5."
     },
     {
       "number": 27,
       "title": "Echeverría",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "directorio",
+        "government",
+        "syndicate",
+        "m26"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Echeverria\n\nNear-miss attempt on dictator's life:\nPlace 2 DR Guerrillas anywhere.\nHavana to Neutral. DR to Eligible.\n\nPopular revolutionary dies\nin his “hit at the top”:\n\nRemove the 2 DR pieces closest to\nHavana. DR Resources -3."
     },
     {
       "number": 28,
       "title": "Morgan",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "directorio",
+        "government",
+        "syndicate",
+        "m26"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "US Comandante:\n\nDR Guerrillas may\nMarch 2 adjacent spaces.\n\nBacklash against\nYanqui adventurer:\nSet a space with a DR Guerrilla\nto Active Support."
     },
     {
       "number": 29,
       "title": "Fauré Chomón",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "directorio",
+        "m26",
+        "government",
+        "syndicate"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Fauré Chomon\nStudents take to the field:\n\nDR or 26July places a Base\nand 2? Guerrillas in Las Villas.\n\nStudent loyalties shift:\nRemove a DR piece or replace it\nwith its 26July counterpart."
     },
     {
       "number": 30,
       "title": "The Guerrilla Life",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "directorio",
+        "m26",
+        "government",
+        "syndicate"
+      ],
       "momentum": false,
+      "capability": true,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "=\n\nThe Guerrilla Life\n\nINSURGENT CAPABILITY\nHardships harden 26July fighters:\nAll 26July Rallies flip Guerrillas\nUnderground, even if placing.\n\nHardships harden\nstudent revolutionaries:\nFlip all DR Guerrillas Underground.\nPlace 1 DR Guerrilla in a City."
     },
     {
       "number": 31,
       "title": "Escopeteros",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "directorio",
+        "m26",
+        "syndicate",
+        "government"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Escopeteros\n\nLocals start their own revolution:\n\nPlace any non-Casino Base and\nany 1 Guerrilla into a Mountain.\n\nTraditionalist countryside\nrejects rebellion:\nShift a Mountain space 1 level\ntoward Active Support."
     },
     {
       "number": 32,
       "title": "Resistencia Cívica",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "directorio",
+        "m26",
+        "syndicate",
+        "government"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Resistencia Civica\n\nUrban movement backs Castro:\nIn a City, replace all Directorio pieces\nwith 26July counterparts.\n\nMovement splits with Castro:\nIn a City, replace all 26July pieces\nwith Directorio counterparts."
     },
     {
       "number": 33,
       "title": "Carlos Prío",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "directorio",
+        "syndicate",
+        "government",
+        "m26"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Carlos Prio\n\nEx-president funnels funds:\n+5 DR or +5 26July Resources.\n\nReturn from exile:\nSelect a space without Govt Control.\nPlace a DR Base there\nand set it to Neutral."
     },
     {
       "number": 34,
       "title": "US Speaking Tour",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "directorio",
+        "syndicate",
+        "government",
+        "m26"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "US Speaking Tour\n\nExpatriates invest:\nAn Insurgent Faction adds a die roll in\nResources. Each other adds +2.\n\nAn embarrassment:\nAdd the lesser of +8 or Aid to\n\nGovernment Resources.\n\nThen Aid +8."
     },
     {
       "number": 35,
       "title": "Defections",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "directorio",
+        "syndicate",
+        "m26",
+        "government"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Defections\nDisillusioned fighters:\n\nIn a space already occupied by your\npieces and those of an enemy,\nreplace 2 of the enemy’s Guerrillas\nor cubes with your Guerrillas or cubes."
     },
     {
       "number": 36,
       "title": "Eloy Gutiérrez Menoyo",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "directorio",
+        "syndicate",
+        "m26",
+        "government"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Eloy Gutiérrez Menoyo\nInspiring DR leader:\nReplace a non-DR non-Casino piece\nwithin 1 space of Las Villas\nwith 2 DR Guerrillas.\n\nConunander fractious:\nReplace a Directorio Guerrilla\nwith a non-Directorio Guerrilla."
     },
     {
       "number": 37,
       "title": "Herbert Matthews",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "syndicate",
+        "government",
+        "m26",
+        "directorio"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Herbert Matthews\n\nNYTimes refutes Fidel’s death:\n26July Resources +5. Aid -6.\n\nFidel’s survival spurs support\nto counterweights:\nAid +10.\nDirectorio Resources +3.\nSyndicate Resources +5."
     },
     {
       "number": 38,
       "title": "Meyer Lansky",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "syndicate",
+        "government",
+        "m26",
+        "directorio"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "nsky\n\nWheeler dealer:\n\nWithin a space, transfer any Cash\namong any Guerrillas or cubes.\n\nMaster mobster:\nSyndicate relocates any Casinos\nanywhere (within stacking).\nAll Casinos open."
     },
     {
       "number": 39,
       "title": "Turismo",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "syndicate",
+        "government",
+        "directorio",
+        "m26"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Turismo\n\n“Ugly American”:\nSupport 1 level toward Neutral\n\neach Casino space.\n\nPolice “protection” for tourists:\nGovt and Syndicate each add +3\nResources per space with open Casino\nand Police."
     },
     {
       "number": 40,
       "title": "Ambassador Smith",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "syndicate",
+        "government",
+        "directorio",
+        "m26"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Ambassador Smith\nHavana advocate ignored in US:\n\nShift US Alliance 1 box down\n(leave Aid the same).\n\nBlindly backing dictator:\nShift US Alliance 1 box up. Aid +9.\nThen add lesser of +9 or half Aid\n(round down) to Syndicate Resources."
     },
     {
       "number": 41,
       "title": "Fat Butcher",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "syndicate",
+        "m26",
+        "government",
+        "directorio"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Casino-man Nicholas di Costanzo\ndraws US heat:\nClose 1 Casino or reduce Aid -8.\n\nMob enforcer:\nSyndicate free Ambushes with 1 of\nits Underground Guerrillas\nand opens 1 closed Casino."
     },
     {
       "number": 42,
       "title": "Llano",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "syndicate",
+        "m26",
+        "government",
+        "directorio"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Slums to armis:\nPlace a 26July Base and\nany Guerrilla in a City.\n\nUrban poor indifferent, eager for work:\nSelect a City. Remove any Opposition\nthere and place an open Casino."
     },
     {
       "number": 43,
       "title": "Mafia Offensive",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "syndicate",
+        "m26",
+        "directorio",
+        "government"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Mafia Offensive\n\nMob helps rebels:\n26July or DR executes a free LimOp,\ntreating 1 Syndicate piece as that\nFaction’s piece.\n\nHitmen:\nSyndicate may Assassinate as if DR,\nbut regardless of Police."
     },
     {
       "number": 44,
       "title": "Rebel Air Force",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "syndicate",
+        "m26",
+        "directorio",
+        "government"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Rebel Air Force\n\nCaptured aircraft shocks troops:\nA 26July or DR Guerrilla (Active or not)\nfree Ambushes Government forces.\nRemove Bases first.\n\nRebels purchase but cannot\noperate aircraft:\nSelect 26July or DR and transfer 1 die\nroll of their Resources to Syndicate."
     },
     {
       "number": 45,
       "title": "Anastasia",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "syndicate",
+        "directorio",
+        "government",
+        "m26"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "a aati\nRival muscles into Cuba:\nClose all Casinos in Havana.\nSyndicate Resources -5.\n\nLansky rival whacked in New York:\nSyndicate Resources +10."
     },
     {
       "number": 46,
       "title": "Sinatra",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "syndicate",
+        "directorio",
+        "government",
+        "m26"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Sinatra\n\nOver-priced star:\n\nSyndicate Resources -6.\n\nFrankie's show:\nPlace an open Casino in Havana\nregardless of stacking.\nPlace 1 Cash with Police there."
     },
     {
       "number": 47,
       "title": "Pact of Miami",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "syndicate",
+        "directorio",
+        "m26",
+        "government"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Pact of Miami\n\nSurprise for dictator and rebels:\nRemove 2 Guerrillas. Govt Ineligible\nthrough next card.\n\nAgreement causes confusion:\n26July and Directorio each lose -3\nResources and are Ineligible through\nnext card."
     },
     {
       "number": 48,
       "title": "Santo Trafficante Jr",
-      "factionOrder": [],
-      "capability": false,
+      "factionOrder": [
+        "syndicate",
+        "directorio",
+        "m26",
+        "government"
+      ],
       "momentum": false,
+      "capability": false,
       "unshaded": "",
-      "shaded": ""
+      "shaded": "",
+      "text_raw": "Santo Trafficante Jr\n\nFeud with Lansky:\nSyndicate Resources -10.\nAll Syndicate Guerrillas to Active.\n\nOld-time mobster:\nAny Underground\nSyndicate Guerrillas\nblock Skim (6.2.3)."
     }
   ]
 }

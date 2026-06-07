@@ -37,6 +37,8 @@ func _initialize() -> void:
 	_test_propaganda_support_reset()
 	_test_propaganda_victory()
 	_test_bots()
+	_test_cards_data()
+	_test_events()
 
 	print("\n-- Risultato: %d passati, %d falliti --" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
@@ -682,6 +684,70 @@ func _test_bots() -> void:
 		if st5.get_resources(f) < 0:
 			consistent = false
 	_check("Stato coerente dopo un giro completo di bot", consistent)
+
+
+func _test_cards_data() -> void:
+	print("\n[Carte — dati]")
+	var mod := CubaLibreModule.new()
+	var gd := mod.build_game_def()
+	_eq("48 carte Evento caricate", gd.cards.size(), 48)
+	_eq("Ordine fazioni #1 (1ª)", gd.card(1).faction_order[0], "government")
+	_eq("Ordine fazioni #1 (2ª)", gd.card(1).faction_order[1], "m26")
+	_eq("Ordine fazioni #7 (1ª)", gd.card(7).faction_order[0], "government")
+	_eq("Ordine fazioni #13 (1ª)", gd.card(13).faction_order[0], "m26")
+	_eq("Ordine fazioni #48 (1ª)", gd.card(48).faction_order[0], "syndicate")
+	_eq("Titolo #18", gd.card(18).title, "Pact of Caracas")
+
+
+func _test_events() -> void:
+	print("\n[Eventi]")
+	# #7 Election (unshaded): 1 Guerriglia M26 in ogni Città
+	var r := _new_game()
+	var mod: CubaLibreModule = r[0]
+	var state: GameState = r[2]
+	var ev := CubaLibreEvents.new(state, mod)
+	var before := state.count_on_map("m26", "guerrilla")
+	var res := ev.apply(7, "unshaded", "m26")
+	_check("Election ok", res.ok)
+	_eq("Election: +3 Guerriglie M26 (3 Città)", state.count_on_map("m26", "guerrilla"), before + 3)
+
+	# #11 Batista Flees (unshaded), die=3
+	var r2 := _new_game()
+	var st2: GameState = r2[2]
+	var ev2 := CubaLibreEvents.new(st2, r2[0])
+	var t_before := st2.count_on_map("government", "troops")
+	ev2.apply(11, "unshaded", "government", {"die": 3})
+	_eq("Batista Flees: Govt -10 Ris", st2.get_resources("government"), 5)
+	_eq("Batista Flees: -3 Truppe", st2.count_on_map("government", "troops"), t_before - 3)
+
+	# #34 US Speaking Tour (shaded): Govt +min(8,Aiuti), Aiuti +8
+	var r3 := _new_game()
+	var st3: GameState = r3[2]
+	var ev3 := CubaLibreEvents.new(st3, r3[0])
+	ev3.apply(34, "shaded", "government")
+	_eq("US Speaking Tour: Govt +8", st3.get_resources("government"), 23)
+	_eq("US Speaking Tour: Aiuti 23", int(st3.tracks.get("aid", 0)), 23)
+
+	# #46 Sinatra (shaded): Casinò aperto a Havana + Denaro
+	var r4 := _new_game()
+	var st4: GameState = r4[2]
+	var ev4 := CubaLibreEvents.new(st4, r4[0])
+	ev4.apply(46, "shaded", "syndicate")
+	_eq("Sinatra: 2 Casinò aperti a Havana", st4.space_state("havana").count("syndicate", "casino", "open"), 2)
+	_eq("Sinatra: 1 Denaro a Havana", st4.space_state("havana").cash_for("syndicate"), 1)
+
+	# Capacità: #18 Pact of Caracas registra la Capacità (effetto manuale)
+	var r5 := _new_game()
+	var st5: GameState = r5[2]
+	var ev5 := CubaLibreEvents.new(st5, r5[0])
+	var res5 := ev5.apply(18, "unshaded", "m26")
+	_check("Pact of Caracas registra Capacità", st5.active_capabilities.has("Pact of Caracas"))
+
+	# Evento senza gestore -> manuale
+	var r6 := _new_game()
+	var ev6 := CubaLibreEvents.new(r6[2], r6[0])
+	var res6 := ev6.apply(25, "unshaded", "directorio")
+	_check("Evento non automatizzato è 'manuale'", res6.get("manual", false))
 
 
 func _test_victory_initial() -> void:

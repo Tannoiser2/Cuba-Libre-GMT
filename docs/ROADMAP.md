@@ -47,9 +47,13 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [ ] Spostamento (Redeploy) del Governo automatizzato.
 
 ### Fase 2 — Carte ed Eventi
-- [ ] Trascrivere testo e ordine fazioni delle 48 carte (da `images/Card_*.png`).
-- [ ] Implementare gli effetti degli eventi (motore a regole/handler per carta).
-- [ ] Capacità Insorgenti e Momentum Governo.
+- [x] Ordine fazioni di tutte le 48 carte (dai simboli) + testo OCR in `cards.json`.
+- [x] Caricamento carte nel `GameDef`.
+- [x] Framework Eventi (`Events.gd`): gestori per carta + fallback "manuale".
+- [x] Registrazione Capacità Insorgenti / Momentum del Governo.
+- [~] Effetti automatizzati: 6 carte (Election, Batista Flees, Larrazábal, Carlos Prío,
+      US Speaking Tour, Sinatra). Le restanti sono giocabili in modalità manuale.
+- [ ] Rifinire `unshaded`/`shaded` per ogni carta (dal testo OCR) e automatizzare i restanti eventi.
 
 ### Fase 3 — Interfaccia utente
 - [x] Mappa interattiva (schematica) con pezzi trascinabili e stato leggibile.

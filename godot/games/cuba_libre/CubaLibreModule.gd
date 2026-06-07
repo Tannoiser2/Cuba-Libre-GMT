@@ -44,6 +44,11 @@ func build_game_def() -> GameDef:
 	for f in factions_data.get("factions", []):
 		gd.add_faction(FactionDef.from_dict(f))
 
+	# Carte
+	var cards_data: Dictionary = _load_json(DATA_DIR + "cards.json")
+	for c in cards_data.get("events", []):
+		gd.add_card(CardDef.from_dict(c))
+
 	# Tracciati globali
 	gd.tracks = {
 		"aid": {"min": 0, "max": 49},

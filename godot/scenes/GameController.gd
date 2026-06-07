@@ -13,6 +13,7 @@ var state: GameState
 var ops: CubaLibreOperations
 var specials: CubaLibreSpecials
 var propaganda: CubaLibrePropaganda
+var events: CubaLibreEvents
 
 
 func _ready() -> void:
@@ -28,6 +29,7 @@ func new_game(scenario: String = "standard") -> void:
 	ops = CubaLibreOperations.new(state, module)
 	specials = CubaLibreSpecials.new(state, module)
 	propaganda = CubaLibrePropaganda.new(state, module)
+	events = CubaLibreEvents.new(state, module)
 	emit_signal("state_changed")
 
 
@@ -66,6 +68,14 @@ func run_special(sa_id: String, params: Dictionary) -> Dictionary:
 		"bribe": res = specials.bribe(params)
 		_: res = {"ok": false, "error": "Attività speciale sconosciuta: %s" % sa_id, "log": []}
 	_emit_result(res)
+	return res
+
+
+func run_event(number: int, side: String, faction: String, params: Dictionary = {}) -> Dictionary:
+	var res := events.apply(number, side, faction, params)
+	for line in res.get("log", []):
+		emit_signal("action_logged", String(line))
+	emit_signal("state_changed")
 	return res
 
 
