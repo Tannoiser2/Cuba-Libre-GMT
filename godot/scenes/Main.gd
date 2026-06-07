@@ -50,6 +50,7 @@ var _turn_banner: Label
 
 # Stato del flusso azione
 var _mode := "idle"                   # idle | select_spaces | moves
+var _limited := false                 # turno limitato a 1 spazio, niente Att.Speciale
 var _faction_select: OptionButton
 var _action_select: OptionButton
 var _special_select: OptionButton
@@ -158,6 +159,7 @@ func _build_action_bar() -> HFlowContainer:
 	bar.add_child(_faction_select)
 
 	_action_select = OptionButton.new()
+	_action_select.item_selected.connect(func(_i): _on_start())  # (a) avvio automatico
 	bar.add_child(_action_select)
 
 	var btn_start := Button.new()
@@ -227,6 +229,11 @@ func _build_action_bar() -> HFlowContainer:
 	btn_bots.text = "Tutti i Bot"
 	btn_bots.pressed.connect(_on_all_bots)
 	bar.add_child(btn_bots)
+
+	var chk_calixto := CheckButton.new()
+	chk_calixto.text = "Bot Calixto"
+	chk_calixto.toggled.connect(func(on): GameController.use_calixto = on)
+	bar.add_child(chk_calixto)
 
 	var btn_prop := Button.new()
 	btn_prop.text = "Round Propaganda"
@@ -458,14 +465,16 @@ func _on_start() -> void:
 	_cur_action = _action_select.get_item_metadata(_action_select.selected)
 	_selected.clear()
 	_pending_moves.clear()
+	_limited = GameController.seq_is_limited_only()
 	_mode = OP_KIND.get(_cur_action, "space_list")
 	_clear_highlights()
 	for sid in _valid_spaces(_cur_faction, _cur_action):
 		_space_views[sid].set_highlight(true)
+	var lim := " (Op Limitata: 1 spazio, niente Att.Speciale)" if _limited else ""
 	if _mode == "moves":
-		_instr.text = "%s: trascina i pezzi tra gli spazi, poi Esegui" % OP_NAMES.get(_cur_action, _cur_action)
+		_instr.text = "%s%s: trascina i pezzi, poi Esegui e Fine turno" % [OP_NAMES.get(_cur_action, _cur_action), lim]
 	else:
-		_instr.text = "%s: clicca gli spazi evidenziati, poi Esegui" % OP_NAMES.get(_cur_action, _cur_action)
+		_instr.text = "%s%s: clicca gli spazi, poi Esegui e Fine turno" % [OP_NAMES.get(_cur_action, _cur_action), lim]
 
 
 func _on_space_clicked(sid: String) -> void:
@@ -474,6 +483,10 @@ func _on_space_clicked(sid: String) -> void:
 	if _selected.has(sid):
 		_selected.erase(sid)
 	else:
+		if _limited and _selected.size() >= 1:
+			for prev in _selected:
+				_space_views[prev].set_highlight(false)
+			_selected.clear()
 		_selected.append(sid)
 		_space_views[sid].set_highlight(true)
 	_instr.text = "Selezionati: %s" % ", ".join(_selected)
@@ -497,6 +510,9 @@ func _on_execute() -> void:
 ## Esegue l'Attività Speciale selezionata, con parametri ricavati dalla selezione/spostamenti.
 func _on_special() -> void:
 	if _special_select.item_count == 0:
+		return
+	if _limited:
+		_instr.text = "Operazione Limitata: niente Attività Speciale"
 		return
 	var sa: String = _special_select.get_item_metadata(_special_select.selected)
 	var sa_id := sa
