@@ -1,8 +1,8 @@
 class_name SpaceView
 extends Panel
 
-## Vista di un singolo spazio della mappa. Mostra nome, Supporto/Opposizione, Controllo
-## e i pezzi presenti. Cliccabile (per la selezione guidata) e bersaglio del drag-and-drop.
+## Vista di uno spazio sovrapposta alla mappa reale: marcatori (Controllo/Supporto/Terrore)
+## e sprite dei pezzi. Cliccabile (selezione guidata) e bersaglio del drag-and-drop.
 
 signal space_clicked(space_id: String)
 signal piece_dropped(from_id: String, to_id: String, faction: String, type: String)
@@ -11,101 +11,101 @@ var space_id: String
 var space_def: SpaceDef
 
 var _name_label: Label
-var _info_label: Label
-var _pieces_box: VBoxContainer
+var _markers: HBoxContainer
+var _pieces: HFlowContainer
 var _highlight := false
 
 
 func setup(sd: SpaceDef) -> void:
 	space_id = sd.id
 	space_def = sd
-	custom_minimum_size = Vector2(150, 96)
+	custom_minimum_size = Vector2(124, 70)
+	size = custom_minimum_size
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	tooltip_text = sd.name
 
 	var vb := VBoxContainer.new()
 	vb.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vb.add_theme_constant_override("separation", 1)
+	vb.add_theme_constant_override("separation", 0)
 	add_child(vb)
+
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 2)
+	vb.add_child(head)
 
 	_name_label = Label.new()
 	_name_label.text = sd.name
-	_name_label.add_theme_font_size_override("font_size", 12)
-	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vb.add_child(_name_label)
+	_name_label.add_theme_font_size_override("font_size", 9)
+	head.add_child(_name_label)
 
-	_info_label = Label.new()
-	_info_label.add_theme_font_size_override("font_size", 10)
-	_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vb.add_child(_info_label)
+	_markers = HBoxContainer.new()
+	_markers.add_theme_constant_override("separation", 1)
+	head.add_child(_markers)
 
-	_pieces_box = VBoxContainer.new()
-	_pieces_box.add_theme_constant_override("separation", 0)
-	vb.add_child(_pieces_box)
+	_pieces = HFlowContainer.new()
+	_pieces.add_theme_constant_override("h_separation", 1)
+	_pieces.add_theme_constant_override("v_separation", 1)
+	vb.add_child(_pieces)
 
 
 func refresh(state: GameState) -> void:
 	var st: SpaceState = state.space_state(space_id)
-	# Info: tipo/terreno + Pop/Econ, Supporto, Controllo
-	var bits: Array = []
-	if space_def.has_population():
-		bits.append("Pop %d" % space_def.pop)
-		bits.append(_support_text(st.support))
-	elif space_def.is_economic():
-		bits.append("Econ %d" % space_def.econ)
-	if st.control != "":
-		bits.append("▣ %s" % _short(st.control))
-	if st.marker("terror") > 0:
-		bits.append("T%d" % st.marker("terror"))
-	if st.marker("sabotage") > 0:
-		bits.append("SAB")
-	_info_label.text = " · ".join(bits)
 
-	# Pezzi per Fazione (token trascinabili)
-	for c in _pieces_box.get_children():
+	# Marcatori: Controllo, Supporto/Opposizione, Terrore/Sabotaggio
+	for c in _markers.get_children():
+		c.queue_free()
+	if st.control != "":
+		_add_marker(CLAssets.control(st.control))
+	if space_def.has_population() and st.support != 0:
+		_add_marker(CLAssets.support(st.support))
+	for i in range(st.marker("terror")):
+		_add_marker(CLAssets.terror())
+	if st.marker("sabotage") > 0:
+		_add_marker(CLAssets.sabotage())
+
+	# Pezzi come sprite trascinabili
+	for c in _pieces.get_children():
 		c.queue_free()
 	for fid in ["government", "m26", "directorio", "syndicate"]:
-		for group in _piece_groups(st, fid):
-			var tok := PieceToken.new()
-			_pieces_box.add_child(tok)
-			tok.setup(space_id, fid, group.type, group.state,
-				"%s %s×%d" % [_short(fid), group.label, group.count])
+		for g in _piece_groups(st, fid):
+			for k in range(g.count):
+				var tok := PieceToken.new()
+				_pieces.add_child(tok)
+				tok.setup(space_id, fid, g.type, g.state, "%s %s" % [fid, g.type])
+		var cash := st.cash_for(fid)
+		for k in range(cash):
+			_add_marker_to(_pieces, CLAssets.cash())
 
-	# Colore di sfondo secondo il terreno/tipo
 	_apply_style()
 
 
-## Restituisce i gruppi di pezzi di una Fazione: [{type,state,count,label}].
+func _add_marker(t: Texture2D) -> void:
+	_add_marker_to(_markers, t)
+
+
+func _add_marker_to(parent: Node, t: Texture2D) -> void:
+	if t == null:
+		return
+	var tr := TextureRect.new()
+	tr.texture = t
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tr.custom_minimum_size = Vector2(16, 16)
+	parent.add_child(tr)
+
+
 func _piece_groups(st: SpaceState, fid: String) -> Array:
 	var groups: Array = []
 	var defs := [
-		["troops", "", "T"], ["police", "", "P"], ["base", "", "B"],
-		["guerrilla", "underground", "g"], ["guerrilla", "active", "G"],
-		["casino", "open", "Ca"], ["casino", "closed", "Cx"],
+		["troops", ""], ["police", ""], ["base", ""],
+		["guerrilla", "underground"], ["guerrilla", "active"],
+		["casino", "open"], ["casino", "closed"],
 	]
 	for d in defs:
 		var n := st.count(fid, d[0], d[1] if d[1] != "" else null)
 		if n > 0:
-			groups.append({"type": d[0], "state": d[1], "count": n, "label": d[2]})
+			groups.append({"type": d[0], "state": d[1], "count": n})
 	return groups
-
-
-func _support_text(s: int) -> String:
-	match s:
-		2: return "Sup++"
-		1: return "Sup+"
-		0: return "Neu"
-		-1: return "Opp-"
-		-2: return "Opp--"
-		_: return ""
-
-
-func _short(fid: String) -> String:
-	match fid:
-		"government": return "Gov"
-		"m26": return "M26"
-		"directorio": return "DR"
-		"syndicate": return "Syn"
-		_: return fid
 
 
 func set_highlight(on: bool) -> void:
@@ -115,30 +115,18 @@ func set_highlight(on: bool) -> void:
 
 func _apply_style() -> void:
 	var sb := StyleBoxFlat.new()
-	var bg := Color("2b2b2b")
-	match space_def.terrain:
-		"forest": bg = Color("1f3a24")
-		"grassland": bg = Color("33401f")
-		"mountain": bg = Color("3a2f24")
-	if space_def.type == CoinEnums.SpaceType.CITY:
-		bg = Color("2a3550")
-	elif space_def.is_economic():
-		bg = Color("3a2f3a")
-	sb.bg_color = bg
+	sb.bg_color = Color(0, 0, 0, 0.45)  # semitrasparente per lasciar vedere la mappa
 	sb.set_border_width_all(2 if _highlight else 1)
-	sb.border_color = Color("f1c40f") if _highlight else Color("555555")
+	sb.border_color = Color("f1c40f") if _highlight else Color(1, 1, 1, 0.35)
 	sb.set_corner_radius_all(4)
 	add_theme_stylebox_override("panel", sb)
 
-
-# --- Interazione ---
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		emit_signal("space_clicked", space_id)
 
 
-# Drag-and-drop: si trascina un descrittore di pezzo verso un altro SpaceView.
 func _can_drop_data(_pos: Vector2, data: Variant) -> bool:
 	return typeof(data) == TYPE_DICTIONARY and data.get("kind", "") == "piece"
 
