@@ -69,7 +69,9 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [ ] Aggancio alla scelta dell'Evento (richiede gli effetti delle carte, Fase 2).
 - [ ] Rifinitura tie-breaker e tabella Spazi Casuali (8.2-8.3).
 - [x] Integrazione dei bot nella UI: pulsanti "Gioca Bot (fazione sel.)" e "Tutti i Bot".
-- [ ] Gioco in solitario completo (loop carte + bot automatici).
+- [x] Loop di gioco completo: mazzo (48 Eventi + 4 Propaganda), pesca carte, risoluzione
+      automatica con i bot, fine partita; pulsanti UI "Avanza carta" e "Auto: partita".
+- [ ] Affinare l'ordine 1ª/2ª Disponibile e la scelta Evento/Operazione dei bot nel loop.
 
 ### Fase 5 — Rifinitura
 - [ ] Scenari (Standard / Variabile / gioco breve), opzioni (Inganno, ecc.).

@@ -34,6 +34,7 @@ const OP_KIND := {
 
 var _space_views: Dictionary = {}     # space_id -> SpaceView
 var _board: Control
+var _card_label: RichTextLabel
 var _faction_label: RichTextLabel
 var _track_label: RichTextLabel
 var _log: RichTextLabel
@@ -126,6 +127,16 @@ func _build_action_bar() -> Control:
 	var sep := VSeparator.new()
 	bar.add_child(sep)
 
+	var btn_step := Button.new()
+	btn_step.text = "Avanza carta"
+	btn_step.pressed.connect(func(): GameController.step_card())
+	bar.add_child(btn_step)
+
+	var btn_auto := Button.new()
+	btn_auto.text = "Auto: partita"
+	btn_auto.pressed.connect(func(): GameController.run_full_game())
+	bar.add_child(btn_auto)
+
 	var btn_bot := Button.new()
 	btn_bot.text = "Gioca Bot (fazione sel.)"
 	btn_bot.pressed.connect(func(): GameController.run_bot_turn(_cur_faction))
@@ -157,6 +168,13 @@ func _build_side_panel() -> Control:
 	pc.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
 	var vb := VBoxContainer.new()
 	pc.add_child(vb)
+
+	_card_label = RichTextLabel.new()
+	_card_label.bbcode_enabled = true
+	_card_label.fit_content = true
+	_card_label.custom_minimum_size = Vector2(360, 70)
+	vb.add_child(_card_label)
+	vb.add_child(HSeparator.new())
 
 	_faction_label = RichTextLabel.new()
 	_faction_label.bbcode_enabled = true
@@ -211,6 +229,7 @@ func _refresh() -> void:
 
 func _refresh_side() -> void:
 	var s: GameState = GameController.state
+	_card_label.text = GameController.current_card_text()
 	var vic := GameController.victory()
 	var txt := "[b]Fazioni[/b]\n"
 	for f in GameController.game_def.factions:

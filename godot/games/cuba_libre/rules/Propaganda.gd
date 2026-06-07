@@ -88,8 +88,12 @@ func resources_phase(cash_policy: Dictionary = {}) -> Array:
 	log.append("Entrate: M26 +%d, DR +%d, Sindacato +%d" % [m26_inc, dr_spaces, syn_inc])
 
 	# 6.2.3 Fare la Cresta (Skim): per ogni spazio con Casinò aperto, 2 Risorse al controllante
+	# Capacità "Santo Trafficante Jr": una Guerriglia Clandestina del Sindacato blocca la Cresta.
+	var santo := mod.has_capability(state, "Santo Trafficante Jr")
 	for sid in state.game_def.space_ids():
 		var st: SpaceState = state.space_state(sid)
+		if santo and st.count("syndicate", "guerrilla", "underground") > 0:
+			continue
 		if st.count("syndicate", "casino", "open") > 0:
 			var ctrl := st.control
 			if ctrl != "" and ctrl != "syndicate":
