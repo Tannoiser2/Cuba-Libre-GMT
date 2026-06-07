@@ -367,13 +367,37 @@ const ACTION_NAMES := {
 }
 
 
+var _prev_fp: Dictionary = {}
+
+
 func _refresh() -> void:
 	for sid in _space_views.keys():
 		_space_views[sid].refresh(GameController.state)
 	if _track_overlay != null:
 		_track_overlay.queue_redraw()
+	_flash_changes()
 	_refresh_turn_banner()
 	_refresh_side()
+
+
+## Lampeggia gli spazi il cui stato è cambiato dall'ultimo aggiornamento (feedback visivo).
+func _flash_changes() -> void:
+	var s: GameState = GameController.state
+	var first := _prev_fp.is_empty()
+	for sid in _space_views.keys():
+		var fp := _space_fp(s, sid)
+		if not first and _prev_fp.get(sid, "") != fp:
+			_space_views[sid].flash()
+		_prev_fp[sid] = fp
+
+
+func _space_fp(s: GameState, sid: String) -> String:
+	var st: SpaceState = s.space_state(sid)
+	var out := "%s,%d,%d,%d" % [st.control, st.support, st.marker("terror"), st.marker("sabotage")]
+	for f in ["government", "m26", "directorio", "syndicate"]:
+		for t in ["troops", "police", "base", "guerrilla", "casino"]:
+			out += "," + str(st.count(f, t))
+	return out
 
 
 ## Banner di turno: mostra chi è di turno e le azioni legali; abilita i pulsanti pertinenti.
