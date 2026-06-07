@@ -37,7 +37,7 @@ var _space_views: Dictionary = {}     # space_id -> SpaceView
 var _board: ScrollContainer
 var _map_wrap: Control
 var _map: TextureRect
-var _bar: HFlowContainer
+var _bar: VBoxContainer
 var _side: PanelContainer
 var _track_overlay: TrackOverlay
 var _card_img: TextureRect
@@ -161,130 +161,108 @@ func _load_regions() -> Dictionary:
 	return data.get("regions", {}) if typeof(data) == TYPE_DICTIONARY else {}
 
 
-func _build_action_bar() -> HFlowContainer:
-	var bar := HFlowContainer.new()
+func _mk_btn(text: String, cb: Callable) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.pressed.connect(cb)
+	return b
+
+
+func _mk_label(text: String) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_color_override("font_color", Color("9fb3c8"))
+	l.add_theme_font_size_override("font_size", 12)
+	return l
+
+
+func _build_action_bar() -> VBoxContainer:
+	var bar := VBoxContainer.new()
 	bar.position = Vector2(8, 6)
-	bar.add_theme_constant_override("h_separation", 5)
-	bar.add_theme_constant_override("v_separation", 3)
+	bar.add_theme_constant_override("separation", 3)
+
+	# --- Banner di turno (in alto, colorato per Fazione) ---
+	_turn_banner = Label.new()
+	_turn_banner.add_theme_font_size_override("font_size", 18)
+	_turn_banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	bar.add_child(_turn_banner)
+
+	# --- Riga 1: AZIONI DI TURNO ---
+	var row1 := HFlowContainer.new()
+	row1.add_theme_constant_override("h_separation", 5)
+	row1.add_theme_constant_override("v_separation", 3)
+	bar.add_child(row1)
 
 	_faction_select = OptionButton.new()
 	for f in GameController.game_def.factions:
 		_faction_select.add_item(f.name)
 		_faction_select.set_item_metadata(_faction_select.item_count - 1, f.id)
 	_faction_select.item_selected.connect(_on_faction_changed)
-	bar.add_child(_faction_select)
+	row1.add_child(_mk_label("Fazione:"))
+	row1.add_child(_faction_select)
 
 	_action_select = OptionButton.new()
-	_action_select.item_selected.connect(func(_i): _on_start())  # (a) avvio automatico
-	bar.add_child(_action_select)
+	_action_select.item_selected.connect(func(_i): _on_start())
+	row1.add_child(_mk_label("Operazione:"))
+	row1.add_child(_action_select)
+	row1.add_child(_mk_btn("Esegui", _on_execute))
 
-	var btn_start := Button.new()
-	btn_start.text = "Avvia"
-	btn_start.pressed.connect(_on_start)
-	bar.add_child(btn_start)
-
-	var btn_exec := Button.new()
-	btn_exec.text = "Esegui"
-	btn_exec.pressed.connect(_on_execute)
-	bar.add_child(btn_exec)
-
-	var btn_cancel := Button.new()
-	btn_cancel.text = "Annulla"
-	btn_cancel.pressed.connect(_on_cancel)
-	bar.add_child(btn_cancel)
-
-	bar.add_child(VSeparator.new())
-
-	# Attività Speciale
 	_special_select = OptionButton.new()
-	bar.add_child(_special_select)
-	_btn_sa = Button.new()
-	_btn_sa.text = "Att. Speciale"
-	_btn_sa.pressed.connect(_on_special)
-	bar.add_child(_btn_sa)
+	row1.add_child(_mk_label("Att.Spec:"))
+	row1.add_child(_special_select)
+	_btn_sa = _mk_btn("Aggiungi Att.Speciale", _on_special)
+	row1.add_child(_btn_sa)
 
-	# Evento della carta corrente (chiaro / ombreggiato)
-	_btn_ev_u = Button.new()
-	_btn_ev_u.text = "Evento ▸ chiaro"
-	_btn_ev_u.pressed.connect(func(): _on_event("unshaded"))
-	bar.add_child(_btn_ev_u)
-	_btn_ev_s = Button.new()
-	_btn_ev_s.text = "Evento ▸ ombr."
-	_btn_ev_s.pressed.connect(func(): _on_event("shaded"))
-	bar.add_child(_btn_ev_s)
+	_btn_ev_u = _mk_btn("Evento ▸ chiaro", func(): _on_event("unshaded"))
+	row1.add_child(_btn_ev_u)
+	_btn_ev_s = _mk_btn("Evento ▸ ombr.", func(): _on_event("shaded"))
+	row1.add_child(_btn_ev_s)
 
-	var sep := VSeparator.new()
-	bar.add_child(sep)
+	row1.add_child(VSeparator.new())
+	_btn_end = _mk_btn("✓ Concludi turno", func(): _on_execute_and_end())
+	_btn_end.add_theme_color_override("font_color", Color("a3e635"))
+	row1.add_child(_btn_end)
+	_btn_pass = _mk_btn("Passa", func(): GameController.seq_pass())
+	row1.add_child(_btn_pass)
+	_btn_bot = _mk_btn("🤖 Gioca la fazione di turno", func(): GameController.bot_act_pending())
+	row1.add_child(_btn_bot)
+	_btn_prop = _mk_btn("Risolvi Propaganda", func(): GameController.run_propaganda())
+	row1.add_child(_btn_prop)
+	row1.add_child(_mk_btn("Annulla", _on_cancel))
 
-	var btn_step := Button.new()
-	btn_step.text = "Avanza carta"
-	btn_step.pressed.connect(func(): GameController.step_card())
-	bar.add_child(btn_step)
+	# --- Riga 2: STRUMENTI ---
+	var row2 := HFlowContainer.new()
+	row2.add_theme_constant_override("h_separation", 5)
+	row2.add_theme_constant_override("v_separation", 3)
+	bar.add_child(row2)
 
-	var btn_auto := Button.new()
-	btn_auto.text = "Auto: partita"
-	btn_auto.pressed.connect(func(): GameController.run_full_game())
-	bar.add_child(btn_auto)
-
-	_btn_end = Button.new()
-	_btn_end.text = "Fine turno"
-	_btn_end.pressed.connect(func(): GameController.end_turn())
-	bar.add_child(_btn_end)
-
-	_btn_pass = Button.new()
-	_btn_pass.text = "Passa"
-	_btn_pass.pressed.connect(func(): GameController.seq_pass())
-	bar.add_child(_btn_pass)
-
-	_btn_bot = Button.new()
-	_btn_bot.text = "Bot (fazione di turno)"
-	_btn_bot.pressed.connect(func(): GameController.bot_act_pending())
-	bar.add_child(_btn_bot)
-
-	var btn_bots := Button.new()
-	btn_bots.text = "Tutti i Bot"
-	btn_bots.pressed.connect(_on_all_bots)
-	bar.add_child(btn_bots)
-
+	row2.add_child(_mk_label("Partita:"))
+	row2.add_child(_mk_btn("Avanza carta", func(): GameController.step_card()))
+	row2.add_child(_mk_btn("Auto: tutta la partita", func(): GameController.run_full_game()))
+	row2.add_child(_mk_btn("Tutti i Bot (questa carta)", _on_all_bots))
 	var chk_calixto := CheckButton.new()
 	chk_calixto.text = "Bot Calixto"
 	chk_calixto.toggled.connect(func(on): GameController.use_calixto = on)
-	bar.add_child(chk_calixto)
+	row2.add_child(chk_calixto)
+	row2.add_child(_mk_btn("Nuova Partita", func(): GameController.new_game()))
+	row2.add_child(VSeparator.new())
+	row2.add_child(_mk_label("Vista:"))
+	row2.add_child(_mk_btn("Zoom +", func(): _set_zoom(_zoom * 1.25)))
+	row2.add_child(_mk_btn("Zoom -", func(): _set_zoom(_zoom / 1.25)))
+	row2.add_child(_mk_btn("Adatta", func(): _set_zoom(1.0)))
 
-	_btn_prop = Button.new()
-	_btn_prop.text = "Risolvi Propaganda"
-	_btn_prop.pressed.connect(func(): GameController.run_propaganda())
-	bar.add_child(_btn_prop)
-
-	var btn_new := Button.new()
-	btn_new.text = "Nuova Partita"
-	btn_new.pressed.connect(func(): GameController.new_game())
-	bar.add_child(btn_new)
-
-	bar.add_child(VSeparator.new())
-	var btn_zin := Button.new()
-	btn_zin.text = "Zoom +"
-	btn_zin.pressed.connect(func(): _set_zoom(_zoom * 1.25))
-	bar.add_child(btn_zin)
-	var btn_zout := Button.new()
-	btn_zout.text = "Zoom -"
-	btn_zout.pressed.connect(func(): _set_zoom(_zoom / 1.25))
-	bar.add_child(btn_zout)
-	var btn_zfit := Button.new()
-	btn_zfit.text = "Adatta"
-	btn_zfit.pressed.connect(func(): _set_zoom(1.0))
-	bar.add_child(btn_zfit)
-
+	# Istruzione di passo (sotto le righe)
 	_instr = Label.new()
 	_instr.add_theme_color_override("font_color", Color("f1c40f"))
 	bar.add_child(_instr)
-
-	_turn_banner = Label.new()
-	_turn_banner.add_theme_color_override("font_color", Color("ffffff"))
-	_turn_banner.add_theme_font_size_override("font_size", 18)
-	_turn_banner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bar.add_child(_turn_banner)
 	return bar
+
+
+## Esegui l'operazione (se selezionata e non ancora eseguita) e concludi il turno.
+func _on_execute_and_end() -> void:
+	if _cur_action != "" and _mode != "idle":
+		_on_execute()
+	GameController.end_turn()
 
 
 func _build_side_panel() -> PanelContainer:
@@ -348,7 +326,7 @@ func _layout_board() -> void:
 	var side_w := 388.0
 	# La barra azioni occupa la larghezza utile e va a capo; il board parte sotto.
 	_bar.size.x = maxf(300.0, size.x - 16.0)
-	var top: float = _bar.size.y + 12.0
+	var top: float = _bar.get_combined_minimum_size().y + 16.0
 	_board.position = Vector2(8, top)
 	_board.size = Vector2(maxf(300.0, size.x - side_w - 16.0), maxf(200.0, size.y - top - 8.0))
 	# Pannello laterale a destra, sotto la barra
@@ -420,6 +398,7 @@ func _refresh_turn_banner() -> void:
 	_set_btn(_btn_sa, turn_active and not GameController.seq_is_limited_only())
 
 	if not turn_active:
+		_turn_banner.add_theme_color_override("font_color", Color("ffffff"))
 		if is_prop:
 			_turn_banner.text = "📣 Carta Propaganda %d/4 — premi 'Risolvi Propaganda'" % (GameController.propaganda_played + 1)
 		elif GameController.game_over:
@@ -432,12 +411,21 @@ func _refresh_turn_banner() -> void:
 	var pending: String = st["pending"]
 	if pending != _cur_faction:
 		_select_faction(pending)
+	_turn_banner.add_theme_color_override("font_color", GameController.faction_color(pending))
 	var slot := "1ª" if st.get("first_slot", true) else "2ª"
-	var acts: Array = []
-	for a in legal:
-		acts.append(ACTION_NAMES.get(int(a), str(a)))
-	_turn_banner.text = "▶ Tocca a: %s (%s Fazione) — scegli: %s, poi 'Fine turno'" % \
-		[GameController.faction_name(pending), slot, ", ".join(acts)]
+	# Guida passo-passo in base allo stato del flusso.
+	var step := ""
+	if _mode == "idle":
+		var acts: Array = []
+		for a in legal:
+			acts.append(ACTION_NAMES.get(int(a), str(a)))
+		step = "scegli un'Operazione (menu), oppure: %s" % ", ".join(acts)
+	elif _mode == "moves":
+		step = "trascina i pezzi (%d spostamenti) → '✓ Concludi turno'" % _pending_moves.size()
+	else:
+		step = "clicca gli spazi evidenziati (%d selezionati) → '✓ Concludi turno'" % _selected.size()
+	_turn_banner.text = "▶ Tocca a %s (%s Fazione) — %s" % \
+		[GameController.faction_name(pending), slot, step]
 
 
 func _set_btn(b: Button, on: bool) -> void:
@@ -514,9 +502,10 @@ func _on_start() -> void:
 		_space_views[sid].set_highlight(true)
 	var lim := " (Op Limitata: 1 spazio, niente Att.Speciale)" if _limited else ""
 	if _mode == "moves":
-		_instr.text = "%s%s: trascina i pezzi, poi Esegui e Fine turno" % [OP_NAMES.get(_cur_action, _cur_action), lim]
+		_instr.text = "%s%s: trascina i pezzi, poi '✓ Concludi turno'" % [OP_NAMES.get(_cur_action, _cur_action), lim]
 	else:
-		_instr.text = "%s%s: clicca gli spazi, poi Esegui e Fine turno" % [OP_NAMES.get(_cur_action, _cur_action), lim]
+		_instr.text = "%s%s: clicca gli spazi, poi '✓ Concludi turno'" % [OP_NAMES.get(_cur_action, _cur_action), lim]
+	_refresh_turn_banner()
 
 
 func _on_space_clicked(sid: String) -> void:
@@ -532,6 +521,7 @@ func _on_space_clicked(sid: String) -> void:
 		_selected.append(sid)
 		_space_views[sid].set_highlight(true)
 	_instr.text = "Selezionati: %s" % ", ".join(_selected)
+	_refresh_turn_banner()
 
 
 func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: String) -> void:
@@ -539,6 +529,7 @@ func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: St
 		return
 	_pending_moves.append({"from": from_id, "to": to_id, "count": 1, "type": type})
 	_instr.text = "%d spostamenti in coda" % _pending_moves.size()
+	_refresh_turn_banner()
 
 
 func _on_execute() -> void:
