@@ -90,17 +90,27 @@ func auto_resolve_current() -> Dictionary:
 	if state.current_card == 0:
 		propaganda_played += 1
 		var is_final := propaganda_played >= 4
-		var res := propaganda.run({"final": is_final})
-		for line in res.get("log", []):
-			emit_signal("action_logged", "📣 " + String(line))
-		if res.get("winner", "") != "":
-			game_over = true; winner = res.winner
+		# Fase Vittoria
+		var vp := propaganda.victory_phase()
+		if vp.get("winner", "") != "":
+			game_over = true; winner = vp.winner
 			emit_signal("action_logged", "🏆 Vittoria: %s" % winner)
-		elif is_final:
+			emit_signal("state_changed")
+			return vp
+		# Fasi Risorse, Supporto (Alleanza) e azioni di Supporto dei bot (Civica/Dimostr./Espatriati)
+		var plog: Array = []
+		plog.append_array(propaganda.resources_phase())
+		plog.append_array(propaganda.support_phase())
+		plog.append_array(bots.propaganda_support())
+		for line in plog:
+			emit_signal("action_logged", "📣 " + String(line))
+		if is_final:
 			game_over = true
 			emit_signal("action_logged", "🏁 Partita conclusa (4ª Propaganda)")
+		else:
+			propaganda.reset_phase()
 		emit_signal("state_changed")
-		return res
+		return {"propaganda": true}
 	# Carta Evento: fino a 2 Fazioni Disponibili agiscono nell'ordine della carta (bot)
 	var card: CardDef = game_def.card(state.current_card)
 	var actors: Array = []
