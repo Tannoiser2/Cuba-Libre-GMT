@@ -16,6 +16,7 @@ var _anchor_norm := Vector2(0.5, 0.5)
 var _cbox := Vector2(-1, -1)
 var _sbox := Vector2(-1, -1)
 var _circle := Vector3(-1, -1, -1)   # (cx, cy, r) normalizzati; r in unità di larghezza
+var _bounds_w := 0.1                  # larghezza zona (normalizzata) per impilare i pezzi
 var _highlight := false
 var _control := ""
 
@@ -34,6 +35,16 @@ func setup(sd: SpaceDef, poly: Array, anchor: Vector2, cbox := Vector2(-1, -1),
 	_circle = circle
 	for p in poly:
 		_poly_norm.append(Vector2(p[0], p[1]))
+	# Larghezza normalizzata della zona (per distribuire i pezzi entro lo spazio).
+	if _circle.z >= 0.0:
+		_bounds_w = _circle.z * 1.7
+	elif _poly_norm.size() > 0:
+		var minx := 1.0
+		var maxx := 0.0
+		for p in _poly_norm:
+			minx = minf(minx, p.x)
+			maxx = maxf(maxx, p.x)
+		_bounds_w = maxf(0.05, (maxx - minx) * 0.8)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	tooltip_text = sd.name
 
@@ -116,7 +127,8 @@ func refresh(state: GameState) -> void:
 	var prow := HFlowContainer.new()
 	prow.add_theme_constant_override("h_separation", 0)
 	prow.add_theme_constant_override("v_separation", 0)
-	prow.custom_minimum_size = Vector2(50, 0)
+	# Larghezza area pezzi adattata alla zona: i pezzi si distribuiscono entro lo spazio.
+	prow.custom_minimum_size = Vector2(clampf(_bounds_w * size.x, 48.0, 240.0), 0)
 	prow.mouse_filter = Control.MOUSE_FILTER_PASS
 	_stack.add_child(prow)
 	for fid in ["government", "m26", "directorio", "syndicate"]:
