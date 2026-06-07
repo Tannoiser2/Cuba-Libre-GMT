@@ -88,20 +88,22 @@ func _build_ui() -> void:
 	_board.position = Vector2(8, 52)
 	add_child(_board)
 
-	# Sfondo: immagine reale della mappa
+	# Sfondo: immagine reale della mappa (riempie esattamente la sua size; aspetto 2640x2040)
 	_map = TextureRect.new()
 	_map.texture = CLAssets.map()
 	_map.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_map.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+	_map.stretch_mode = TextureRect.STRETCH_SCALE
+	_map.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_board.add_child(_map)
 
+	# Gli spazi sono figli della mappa: stesse coordinate dell'immagine.
 	for sid in LAYOUT.keys():
 		var sd: SpaceDef = GameController.game_def.space(sid)
 		var sv := SpaceView.new()
 		sv.setup(sd)
 		sv.space_clicked.connect(_on_space_clicked)
 		sv.piece_dropped.connect(_on_piece_dropped)
-		_board.add_child(sv)
+		_map.add_child(sv)
 		_space_views[sid] = sv
 
 	# Pannello laterale (destra)

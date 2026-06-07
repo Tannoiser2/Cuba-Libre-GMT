@@ -19,7 +19,7 @@ var _highlight := false
 func setup(sd: SpaceDef) -> void:
 	space_id = sd.id
 	space_def = sd
-	custom_minimum_size = Vector2(124, 70)
+	custom_minimum_size = Vector2(66, 34)
 	size = custom_minimum_size
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	tooltip_text = sd.name
@@ -29,19 +29,12 @@ func setup(sd: SpaceDef) -> void:
 	vb.add_theme_constant_override("separation", 0)
 	add_child(vb)
 
-	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 2)
-	vb.add_child(head)
-
-	_name_label = Label.new()
-	_name_label.text = sd.name
-	_name_label.add_theme_font_size_override("font_size", 9)
-	head.add_child(_name_label)
-
+	# Riga marcatori (Controllo/Supporto/Terrore) — compatta
 	_markers = HBoxContainer.new()
 	_markers.add_theme_constant_override("separation", 1)
-	head.add_child(_markers)
+	vb.add_child(_markers)
 
+	# Riga pezzi (sprite trascinabili)
 	_pieces = HFlowContainer.new()
 	_pieces.add_theme_constant_override("h_separation", 1)
 	_pieces.add_theme_constant_override("v_separation", 1)
@@ -90,7 +83,7 @@ func _add_marker_to(parent: Node, t: Texture2D) -> void:
 	tr.texture = t
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	tr.custom_minimum_size = Vector2(16, 16)
+	tr.custom_minimum_size = Vector2(13, 13)
 	parent.add_child(tr)
 
 
