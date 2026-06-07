@@ -4,9 +4,12 @@ extends Control
 ## Disegna i segnalini sui tracciati di bordo mappa: Risorse delle 4 Fazioni, Aiuti,
 ## i 4 marcatori di vittoria (Totale Supporto, Opp+Basi, DR Pop+Basi, Casinò aperti)
 ## sul tracciato perimetrale 0–49, e il marcatore dell'Alleanza USA nella sua casella.
-## Coordinate normalizzate sull'immagine mappa (approssimate, rifinibili).
+## I segnalini con lo stesso valore vengono impilati leggermente per non sovrapporsi.
 
-# Posizione normalizzata della cella `value` (0..49) del tracciato perimetrale.
+const BASE_OFF := 20.0   # scostamento dei segnalini sotto la riga dei numeri
+const STACK := 15.0      # scostamento per segnalini sulla stessa cella
+
+
 func _track_norm(value: int) -> Vector2:
 	value = clampi(value, 0, 49)
 	if value <= 30:
@@ -14,42 +17,52 @@ func _track_norm(value: int) -> Vector2:
 	return Vector2(0.978, 0.115 + (value - 31) * 0.04722)
 
 
-func _chip(value: int, lane: int, col: Color, label: String) -> void:
-	var n := _track_norm(value)
-	var c := Vector2(n.x * size.x, n.y * size.y)
-	# sfalsa le corsie per non sovrapporre i segnalini sulla stessa cella
-	if value <= 30:
-		c.y += lane * 15.0
-	else:
-		c.x -= lane * 15.0
-	draw_circle(c, 9.0, col)
-	draw_arc(c, 9.0, 0, TAU, 16, Color(0, 0, 0, 0.7), 1.5)
-	var font := ThemeDB.fallback_font
-	draw_string(font, c + Vector2(-7, 4), label, HORIZONTAL_ALIGNMENT_CENTER, 14, 11, Color.WHITE)
-
-
 func _draw() -> void:
 	var s: GameState = GameController.state
 	if s == null:
 		return
 	var mod: CubaLibreModule = GameController.module
-	# Risorse delle Fazioni (corsie 0..3)
-	_chip(s.get_resources("government"), 0, GameController.faction_color("government"), "G")
-	_chip(s.get_resources("m26"), 1, GameController.faction_color("m26"), "26")
-	_chip(s.get_resources("directorio"), 2, GameController.faction_color("directorio"), "DR")
-	_chip(s.get_resources("syndicate"), 3, GameController.faction_color("syndicate"), "S")
-	# Aiuti
-	_chip(int(s.tracks.get("aid", 0)), 4, Color("e67e22"), "Aid")
-	# Marcatori di vittoria
-	_chip(s.total_support(), 5, Color("5dade2"), "Sup")
-	_chip(mod.opposition_plus_bases(s), 6, Color("a93226"), "O+B")
-	_chip(mod.dr_pop_plus_bases(s), 7, Color("d4ac0d"), "DRp")
-	_chip(mod.open_casinos(s), 8, Color("27ae60"), "Cas")
-	# Alleanza USA nella sua casella (Firm/Reluctant/Embargoed)
-	var idx := int(s.tracks.get("us_alliance", 0))
-	var ay: float = [0.135, 0.185, 0.235][idx]
+	# Elenco segnalini (valore, colore, etichetta)
+	var chips := [
+		[s.get_resources("government"), GameController.faction_color("government"), "G"],
+		[s.get_resources("m26"), GameController.faction_color("m26"), "26"],
+		[s.get_resources("directorio"), GameController.faction_color("directorio"), "DR"],
+		[s.get_resources("syndicate"), GameController.faction_color("syndicate"), "S"],
+		[int(s.tracks.get("aid", 0)), Color("e67e22"), "Ai"],
+		[s.total_support(), Color("5dade2"), "Su"],
+		[mod.opposition_plus_bases(s), Color("a93226"), "OB"],
+		[mod.dr_pop_plus_bases(s), Color("d4ac0d"), "Dp"],
+		[mod.open_casinos(s), Color("27ae60"), "Ca"],
+	]
+	# Raggruppa per valore per impilare solo i segnalini sulla stessa cella
+	var counts := {}
+	for ch in chips:
+		var v := clampi(int(ch[0]), 0, 49)
+		var idx := int(counts.get(v, 0))
+		counts[v] = idx + 1
+		_chip(v, idx, ch[1], ch[2])
+
+	# Alleanza USA nella sua casella
+	var ai := int(s.tracks.get("us_alliance", 0))
+	var ay: float = [0.135, 0.185, 0.235][ai]
 	var ac := Vector2(0.145 * size.x, ay * size.y)
 	draw_circle(ac, 10.0, Color("2c3e50"))
 	draw_arc(ac, 10.0, 0, TAU, 16, Color("f1c40f"), 2.0)
+	_label(ac, "USA")
+
+
+func _chip(value: int, stack_idx: int, col: Color, label: String) -> void:
+	var n := _track_norm(value)
+	var c := Vector2(n.x * size.x, n.y * size.y)
+	if value <= 30:
+		c.y += BASE_OFF + stack_idx * STACK
+	else:
+		c.x -= BASE_OFF + stack_idx * STACK
+	draw_circle(c, 8.5, col)
+	draw_arc(c, 8.5, 0, TAU, 16, Color(0, 0, 0, 0.7), 1.5)
+	_label(c, label)
+
+
+func _label(c: Vector2, t: String) -> void:
 	var font := ThemeDB.fallback_font
-	draw_string(font, ac + Vector2(-8, 4), "USA", HORIZONTAL_ALIGNMENT_CENTER, 16, 10, Color.WHITE)
+	draw_string(font, c + Vector2(-9, 4), t, HORIZONTAL_ALIGNMENT_CENTER, 18, 10, Color.WHITE)

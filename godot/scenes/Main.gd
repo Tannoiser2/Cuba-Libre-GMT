@@ -223,11 +223,11 @@ func _build_action_bar() -> HFlowContainer:
 
 	bar.add_child(VSeparator.new())
 	var btn_zin := Button.new()
-	btn_zin.text = "🔍+"
+	btn_zin.text = "Zoom +"
 	btn_zin.pressed.connect(func(): _set_zoom(_zoom * 1.25))
 	bar.add_child(btn_zin)
 	var btn_zout := Button.new()
-	btn_zout.text = "🔍−"
+	btn_zout.text = "Zoom -"
 	btn_zout.pressed.connect(func(): _set_zoom(_zoom / 1.25))
 	bar.add_child(btn_zout)
 	var btn_zfit := Button.new()
