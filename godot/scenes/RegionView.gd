@@ -15,6 +15,7 @@ var _poly_norm: PackedVector2Array = PackedVector2Array()
 var _anchor_norm := Vector2(0.5, 0.5)
 var _cbox := Vector2(-1, -1)
 var _sbox := Vector2(-1, -1)
+var _circle := Vector3(-1, -1, -1)   # (cx, cy, r) normalizzati; r in unità di larghezza
 var _highlight := false
 var _control := ""
 
@@ -23,12 +24,14 @@ var _ctrl_tr: TextureRect
 var _sup_tr: TextureRect
 
 
-func setup(sd: SpaceDef, poly: Array, anchor: Vector2, cbox := Vector2(-1, -1), sbox := Vector2(-1, -1)) -> void:
+func setup(sd: SpaceDef, poly: Array, anchor: Vector2, cbox := Vector2(-1, -1),
+		sbox := Vector2(-1, -1), circle := Vector3(-1, -1, -1)) -> void:
 	space_id = sd.id
 	space_def = sd
 	_anchor_norm = anchor
 	_cbox = cbox
 	_sbox = sbox
+	_circle = circle
 	for p in poly:
 		_poly_norm.append(Vector2(p[0], p[1]))
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -63,8 +66,11 @@ func _scaled_poly() -> PackedVector2Array:
 	return out
 
 
-# Definisce la regione cliccabile: solo dentro il poligono.
+# Definisce la regione cliccabile: dentro il cerchio (città/EC) o il poligono (province).
 func _has_point(point: Vector2) -> bool:
+	if _circle.z >= 0.0:
+		var c := Vector2(_circle.x * size.x, _circle.y * size.y)
+		return point.distance_to(c) <= _circle.z * size.x
 	return Geometry2D.is_point_in_polygon(point, _scaled_poly())
 
 
@@ -158,18 +164,27 @@ func set_highlight(on: bool) -> void:
 
 
 func _draw() -> void:
+	var outline := Color("f1c40f") if _highlight else Color(1, 1, 1, 0.35)
+	var width := 3.0 if _highlight else 1.0
+	# Città/EC: cerchio
+	if _circle.z >= 0.0:
+		var c := Vector2(_circle.x * size.x, _circle.y * size.y)
+		var r := _circle.z * size.x
+		if _control != "":
+			var cc := GameController.faction_color(_control); cc.a = 0.22
+			draw_circle(c, r, cc)
+		draw_arc(c, r, 0, TAU, 48, outline, width)
+		return
+	# Province: poligono
 	var poly := _scaled_poly()
 	if poly.size() < 3:
 		return
-	# Tinta del territorio secondo il controllante
 	if _control != "":
 		var col := GameController.faction_color(_control)
 		col.a = 0.22
 		draw_colored_polygon(poly, col)
-	# Contorno (giallo se evidenziato)
 	var line := poly + PackedVector2Array([poly[0]])
-	draw_polyline(line, Color("f1c40f") if _highlight else Color(1, 1, 1, 0.35),
-		3.0 if _highlight else 1.0)
+	draw_polyline(line, outline, width)
 
 
 func _gui_input(event: InputEvent) -> void:
