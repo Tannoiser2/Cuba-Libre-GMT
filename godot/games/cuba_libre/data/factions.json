@@ -7,10 +7,27 @@
       "shortName": "Govt",
       "color": "blue",
       "type": "counterinsurgent",
-      "forces": { "troops": 15, "police": 15, "bases": 2 },
-      "operations": ["train", "garrison", "sweep", "assault"],
-      "specialActivities": ["transport", "air_strike", "reprisal"],
-      "victory": { "metric": "total_support", "threshold": 18, "formula": "Totale Supporto > 18 e tutte le Città a Supporto Attivo" },
+      "forces": {
+        "troops": 15,
+        "police": 15,
+        "base": 2
+      },
+      "operations": [
+        "train",
+        "garrison",
+        "sweep",
+        "assault"
+      ],
+      "specialActivities": [
+        "transport",
+        "air_strike",
+        "reprisal"
+      ],
+      "victory": {
+        "metric": "total_support",
+        "threshold": 18,
+        "formula": "Totale Supporto > 18 e tutte le Città a Supporto Attivo"
+      },
       "victoryMargin": "total_support - 18"
     },
     {
@@ -19,10 +36,26 @@
       "shortName": "26July",
       "color": "red",
       "type": "insurgent",
-      "forces": { "guerrillas": 15, "bases": 4 },
-      "operations": ["rally", "march", "attack", "terror"],
-      "specialActivities": ["infiltrate", "ambush", "kidnap"],
-      "victory": { "metric": "opposition_plus_bases", "threshold": 15, "formula": "Totale Opposizione + Basi M26 > 15" },
+      "forces": {
+        "guerrilla": 15,
+        "base": 4
+      },
+      "operations": [
+        "rally",
+        "march",
+        "attack",
+        "terror"
+      ],
+      "specialActivities": [
+        "infiltrate",
+        "ambush",
+        "kidnap"
+      ],
+      "victory": {
+        "metric": "opposition_plus_bases",
+        "threshold": 15,
+        "formula": "Totale Opposizione + Basi M26 > 15"
+      },
       "victoryMargin": "opposition_plus_bases - 15"
     },
     {
@@ -31,10 +64,26 @@
       "shortName": "DR",
       "color": "yellow",
       "type": "insurgent",
-      "forces": { "guerrillas": 15, "bases": 4 },
-      "operations": ["rally", "march", "attack", "terror"],
-      "specialActivities": ["subvert", "ambush", "assassinate"],
-      "victory": { "metric": "dr_pop_plus_bases", "threshold": 9, "formula": "Popolazione controllata dal DR + Basi DR > 9" },
+      "forces": {
+        "guerrilla": 15,
+        "base": 4
+      },
+      "operations": [
+        "rally",
+        "march",
+        "attack",
+        "terror"
+      ],
+      "specialActivities": [
+        "subvert",
+        "ambush",
+        "assassinate"
+      ],
+      "victory": {
+        "metric": "dr_pop_plus_bases",
+        "threshold": 9,
+        "formula": "Popolazione controllata dal DR + Basi DR > 9"
+      },
       "victoryMargin": "dr_pop_plus_bases - 9"
     },
     {
@@ -43,16 +92,43 @@
       "shortName": "Syndicate",
       "color": "green",
       "type": "insurgent",
-      "forces": { "guerrillas": 6, "bases_casinos": 10 },
-      "operations": ["rally", "march", "terror", "build"],
-      "specialActivities": ["profit", "muscle", "bribe"],
-      "victory": { "metric": "open_casinos_and_resources", "thresholds": { "open_casinos": 7, "resources": 30 }, "formula": "Casinò aperti > 7 E Risorse > 30" },
+      "forces": {
+        "guerrilla": 6,
+        "casino": 10
+      },
+      "operations": [
+        "rally",
+        "march",
+        "terror",
+        "build"
+      ],
+      "specialActivities": [
+        "profit",
+        "muscle",
+        "bribe"
+      ],
+      "victory": {
+        "metric": "open_casinos_and_resources",
+        "thresholds": {
+          "open_casinos": 7,
+          "resources": 30
+        },
+        "formula": "Casinò aperti > 7 E Risorse > 30"
+      },
       "victoryMargin": "min(open_casinos - 7, resources - 30)"
     }
   ],
   "globalMarkers": {
-    "usAlliance": ["solid", "wavering", "embargo"],
-    "coinOpCost": { "solid": 2, "wavering": 3, "embargo": 4 },
+    "usAlliance": [
+      "solid",
+      "wavering",
+      "embargo"
+    ],
+    "coinOpCost": {
+      "solid": 2,
+      "wavering": 3,
+      "embargo": 4
+    },
     "resourceLimit": 49,
     "terrorSabotageMarkers": 20,
     "cashTokens": 4,

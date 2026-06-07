@@ -21,6 +21,14 @@ func _initialize() -> void:
 	_test_sequence_eligibility_filter()
 	_test_sequence_final_card()
 	_test_serialization()
+	_test_op_train()
+	_test_op_sweep()
+	_test_op_assault()
+	_test_op_rally()
+	_test_op_march()
+	_test_op_attack()
+	_test_op_terror()
+	_test_op_build()
 
 	print("\n-- Risultato: %d passati, %d falliti --" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
@@ -250,6 +258,172 @@ func _test_serialization() -> void:
 	if state3 != null:
 		_eq("file: Risorse m26", state3.get_resources("m26"), state.get_resources("m26"))
 		_eq("file: Totale Supporto", state3.total_support(), 16)
+
+
+func _ops() -> Array:
+	# [mod, gd, state, ops]
+	var r := _new_game()
+	var ops := CubaLibreOperations.new(r[2], r[0])
+	return [r[0], r[1], r[2], ops]
+
+
+func _test_op_train() -> void:
+	print("\n[Operazione — Train]")
+	var r := _ops()
+	var state: GameState = r[2]
+	var ops: CubaLibreOperations = r[3]
+	# Piazza 2 Truppe + 2 Polizia a Havana (Città). Costo 2 (Alleanza Solida).
+	var res = ops.train({"spaces": ["havana"], "place": {"havana": {"troops": 2, "police": 2}}})
+	_check("train ok", res.ok)
+	_eq("costo train", res.cost, 2)
+	_eq("Risorse Govt dopo train", state.get_resources("government"), 13)
+	_eq("Truppe a Havana", state.space_state("havana").count("government", "troops"), 8)
+	_eq("Polizia a Havana", state.space_state("havana").count("government", "police"), 6)
+	# Azione speciale "base" a Havana: rimuove 2 cubi, +1 Base
+	var r2 := _ops()
+	var st2: GameState = r2[2]
+	var ops2: CubaLibreOperations = r2[3]
+	var res2 = ops2.train({"spaces": ["havana"], "special": {"type": "base", "space": "havana"}})
+	_check("train base ok", res2.ok)
+	_eq("Base Govt a Havana", st2.space_state("havana").count("government", "base"), 1)
+
+
+func _test_op_sweep() -> void:
+	print("\n[Operazione — Sweep]")
+	var r := _ops()
+	var state: GameState = r[2]
+	var ops: CubaLibreOperations = r[3]
+	# Matanzas (prateria): 3 Truppe Govt, 2 Guerriglie M26 clandestine
+	state.space_state("matanzas").add_piece("government", "troops", 3)
+	state.space_state("matanzas").add_piece("m26", "guerrilla", 2, "underground")
+	var res = ops.sweep({"spaces": ["matanzas"]})
+	_check("sweep ok", res.ok)
+	_eq("Guerriglie attivate (prateria, 3 cubi)",
+		state.space_state("matanzas").count("m26", "guerrilla", "active"), 2)
+	# Foresta: Las Villas (3 Truppe setup) +1 = 4 cubi -> attiva floor(4/2)=2
+	var r2 := _ops()
+	var st2: GameState = r2[2]
+	var ops2: CubaLibreOperations = r2[3]
+	st2.space_state("las_villas").add_piece("government", "troops", 1)  # ora 4 cubi
+	st2.space_state("las_villas").add_piece("m26", "guerrilla", 3, "underground")
+	ops2.sweep({"spaces": ["las_villas"]})
+	_eq("Guerriglie attivate (foresta, 4 cubi)",
+		st2.space_state("las_villas").count("m26", "guerrilla", "active"), 2)
+
+
+func _test_op_assault() -> void:
+	print("\n[Operazione — Assault]")
+	# Provincia prateria: 3 Truppe -> capacità 3
+	var r := _ops()
+	var state: GameState = r[2]
+	var ops: CubaLibreOperations = r[3]
+	state.space_state("matanzas").add_piece("government", "troops", 3)
+	state.space_state("matanzas").add_piece("m26", "guerrilla", 3, "active")
+	ops.assault({"spaces": ["matanzas"]})
+	_eq("Assalto prateria rimuove 3 attive",
+		state.space_state("matanzas").count("m26", "guerrilla", "active"), 0)
+	# Montagna: 4 Truppe -> capacità floor(4/2)=2
+	var r2 := _ops()
+	var st2: GameState = r2[2]
+	var ops2: CubaLibreOperations = r2[3]
+	st2.space_state("oriente").add_piece("government", "troops", 4)
+	st2.space_state("oriente").add_piece("m26", "guerrilla", 4, "active")
+	ops2.assault({"spaces": ["oriente"]})
+	_eq("Assalto montagna rimuove solo 2", st2.space_state("oriente").count("m26", "guerrilla", "active"), 2)
+	# Protezione Base: 2 Truppe, 1 Guerriglia attiva + 1 Base -> rimuove guerriglia poi base
+	var r3 := _ops()
+	var st3: GameState = r3[2]
+	var ops3: CubaLibreOperations = r3[3]
+	st3.space_state("matanzas").add_piece("government", "troops", 2)
+	st3.space_state("matanzas").add_piece("m26", "guerrilla", 1, "active")
+	st3.space_state("matanzas").add_piece("m26", "base", 1)
+	ops3.assault({"spaces": ["matanzas"]})
+	_eq("Assalto: guerriglia rimossa", st3.space_state("matanzas").count("m26", "guerrilla"), 0)
+	_eq("Assalto: base rimossa dopo guerriglia", st3.space_state("matanzas").count("m26", "base"), 0)
+
+
+func _test_op_rally() -> void:
+	print("\n[Operazione — Rally]")
+	var r := _ops()
+	var state: GameState = r[2]
+	var ops: CubaLibreOperations = r[3]
+	# M26 Rally "extra" in Sierra Maestra (ha 1 Base, Pop 1): limite 2*1+2*1=4
+	var before := state.space_state("sierra_maestra").count("m26", "guerrilla")
+	var res = ops.rally({"faction": "m26", "spaces": ["sierra_maestra"], "choices": {"sierra_maestra": "extra"}})
+	_check("rally extra ok", res.ok)
+	_eq("Guerriglie M26 dopo extra a Sierra",
+		state.space_state("sierra_maestra").count("m26", "guerrilla"), before + 4)
+	# Vincolo: M26 non può Rally in spazio con Supporto (Havana = Supporto Attivo)
+	var r2 := _ops()
+	var ops2: CubaLibreOperations = r2[3]
+	var res2 = ops2.rally({"faction": "m26", "spaces": ["havana"]})
+	_check("rally M26 vietato in Supporto", not res2.ok)
+
+
+func _test_op_march() -> void:
+	print("\n[Operazione — March]")
+	var r := _ops()
+	var state: GameState = r[2]
+	var ops: CubaLibreOperations = r[3]
+	# 3 Guerriglie M26 clandestine in La Habana marciano a Havana (Supporto Attivo, 10 cubi)
+	state.space_state("la_habana").add_piece("m26", "guerrilla", 2, "underground")  # ora 3
+	var res = ops.march({"faction": "m26", "moves": [{"from": "la_habana", "to": "havana", "count": 3}]})
+	_check("march ok", res.ok)
+	_eq("costo march (Havana è Città)", res.cost, 1)
+	_eq("Guerriglie attivate entrando in Supporto",
+		state.space_state("havana").count("m26", "guerrilla", "active"), 3)
+
+
+func _test_op_attack() -> void:
+	print("\n[Operazione — Attack]")
+	var r := _ops()
+	var state: GameState = r[2]
+	var ops: CubaLibreOperations = r[3]
+	state.space_state("matanzas").add_piece("m26", "guerrilla", 2, "underground")
+	state.space_state("matanzas").add_piece("government", "police", 1)
+	# tiro 2 <= 2 guerriglie -> successo
+	var res = ops.attack({"faction": "m26", "spaces": ["matanzas"], "die_rolls": {"matanzas": 2}})
+	_check("attack ok", res.ok)
+	_eq("Polizia rimossa dall'attacco", state.space_state("matanzas").count("government", "police"), 0)
+	# tiro 1 -> successo + cattura (1 guerriglia in più)
+	var r2 := _ops()
+	var st2: GameState = r2[2]
+	var ops2: CubaLibreOperations = r2[3]
+	st2.space_state("matanzas").add_piece("m26", "guerrilla", 1, "underground")
+	st2.space_state("matanzas").add_piece("government", "troops", 1)
+	var g_before := st2.count_on_map("m26", "guerrilla")
+	ops2.attack({"faction": "m26", "spaces": ["matanzas"], "die_rolls": {"matanzas": 1}})
+	_eq("cattura: +1 Guerriglia M26 sulla mappa", st2.count_on_map("m26", "guerrilla"), g_before + 1)
+
+
+func _test_op_terror() -> void:
+	print("\n[Operazione — Terror]")
+	var r := _ops()
+	var state: GameState = r[2]
+	var ops: CubaLibreOperations = r[3]
+	# Matanzas: Opposizione Passiva (-1). M26 ha guerriglia clandestina -> verso Opp Attiva (-2)
+	state.space_state("matanzas").add_piece("m26", "guerrilla", 1, "underground")
+	var res = ops.terror({"faction": "m26", "spaces": ["matanzas"]})
+	_check("terror ok", res.ok)
+	_eq("Supporto a Matanzas verso Opp Attiva",
+		state.space_state("matanzas").support, CoinEnums.Support.ACTIVE_OPPOSITION)
+	_eq("segnalino Terrore a Matanzas", state.space_state("matanzas").marker("terror"), 1)
+
+
+func _test_op_build() -> void:
+	print("\n[Operazione — Build]")
+	var r := _ops()
+	var state: GameState = r[2]
+	var ops: CubaLibreOperations = r[3]
+	# Pinar del Río è controllata dal Sindacato. Costruisci nuovo Casinò (chiuso). Costo 5.
+	var before := state.space_state("pinar_del_rio").count("syndicate", "casino")
+	var res = ops.build({"spaces": ["pinar_del_rio"], "choices": {"pinar_del_rio": "new"}})
+	_check("build ok", res.ok)
+	_eq("costo build", res.cost, 5)
+	_eq("Risorse Sindacato dopo build", state.get_resources("syndicate"), 10)
+	_eq("nuovo Casinò chiuso a Pinar",
+		state.space_state("pinar_del_rio").count("syndicate", "casino", "closed"), 1)
+	_eq("Casinò totali a Pinar", state.space_state("pinar_del_rio").count("syndicate", "casino"), before + 1)
 
 
 func _test_victory_initial() -> void:

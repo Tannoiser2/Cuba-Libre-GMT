@@ -162,6 +162,91 @@ func controlled_population(faction: String) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Forze disponibili (fuori mappa) e primitive di manipolazione
+# ---------------------------------------------------------------------------
+
+## Pezzi di un tipo ancora disponibili fuori mappa (pool totale - in gioco).
+func available(faction: String, type: String) -> int:
+	var f: FactionDef = game_def.faction(faction)
+	if f == null:
+		return 0
+	var pool := int(f.force_pool.get(type, 0))
+	return max(0, pool - count_on_map(faction, type))
+
+
+## Piazza pezzi prelevandoli dalle forze disponibili. Restituisce quanti piazzati.
+func place_from_available(faction: String, type: String, space_id: String,
+		count: int = 1, state: String = "__default__") -> int:
+	if not spaces.has(space_id) or count <= 0:
+		return 0
+	var st_str := _resolve_state(type, state)
+	var n: int = min(count, available(faction, type))
+	if n <= 0:
+		return 0
+	spaces[space_id].add_piece(faction, type, n, st_str)
+	return n
+
+
+## Rimuove pezzi dalla mappa (tornano disponibili). Restituisce quanti rimossi.
+func remove_to_available(faction: String, type: String, space_id: String,
+		count: int = 1, state = null) -> int:
+	if not spaces.has(space_id):
+		return 0
+	var st: SpaceState = spaces[space_id]
+	if state != null:
+		return st.remove_piece(faction, type, count, String(state))
+	# Rimuove indistintamente dagli stati disponibili fino a `count`.
+	var removed := 0
+	var pt: PieceTypeDef = game_def.piece_type(type)
+	var states := pt.states if (pt != null and pt.states.size() > 0) else PackedStringArray([""])
+	for s in states:
+		if removed >= count:
+			break
+		removed += st.remove_piece(faction, type, count - removed, s)
+	return removed
+
+
+## Sposta pezzi da uno spazio all'altro. Restituisce quanti spostati.
+func move_pieces(faction: String, type: String, from_id: String, to_id: String,
+		count: int = 1, state: String = "") -> int:
+	if not spaces.has(from_id) or not spaces.has(to_id):
+		return 0
+	var src: SpaceState = spaces[from_id]
+	var dst: SpaceState = spaces[to_id]
+	var moved := src.remove_piece(faction, type, count, state)
+	if moved > 0:
+		dst.add_piece(faction, type, moved, state)
+	return moved
+
+
+## Cambia lo stato di pezzi in uno spazio (es. Guerriglia underground->active). Restituisce quanti.
+func flip_pieces(faction: String, type: String, space_id: String,
+		from_state: String, to_state: String, count: int = -1) -> int:
+	if not spaces.has(space_id):
+		return 0
+	var st: SpaceState = spaces[space_id]
+	var have := st.count(faction, type, from_state)
+	var n: int = have if count < 0 else mini(count, have)
+	if n <= 0:
+		return 0
+	st.remove_piece(faction, type, n, from_state)
+	st.add_piece(faction, type, n, to_state)
+	return n
+
+
+func set_support(space_id: String, level: CoinEnums.Support) -> void:
+	if spaces.has(space_id):
+		spaces[space_id].support = level
+
+
+func _resolve_state(type: String, state: String) -> String:
+	if state != "__default__":
+		return state
+	var pt: PieceTypeDef = game_def.piece_type(type)
+	return pt.default_state if pt != null else ""
+
+
+# ---------------------------------------------------------------------------
 # Serializzazione (save/load)
 # ---------------------------------------------------------------------------
 

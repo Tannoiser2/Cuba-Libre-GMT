@@ -140,6 +140,38 @@ func _alliance_index(s: String) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Costi e raggruppamento
+# ---------------------------------------------------------------------------
+
+## Costo per spazio delle Operazioni COIN secondo l'Alleanza USA (2/3/4).
+func coin_op_cost(state: GameState) -> int:
+	match int(state.tracks.get("us_alliance", 0)):
+		0: return 2   # Solida
+		1: return 3   # Vacillante
+		_: return 4   # Embargo
+
+
+## L'Alleanza USA è ad Embargo? (vieta gli Attacchi Aerei)
+func is_embargo(state: GameState) -> bool:
+	return int(state.tracks.get("us_alliance", 0)) >= 2
+
+
+## Raggruppamento (1.4.2): negli EC niente Basi; max 2 Basi non-Casinò + 2 Casinò per spazio.
+func can_place_base(state: GameState, space_id: String, is_casino: bool) -> bool:
+	var sd: SpaceDef = state.game_def.space(space_id)
+	if sd == null or sd.is_economic():
+		return false
+	var st: SpaceState = state.space_state(space_id)
+	if is_casino:
+		return st.count("syndicate", "casino") < 2
+	# Basi non-Casinò: somma delle Basi "base" di tutte le Fazioni < 2
+	var bases := 0
+	for fid in ["government", "m26", "directorio"]:
+		bases += st.count(fid, "base")
+	return bases < 2
+
+
+# ---------------------------------------------------------------------------
 # Metriche / Vittoria specifiche di Cuba Libre
 # ---------------------------------------------------------------------------
 
