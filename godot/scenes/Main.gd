@@ -47,6 +47,13 @@ var _track_label: RichTextLabel
 var _log: RichTextLabel
 var _instr: Label
 var _turn_banner: Label
+var _btn_end: Button
+var _btn_pass: Button
+var _btn_bot: Button
+var _btn_prop: Button
+var _btn_sa: Button
+var _btn_ev_u: Button
+var _btn_ev_s: Button
 
 # Stato del flusso azione
 var _mode := "idle"                   # idle | select_spaces | moves
@@ -185,20 +192,20 @@ func _build_action_bar() -> HFlowContainer:
 	# Attività Speciale
 	_special_select = OptionButton.new()
 	bar.add_child(_special_select)
-	var btn_sa := Button.new()
-	btn_sa.text = "Att. Speciale"
-	btn_sa.pressed.connect(_on_special)
-	bar.add_child(btn_sa)
+	_btn_sa = Button.new()
+	_btn_sa.text = "Att. Speciale"
+	_btn_sa.pressed.connect(_on_special)
+	bar.add_child(_btn_sa)
 
 	# Evento della carta corrente (chiaro / ombreggiato)
-	var btn_ev_u := Button.new()
-	btn_ev_u.text = "Evento ▸ chiaro"
-	btn_ev_u.pressed.connect(func(): _on_event("unshaded"))
-	bar.add_child(btn_ev_u)
-	var btn_ev_s := Button.new()
-	btn_ev_s.text = "Evento ▸ ombr."
-	btn_ev_s.pressed.connect(func(): _on_event("shaded"))
-	bar.add_child(btn_ev_s)
+	_btn_ev_u = Button.new()
+	_btn_ev_u.text = "Evento ▸ chiaro"
+	_btn_ev_u.pressed.connect(func(): _on_event("unshaded"))
+	bar.add_child(_btn_ev_u)
+	_btn_ev_s = Button.new()
+	_btn_ev_s.text = "Evento ▸ ombr."
+	_btn_ev_s.pressed.connect(func(): _on_event("shaded"))
+	bar.add_child(_btn_ev_s)
 
 	var sep := VSeparator.new()
 	bar.add_child(sep)
@@ -213,20 +220,20 @@ func _build_action_bar() -> HFlowContainer:
 	btn_auto.pressed.connect(func(): GameController.run_full_game())
 	bar.add_child(btn_auto)
 
-	var btn_end := Button.new()
-	btn_end.text = "Fine turno"
-	btn_end.pressed.connect(func(): GameController.end_turn())
-	bar.add_child(btn_end)
+	_btn_end = Button.new()
+	_btn_end.text = "Fine turno"
+	_btn_end.pressed.connect(func(): GameController.end_turn())
+	bar.add_child(_btn_end)
 
-	var btn_pass := Button.new()
-	btn_pass.text = "Passa"
-	btn_pass.pressed.connect(func(): GameController.seq_pass())
-	bar.add_child(btn_pass)
+	_btn_pass = Button.new()
+	_btn_pass.text = "Passa"
+	_btn_pass.pressed.connect(func(): GameController.seq_pass())
+	bar.add_child(_btn_pass)
 
-	var btn_bot := Button.new()
-	btn_bot.text = "Bot (fazione di turno)"
-	btn_bot.pressed.connect(func(): GameController.bot_act_pending())
-	bar.add_child(btn_bot)
+	_btn_bot = Button.new()
+	_btn_bot.text = "Bot (fazione di turno)"
+	_btn_bot.pressed.connect(func(): GameController.bot_act_pending())
+	bar.add_child(_btn_bot)
 
 	var btn_bots := Button.new()
 	btn_bots.text = "Tutti i Bot"
@@ -238,10 +245,10 @@ func _build_action_bar() -> HFlowContainer:
 	chk_calixto.toggled.connect(func(on): GameController.use_calixto = on)
 	bar.add_child(chk_calixto)
 
-	var btn_prop := Button.new()
-	btn_prop.text = "Round Propaganda"
-	btn_prop.pressed.connect(func(): GameController.run_propaganda())
-	bar.add_child(btn_prop)
+	_btn_prop = Button.new()
+	_btn_prop.text = "Risolvi Propaganda"
+	_btn_prop.pressed.connect(func(): GameController.run_propaganda())
+	bar.add_child(_btn_prop)
 
 	var btn_new := Button.new()
 	btn_new.text = "Nuova Partita"
@@ -383,27 +390,47 @@ func _refresh() -> void:
 	_refresh_side()
 
 
-## Banner di turno: mostra chi è di turno e le azioni legali; auto-seleziona la Fazione.
+## Banner di turno: mostra chi è di turno e le azioni legali; abilita i pulsanti pertinenti.
 func _refresh_turn_banner() -> void:
 	var st := GameController.seq_status()
-	if not st.get("active", false) or String(st.get("pending", "")) == "":
-		if GameController.state.current_card == 0:
-			_turn_banner.text = "Carta Propaganda — premi 'Round Propaganda'"
-		elif GameController.state.current_card == -1:
+	var card: int = GameController.state.current_card
+	var turn_active: bool = st.get("active", false) and String(st.get("pending", "")) != ""
+	var is_prop := card == 0 and not GameController.game_over
+	# Stato pulsanti contestuale
+	_set_btn(_btn_end, turn_active)
+	_set_btn(_btn_pass, turn_active)
+	_set_btn(_btn_bot, turn_active)
+	_set_btn(_btn_prop, is_prop)
+	var legal: Array = st.get("legal", [])
+	var event_ok := turn_active and (legal.has(4))  # EVENT
+	_set_btn(_btn_ev_u, event_ok)
+	_set_btn(_btn_ev_s, event_ok)
+	_set_btn(_btn_sa, turn_active and not GameController.seq_is_limited_only())
+
+	if not turn_active:
+		if is_prop:
+			_turn_banner.text = "📣 Carta Propaganda %d/4 — premi 'Risolvi Propaganda'" % (GameController.propaganda_played + 1)
+		elif GameController.game_over:
+			_turn_banner.text = "🏁 Partita conclusa"
+		elif card == -1:
 			_turn_banner.text = "Mazzo esaurito"
 		else:
 			_turn_banner.text = ""
 		return
 	var pending: String = st["pending"]
-	# Auto-seleziona la Fazione di turno (solo se cambiata, per non azzerare la selezione).
 	if pending != _cur_faction:
 		_select_faction(pending)
 	var slot := "1ª" if st.get("first_slot", true) else "2ª"
 	var acts: Array = []
-	for a in st.get("legal", []):
+	for a in legal:
 		acts.append(ACTION_NAMES.get(int(a), str(a)))
-	_turn_banner.text = "Tocca a: %s (%s) — scegli: %s, poi 'Fine turno'" % \
+	_turn_banner.text = "▶ Tocca a: %s (%s Fazione) — scegli: %s, poi 'Fine turno'" % \
 		[GameController.faction_name(pending), slot, ", ".join(acts)]
+
+
+func _set_btn(b: Button, on: bool) -> void:
+	if b != null:
+		b.disabled = not on
 
 
 func _select_faction(fid: String) -> void:

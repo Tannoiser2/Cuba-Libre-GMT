@@ -236,29 +236,7 @@ func auto_resolve_current() -> Dictionary:
 	if game_over or state.current_card == -1:
 		return {"over": true}
 	if state.current_card == 0:
-		propaganda_played += 1
-		var is_final := propaganda_played >= 4
-		# Fase Vittoria
-		var vp := propaganda.victory_phase()
-		if vp.get("winner", "") != "":
-			game_over = true; winner = vp.winner
-			emit_signal("action_logged", "🏆 Vittoria: %s" % winner)
-			emit_signal("state_changed")
-			return vp
-		# Fasi Risorse, Supporto (Alleanza) e azioni di Supporto dei bot (Civica/Dimostr./Espatriati)
-		var plog: Array = []
-		plog.append_array(propaganda.resources_phase())
-		plog.append_array(propaganda.support_phase())
-		plog.append_array(bots.propaganda_support())
-		for line in plog:
-			emit_signal("action_logged", "📣 " + String(line))
-		if is_final:
-			game_over = true
-			emit_signal("action_logged", "🏁 Partita conclusa (4ª Propaganda)")
-		else:
-			propaganda.reset_phase()
-		emit_signal("state_changed")
-		return {"propaganda": true}
+		return resolve_propaganda()
 	# Carta Evento: le Fazioni Disponibili agiscono (bot) secondo la Sequenza di Gioco.
 	if seq == null:
 		_start_card_sequence()
@@ -374,11 +352,44 @@ func run_bot_turn(faction: String) -> Dictionary:
 	return res
 
 
-func run_propaganda(params: Dictionary = {}) -> Dictionary:
-	var res := propaganda.run(params)
-	for line in res.get("log", []):
-		emit_signal("action_logged", line)
+## Risolve la carta Propaganda corrente (Vittoria → Risorse → Supporto → azioni NP → Reset),
+## gestendo conteggio (X/4), vittoria e Propaganda finale. Percorso UNICO e corretto.
+func resolve_propaganda() -> Dictionary:
+	if state.current_card != 0:
+		emit_signal("action_logged", "⚠ La carta corrente non è una Propaganda")
+		return {"ok": false}
+	propaganda_played += 1
+	var is_final := propaganda_played >= 4
+	emit_signal("action_logged", "📣 Round Propaganda %d/4" % propaganda_played)
+	# Fase Vittoria
+	var vp := propaganda.victory_phase()
+	if vp.get("winner", "") != "":
+		game_over = true
+		winner = vp.winner
+		emit_signal("action_logged", "🏆 Vittoria: %s" % winner)
+		emit_signal("state_changed")
+		return vp
+	# Risorse, Supporto (Alleanza) e azioni di Supporto dei bot (Civica/Dimostrazioni/Espatriati)
+	var plog: Array = []
+	plog.append_array(propaganda.resources_phase())
+	plog.append_array(propaganda.support_phase())
+	plog.append_array(bots.propaganda_support())
+	for line in plog:
+		emit_signal("action_logged", "📣 " + String(line))
+	if is_final:
+		game_over = true
+		emit_signal("action_logged", "🏁 Partita conclusa (4ª Propaganda)")
+	else:
+		propaganda.reset_phase()
 	emit_signal("state_changed")
+	return {"propaganda": true}
+
+
+## Pulsante "Risolvi Propaganda": risolve e pesca la carta successiva.
+func run_propaganda(_params: Dictionary = {}) -> Dictionary:
+	var res := resolve_propaganda()
+	if not game_over:
+		draw_next()
 	return res
 
 
