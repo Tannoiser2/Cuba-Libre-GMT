@@ -159,3 +159,71 @@ func controlled_population(faction: String) -> int:
 		if spaces[sid].control == faction:
 			sum += game_def.space(sid).pop
 	return sum
+
+
+# ---------------------------------------------------------------------------
+# Serializzazione (save/load)
+# ---------------------------------------------------------------------------
+
+func to_dict() -> Dictionary:
+	var sp := {}
+	for sid in spaces.keys():
+		sp[sid] = spaces[sid].to_dict()
+	return {
+		"version": 1,
+		"spaces": sp,
+		"resources": resources.duplicate(true),
+		"tracks": tracks.duplicate(true),
+		"eligibility": eligibility.duplicate(true),
+		"draw_deck": draw_deck.duplicate(),
+		"played_deck": played_deck.duplicate(),
+		"current_card": current_card,
+		"active_capabilities": Array(active_capabilities),
+		"active_momentum": Array(active_momentum),
+	}
+
+
+## Crea un GameState da un dizionario salvato, dato il GameDef di riferimento.
+static func from_dict(p_game_def: GameDef, d: Dictionary) -> GameState:
+	var gs := GameState.new(p_game_def)
+	var sp: Dictionary = d.get("spaces", {})
+	for sid in sp.keys():
+		if gs.spaces.has(sid):
+			gs.spaces[sid].apply_dict(sp[sid])
+	for k in d.get("resources", {}).keys():
+		gs.resources[k] = int(d["resources"][k])
+	gs.tracks = (d.get("tracks", {}) as Dictionary).duplicate(true)
+	for k in d.get("eligibility", {}).keys():
+		gs.eligibility[k] = int(d["eligibility"][k])
+	gs.draw_deck.clear()
+	for n in d.get("draw_deck", []):
+		gs.draw_deck.append(int(n))
+	gs.played_deck.clear()
+	for n in d.get("played_deck", []):
+		gs.played_deck.append(int(n))
+	gs.current_card = int(d.get("current_card", -1))
+	gs.active_capabilities = PackedStringArray(d.get("active_capabilities", []))
+	gs.active_momentum = PackedStringArray(d.get("active_momentum", []))
+	return gs
+
+
+## Salva su file JSON. Restituisce true in caso di successo.
+func save_to_file(path: String) -> bool:
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f == null:
+		push_error("Impossibile aprire per scrittura: %s" % path)
+		return false
+	f.store_string(JSON.stringify(to_dict(), "\t"))
+	f.close()
+	return true
+
+
+static func load_from_file(p_game_def: GameDef, path: String) -> GameState:
+	if not FileAccess.file_exists(path):
+		push_error("File di salvataggio non trovato: %s" % path)
+		return null
+	var data = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if typeof(data) != TYPE_DICTIONARY:
+		push_error("Salvataggio non valido: %s" % path)
+		return null
+	return GameState.from_dict(p_game_def, data)

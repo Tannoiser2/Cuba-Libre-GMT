@@ -215,6 +215,11 @@ func tiebreak_order() -> PackedStringArray:
 	return PackedStringArray(["syndicate", "directorio", "m26", "government"])
 
 
+func pass_resources(faction: String) -> int:
+	# Il Governo riceve +3 Risorse quando Passa, le altre Fazioni +1 (2.3.3).
+	return 3 if faction == "government" else 1
+
+
 # ---------------------------------------------------------------------------
 # Utilità
 # ---------------------------------------------------------------------------

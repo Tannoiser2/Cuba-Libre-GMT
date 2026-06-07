@@ -101,3 +101,25 @@ func set_marker(name: String, value: int) -> void:
 
 func add_marker(name: String, delta: int = 1) -> void:
 	set_marker(name, marker(name) + delta)
+
+
+# ---------------------------------------------------------------------------
+# Serializzazione
+# ---------------------------------------------------------------------------
+
+func to_dict() -> Dictionary:
+	return {
+		"space_id": space_id,
+		"pieces": pieces.duplicate(true),
+		"support": int(support),
+		"control": control,
+		"markers": markers.duplicate(true),
+	}
+
+
+func apply_dict(d: Dictionary) -> void:
+	space_id = String(d.get("space_id", space_id))
+	pieces = (d.get("pieces", {}) as Dictionary).duplicate(true)
+	support = int(d.get("support", CoinEnums.Support.NEUTRAL))
+	control = String(d.get("control", ""))
+	markers = (d.get("markers", {}) as Dictionary).duplicate(true)

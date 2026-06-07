@@ -34,9 +34,9 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 ### Fase 1 — Motore di gioco (core engine)
 - [x] Modello degli spazi, forze, marker, tracciati (classi generiche).
 - [x] Controllo, Supporto/Opposizione, calcolo dei tracciati di vittoria.
-- [x] Caricamento dati + schieramento standard, validati da test headless (33/33).
-- [ ] Stato di gioco: serializzazione (save/load).
-- [ ] Sequenza di gioco: carta Evento, Disponibilità, Passare, 1ª/2ª Fazione.
+- [x] Caricamento dati + schieramento standard, validati da test headless.
+- [x] Stato di gioco: serializzazione (save/load JSON).
+- [x] Sequenza di gioco: carta Evento, Disponibilità, Passare, opzioni 1ª/2ª Fazione, Carta Finale.
 - [ ] Operazioni (Train/Garrison/Sweep/Assault, Rally/March/Attack/Terror/Build).
 - [ ] Attività Speciali (tutte le 12).
 - [ ] Sistema Denaro (Cash) e Riciclaggio.

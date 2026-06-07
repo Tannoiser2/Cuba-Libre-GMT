@@ -24,3 +24,8 @@ func victory_status(state: GameState) -> Dictionary:
 ## Ordine di risoluzione delle parità (id Fazione dal vincente al perdente in caso di pari margine).
 func tiebreak_order() -> PackedStringArray:
 	return PackedStringArray()
+
+
+## Risorse ottenute da una Fazione quando Passa (default +1; alcuni giochi differiscono).
+func pass_resources(faction: String) -> int:
+	return 1
