@@ -3,21 +3,22 @@ extends Control
 ## Scena principale: mappa interattiva + pannelli (fazioni, tracciati, log) + barra azioni
 ## con flusso guidato (selezione spazi / drag-and-drop dei pezzi).
 
-# Posizioni normalizzate (0..1) degli spazi sulla mappa (ovest -> est).
+# Centri normalizzati (0..1) degli spazi sull'immagine della mappa reale.
+# Stimati dalla mappa; facilmente ritoccabili.
 const LAYOUT := {
-	"pinar_del_rio": Vector2(0.04, 0.45),
-	"ec_pinar_habana": Vector2(0.15, 0.18),
-	"la_habana": Vector2(0.18, 0.45),
-	"havana": Vector2(0.18, 0.04),
-	"matanzas": Vector2(0.31, 0.45),
-	"las_villas": Vector2(0.44, 0.45),
-	"ec_lasvillas_camaguey": Vector2(0.53, 0.18),
-	"camaguey_province": Vector2(0.60, 0.45),
-	"camaguey_city": Vector2(0.60, 0.74),
-	"oriente": Vector2(0.75, 0.42),
-	"ec_oriente_sierra": Vector2(0.85, 0.16),
-	"sierra_maestra": Vector2(0.84, 0.66),
-	"santiago_de_cuba": Vector2(0.93, 0.78),
+	"pinar_del_rio": Vector2(0.085, 0.47),
+	"ec_pinar_habana": Vector2(0.15, 0.33),
+	"havana": Vector2(0.225, 0.30),
+	"la_habana": Vector2(0.205, 0.43),
+	"matanzas": Vector2(0.305, 0.44),
+	"ec_lasvillas_camaguey": Vector2(0.40, 0.40),
+	"las_villas": Vector2(0.46, 0.46),
+	"camaguey_province": Vector2(0.565, 0.41),
+	"camaguey_city": Vector2(0.545, 0.66),
+	"oriente": Vector2(0.715, 0.51),
+	"ec_oriente_sierra": Vector2(0.77, 0.57),
+	"sierra_maestra": Vector2(0.80, 0.61),
+	"santiago_de_cuba": Vector2(0.875, 0.74),
 }
 
 const OP_NAMES := {
@@ -34,6 +35,7 @@ const OP_KIND := {
 
 var _space_views: Dictionary = {}     # space_id -> SpaceView
 var _board: Control
+var _map: TextureRect
 var _card_label: RichTextLabel
 var _faction_label: RichTextLabel
 var _track_label: RichTextLabel
@@ -77,6 +79,14 @@ func _build_ui() -> void:
 	_board = Control.new()
 	_board.position = Vector2(8, 52)
 	add_child(_board)
+
+	# Sfondo: immagine reale della mappa
+	_map = TextureRect.new()
+	_map.texture = CLAssets.map()
+	_map.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_map.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+	_board.add_child(_map)
+
 	for sid in LAYOUT.keys():
 		var sd: SpaceDef = GameController.game_def.space(sid)
 		var sv := SpaceView.new()
@@ -211,10 +221,21 @@ func _layout_board() -> void:
 	var side_w := 388.0
 	var bw: float = maxf(400.0, size.x - side_w - 16.0)
 	var bh: float = maxf(300.0, size.y - 60.0)
+	# Dimensiona la mappa mantenendo le proporzioni (2640x2040)
+	var aspect := 2040.0 / 2640.0
+	var mw := bw
+	var mh := mw * aspect
+	if mh > bh:
+		mh = bh
+		mw = mh / aspect
+	if _map != null:
+		_map.position = Vector2.ZERO
+		_map.size = Vector2(mw, mh)
+	# Posiziona gli spazi centrati sulle coordinate normalizzate della mappa
 	for sid in _space_views.keys():
 		var p: Vector2 = LAYOUT[sid]
 		var sv: SpaceView = _space_views[sid]
-		sv.position = Vector2(p.x * (bw - 150.0), p.y * (bh - 96.0))
+		sv.position = Vector2(p.x * mw - sv.size.x * 0.5, p.y * mh - sv.size.y * 0.5)
 
 
 # ---------------------------------------------------------------------------

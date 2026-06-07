@@ -58,8 +58,10 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [x] Mappa interattiva (schematica) con pezzi trascinabili e stato leggibile.
 - [x] Pannelli Fazione, tracciati, log delle azioni.
 - [x] Flusso guidato per le Operazioni (selezione spazi + drag-and-drop) + Round Propaganda.
+- [x] Grafica: mappa reale di sfondo, spazi posizionati alle coordinate reali, pezzi e
+      marcatori come sprite (Controllo/Supporto/Terrore/Denaro), drag-and-drop con anteprima.
+- [ ] Rifinire le coordinate degli spazi e le dimensioni dei pezzi.
 - [ ] Flussi guidati per le Attività Speciali ed Eventi nella UI.
-- [ ] Grafica della mappa reale (sprite) e rifinitura visiva.
 - [ ] Hotseat multi-giocatore locale.
 
 ### Fase 4 — Bot (Non-Giocatore)
