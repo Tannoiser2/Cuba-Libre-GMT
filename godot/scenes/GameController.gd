@@ -16,6 +16,12 @@ var propaganda: CubaLibrePropaganda
 var events: CubaLibreEvents
 var bots: CubaLibreBots
 
+## Sequenza di Gioco della carta Evento corrente (loop di turno giocabile).
+var seq: SequenceOfPlay
+var _turn_did_op := false
+var _turn_did_special := false
+var _turn_did_event := false
+
 
 func _ready() -> void:
 	new_game()
@@ -75,8 +81,123 @@ func draw_next() -> int:
 		state.current_card = -1
 	else:
 		state.current_card = state.draw_deck.pop_front()
+	_start_card_sequence()
 	emit_signal("state_changed")
 	return state.current_card
+
+
+## Costruisce la Sequenza di Gioco per la carta Evento corrente (per il turno guidato).
+func _start_card_sequence() -> void:
+	seq = null
+	_reset_turn_flags()
+	if state.current_card > 0:
+		var card: CardDef = game_def.card(state.current_card)
+		seq = SequenceOfPlay.new(state, module, card)
+
+
+func _reset_turn_flags() -> void:
+	_turn_did_op = false
+	_turn_did_special = false
+	_turn_did_event = false
+
+
+## Stato della sequenza per la UI: chi è di turno, slot, azioni legali, conclusione.
+func seq_status() -> Dictionary:
+	if seq == null:
+		return {"active": false}
+	return {
+		"active": true,
+		"pending": seq.pending_faction(),
+		"first_slot": seq.is_first_slot(),
+		"legal": seq.legal_actions(),
+		"done": seq.is_done(),
+	}
+
+
+## La Fazione di turno Passa.
+func seq_pass() -> bool:
+	if seq == null or seq.pending_faction() == "":
+		return false
+	var fid := seq.pending_faction()
+	if not seq.act_pass():
+		return false
+	emit_signal("action_logged", "%s Passa" % faction_name(fid))
+	_after_decision()
+	return true
+
+
+## Conclude il turno della Fazione corrente, registrando l'azione svolta (Op/Op+SA/Evento).
+func end_turn() -> bool:
+	if seq == null or seq.pending_faction() == "":
+		return false
+	var A := CoinEnums.ActionType
+	var t := -1
+	if _turn_did_event:
+		t = A.EVENT
+	elif _turn_did_op:
+		if _turn_did_special and seq.is_legal(A.OPERATION_WITH_SPECIAL):
+			t = A.OPERATION_WITH_SPECIAL
+		elif seq.is_legal(A.OPERATION):
+			t = A.OPERATION
+		elif seq.is_legal(A.LIMITED_OPERATION):
+			t = A.LIMITED_OPERATION
+		elif seq.is_legal(A.OPERATION_WITH_SPECIAL):
+			t = A.OPERATION_WITH_SPECIAL
+	if t == -1:
+		emit_signal("action_logged", "⚠ Nessuna azione valida da concludere (esegui un'Operazione/Evento o Passa)")
+		return false
+	if not seq.act(t):
+		emit_signal("action_logged", "⚠ Azione non legale in questo momento")
+		return false
+	_after_decision()
+	return true
+
+
+## Fa giocare il bot per la Fazione di turno e ne registra l'azione nella sequenza.
+func bot_act_pending() -> bool:
+	if seq == null or seq.pending_faction() == "":
+		return false
+	_bot_take_pending()
+	_after_decision()
+	return true
+
+
+func _bot_take_pending() -> void:
+	var A := CoinEnums.ActionType
+	var fid := seq.pending_faction()
+	if fid == "":
+		return
+	var br := bots.take_turn(fid)
+	for line in br.get("log", []):
+		emit_signal("action_logged", "🤖 " + String(line))
+	if br.get("action", "pass") == "pass":
+		seq.act_pass()
+		return
+	# Il bot svolge Operazione (+ Att.Speciale). Scegli il tipo legale più ricco.
+	var t := A.OPERATION
+	if seq.is_legal(A.OPERATION_WITH_SPECIAL):
+		t = A.OPERATION_WITH_SPECIAL
+	elif seq.is_legal(A.OPERATION):
+		t = A.OPERATION
+	elif seq.is_legal(A.LIMITED_OPERATION):
+		t = A.LIMITED_OPERATION
+	else:
+		seq.act_pass()
+		return
+	seq.act(t)
+
+
+## Dopo una decisione (Op/Pass/Evento): aggiorna stato; a carta conclusa, chiude e pesca.
+func _after_decision() -> void:
+	_reset_turn_flags()
+	state.recompute_all_control()
+	module._refresh_victory_tracks(state)
+	if seq != null and seq.is_done():
+		seq.finish()
+		emit_signal("action_logged", "— Carta conclusa —")
+		draw_next()
+		return
+	emit_signal("state_changed")
 
 
 func cards_left() -> int:
@@ -111,23 +232,22 @@ func auto_resolve_current() -> Dictionary:
 			propaganda.reset_phase()
 		emit_signal("state_changed")
 		return {"propaganda": true}
-	# Carta Evento: fino a 2 Fazioni Disponibili agiscono nell'ordine della carta (bot)
-	var card: CardDef = game_def.card(state.current_card)
-	var actors: Array = []
-	for fid in card.faction_order:
-		if state.eligibility.get(fid, CoinEnums.Eligibility.ELIGIBLE) != CoinEnums.Eligibility.ELIGIBLE:
-			continue
-		if actors.size() >= 2:
-			break
-		var br := bots.take_turn(fid)
-		for line in br.get("log", []):
-			emit_signal("action_logged", "🤖 " + String(line))
-		if br.get("action", "pass") != "pass":
-			actors.append(fid)
-	for f in game_def.factions:
-		state.eligibility[f.id] = CoinEnums.Eligibility.INELIGIBLE if actors.has(f.id) else CoinEnums.Eligibility.ELIGIBLE
+	# Carta Evento: le Fazioni Disponibili agiscono (bot) secondo la Sequenza di Gioco.
+	if seq == null:
+		_start_card_sequence()
+	var guard := 0
+	while seq != null and not seq.is_done() and guard < 8:
+		guard += 1
+		_bot_take_pending()
+	var acted: Array = []
+	if seq != null:
+		for f in seq.actors():
+			acted.append(f)
+		seq.finish()
+	state.recompute_all_control()
+	module._refresh_victory_tracks(state)
 	emit_signal("state_changed")
-	return {"actors": actors}
+	return {"actors": acted}
 
 
 ## Gioca automaticamente l'intera partita (tutti i bot) fino a fine mazzo o vittoria.
@@ -181,6 +301,8 @@ func run_operation(op_id: String, params: Dictionary) -> Dictionary:
 		"terror": res = ops.terror(params)
 		"build": res = ops.build(params)
 		_: res = {"ok": false, "error": "Operazione sconosciuta: %s" % op_id, "log": []}
+	if res.get("ok", false):
+		_turn_did_op = true
 	_emit_result(res)
 	return res
 
@@ -201,12 +323,16 @@ func run_special(sa_id: String, params: Dictionary) -> Dictionary:
 		"muscle": res = specials.muscle(params)
 		"bribe": res = specials.bribe(params)
 		_: res = {"ok": false, "error": "Attività speciale sconosciuta: %s" % sa_id, "log": []}
+	if res.get("ok", false):
+		_turn_did_special = true
 	_emit_result(res)
 	return res
 
 
 func run_event(number: int, side: String, faction: String, params: Dictionary = {}) -> Dictionary:
 	var res := events.apply(number, side, faction, params)
+	if res.get("ok", true):
+		_turn_did_event = true
 	for line in res.get("log", []):
 		emit_signal("action_logged", String(line))
 	emit_signal("state_changed")
@@ -242,6 +368,11 @@ func _emit_result(res: Dictionary) -> void:
 
 func victory() -> Dictionary:
 	return module.victory_status(state)
+
+
+func faction_name(fid: String) -> String:
+	var f := game_def.faction(fid)
+	return f.name if f != null else fid
 
 
 func faction_color(fid: String) -> Color:

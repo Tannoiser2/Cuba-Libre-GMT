@@ -43,6 +43,10 @@ func _initialize() -> void:
 	_test_capabilities()
 	_test_game_loop()
 
+	_test_calixto_data()
+	_test_calixto_deck()
+	_test_calixto_engine()
+
 	print("\n-- Risultato: %d passati, %d falliti --" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
 
@@ -854,3 +858,78 @@ func _test_victory_initial() -> void:
 	_eq("Margine 26 Luglio", vs["m26"].margin, -8)
 	_eq("Margine Directorio", vs["directorio"].margin, -8)
 	_eq("Margine Sindacato", vs["syndicate"].margin, -15)
+
+
+# ---------------------------------------------------------------------------
+# Calixto (motore NP generico)
+# ---------------------------------------------------------------------------
+
+func _load_json(path: String) -> Dictionary:
+	var f := FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return {}
+	var d = JSON.parse_string(f.get_as_text())
+	return d if d is Dictionary else {}
+
+
+func _test_calixto_data() -> void:
+	var cards := _load_json("res://games/cuba_libre/data/calixto_cards.json")
+	var factions := ["government", "m26", "directorio", "syndicate"]
+	for fac in factions:
+		_check("Calixto: 6 carte %s" % fac, cards.has(fac) and cards[fac].size() == 6)
+		for letter in cards.get(fac, {}):
+			var c: Dictionary = cards[fac][letter]
+			_check("Calixto %s-%s fronte+retro" % [fac, letter], c.has("front") and c.has("back"))
+	# AN insorti presenti
+	var an_ok := true
+	for fac in ["m26", "directorio", "syndicate"]:
+		for letter in cards.get(fac, {}):
+			if cards[fac][letter]["front"].get("an", null) == null:
+				an_ok = false
+	_check("Calixto: AN insorti presenti", an_ok)
+	var tables := _load_json("res://games/cuba_libre/data/calixto_tables.json")
+	_check("Calixto: tabella eligibility", tables.has("eligibility"))
+	_check("Calixto: space_selection 4 fazioni", tables.has("space_selection")
+		and tables["space_selection"].has("government") and tables["space_selection"].has("syndicate"))
+	_check("Calixto: move_priorities", tables.has("move_priorities"))
+
+
+func _test_calixto_deck() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 42
+	var deck := CalixtoDeck.new({
+		"government": ["U", "Y", "Z", "X", "W", "V"],
+		"m26": ["G", "H", "J", "K", "L", "M"],
+	}, rng)
+	_eq("Deck: 12 carte", deck.size(), 12)
+	var top := deck.draw_for("m26")
+	_check("Deck: pesca carta 26J", top in ["G", "H", "J", "K", "L", "M"])
+	var nxt := deck.draw_next("m26")
+	_check("Deck: pesca successiva 26J", nxt in ["G", "H", "J", "K", "L", "M"])
+
+
+func _test_calixto_engine() -> void:
+	var side := {
+		"flow": [
+			{"cond": "a", "t": "next", "f": "draw"},
+			{"cond": "b", "t": "op:sweep", "f": "flip"}
+		],
+		"ops": {"sweep": {"type": "sweep"}},
+		"special": [{"sa": "transport"}]
+	}
+	var all_true := func(_n): return true
+	var r1 = CalixtoEngine.walk(side, all_true)
+	_eq("Engine: a&b veri -> op sweep", r1["op_id"], "sweep")
+	var a_false := func(n): return n.get("cond", "") != "a"
+	var r2 = CalixtoEngine.walk(side, a_false)
+	_eq("Engine: a falso -> draw", r2["result"], "draw")
+	var b_false := func(n): return n.get("cond", "") != "b"
+	var r3 = CalixtoEngine.walk(side, b_false)
+	_eq("Engine: b falso -> flip", r3["result"], "flip")
+	# incondizionata: usa prima op
+	var uncond := {"flow": [{"t": "op:train"}], "ops": {"train": {}}}
+	var r4 = CalixtoEngine.walk(uncond, all_true)
+	_eq("Engine: incondizionata -> train", r4["op_id"], "train")
+	# special_by_branch
+	var side2 := {"special_by_branch": {"march": [{"sa": "infiltrate"}], "terror": [{"sa": "kidnap"}]}}
+	_eq("Engine: specials ramo march", CalixtoEngine.specials_for(side2, "march")[0]["sa"], "infiltrate")

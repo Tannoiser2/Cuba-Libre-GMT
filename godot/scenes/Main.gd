@@ -46,6 +46,7 @@ var _faction_label: RichTextLabel
 var _track_label: RichTextLabel
 var _log: RichTextLabel
 var _instr: Label
+var _turn_banner: Label
 
 # Stato del flusso azione
 var _mode := "idle"                   # idle | select_spaces | moves
@@ -207,9 +208,19 @@ func _build_action_bar() -> HFlowContainer:
 	btn_auto.pressed.connect(func(): GameController.run_full_game())
 	bar.add_child(btn_auto)
 
+	var btn_end := Button.new()
+	btn_end.text = "Fine turno"
+	btn_end.pressed.connect(func(): GameController.end_turn())
+	bar.add_child(btn_end)
+
+	var btn_pass := Button.new()
+	btn_pass.text = "Passa"
+	btn_pass.pressed.connect(func(): GameController.seq_pass())
+	bar.add_child(btn_pass)
+
 	var btn_bot := Button.new()
-	btn_bot.text = "Gioca Bot (fazione sel.)"
-	btn_bot.pressed.connect(func(): GameController.run_bot_turn(_cur_faction))
+	btn_bot.text = "Bot (fazione di turno)"
+	btn_bot.pressed.connect(func(): GameController.bot_act_pending())
 	bar.add_child(btn_bot)
 
 	var btn_bots := Button.new()
@@ -244,6 +255,12 @@ func _build_action_bar() -> HFlowContainer:
 	_instr = Label.new()
 	_instr.add_theme_color_override("font_color", Color("f1c40f"))
 	bar.add_child(_instr)
+
+	_turn_banner = Label.new()
+	_turn_banner.add_theme_color_override("font_color", Color("ffffff"))
+	_turn_banner.add_theme_font_size_override("font_size", 18)
+	_turn_banner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bar.add_child(_turn_banner)
 	return bar
 
 
@@ -342,12 +359,49 @@ func _layout_board() -> void:
 # Aggiornamento viste
 # ---------------------------------------------------------------------------
 
+const ACTION_NAMES := {
+	0: "Passa", 1: "Operazione", 2: "Op+Att.Speciale", 3: "Op Limitata", 4: "Evento",
+}
+
+
 func _refresh() -> void:
 	for sid in _space_views.keys():
 		_space_views[sid].refresh(GameController.state)
 	if _track_overlay != null:
 		_track_overlay.queue_redraw()
+	_refresh_turn_banner()
 	_refresh_side()
+
+
+## Banner di turno: mostra chi è di turno e le azioni legali; auto-seleziona la Fazione.
+func _refresh_turn_banner() -> void:
+	var st := GameController.seq_status()
+	if not st.get("active", false) or String(st.get("pending", "")) == "":
+		if GameController.state.current_card == 0:
+			_turn_banner.text = "Carta Propaganda — premi 'Round Propaganda'"
+		elif GameController.state.current_card == -1:
+			_turn_banner.text = "Mazzo esaurito"
+		else:
+			_turn_banner.text = ""
+		return
+	var pending: String = st["pending"]
+	# Auto-seleziona la Fazione di turno (solo se cambiata, per non azzerare la selezione).
+	if pending != _cur_faction:
+		_select_faction(pending)
+	var slot := "1ª" if st.get("first_slot", true) else "2ª"
+	var acts: Array = []
+	for a in st.get("legal", []):
+		acts.append(ACTION_NAMES.get(int(a), str(a)))
+	_turn_banner.text = "Tocca a: %s (%s) — scegli: %s, poi 'Fine turno'" % \
+		[GameController.faction_name(pending), slot, ", ".join(acts)]
+
+
+func _select_faction(fid: String) -> void:
+	for i in range(_faction_select.item_count):
+		if _faction_select.get_item_metadata(i) == fid:
+			_faction_select.select(i)
+			_on_faction_changed(i)
+			return
 
 
 func _refresh_side() -> void:
@@ -487,10 +541,8 @@ func _on_event(side: String) -> void:
 
 
 func _on_all_bots() -> void:
-	# Esegue il turno di tutte le Fazioni Disponibili nell'ordine predefinito.
-	for f in GameController.game_def.factions:
-		if GameController.state.eligibility[f.id] == CoinEnums.Eligibility.ELIGIBLE:
-			GameController.run_bot_turn(f.id)
+	# Risolve la carta corrente con i bot secondo la Sequenza di Gioco, poi pesca la prossima.
+	GameController.step_card()
 
 
 func _on_cancel() -> void:
