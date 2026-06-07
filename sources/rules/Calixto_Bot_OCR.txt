@@ -1,0 +1,2111 @@
+===== calx-01.png =====
+Ushi
+
+LiBRE
+
+Castro’s
+Insurgency,
+1957-1958
+
+COIN Series, Volume Il
+
+Calixto Card-Based Non-Player Update
+
+RULES
+
+and REFERENCE
+BOOKLET
+
+By Kevin Crooks
+
+TABLE OF CONTENTS
+
+C8.1 Introduction & Components...........
+
+C8.2 Golden Rules
+C8.3 Victory...
+C8.4 Setup.......
+C8.5 Sequence of Play
+
+GMT Games, LLC +
+
+scese 2° C8.6 OperationsReference.......iiin
+nd C8.7 Special Activities Reference... 8
+
+3. C8.8 Events ReferenCe............ 10
+
+3. C8.9 Non-Player Example of Play.. .10
+
+Additional Capability & Momentum Instructions .
+
+GMT
+
+GAMES
+
+P.O. Box 1308, Hanford, CA 93232-1308 * www.GMTGames.com
+===== calx-02.png =====
+2 Calixto Card-Based Non-Player Rules
+
+C8.1 Introduction & Components
+Calixto is an updated Non-Player (NP) system, replacing the
+system included in the Cuba Libre base game. A deck of cards
+and several player aid tables replace the flowcharts ofthe original
+Non-player Factions. Calixto is named in reference to the general
+Calixto Garcia ffiiguez, an important leader in three early Cuban
+rebellions against Spanish imperialism.
+
+Important — When playing Cuba Libre with any NP Factions,
+
+use this rulebook instead of section 8.0 in the original rules. |
+|
+
+C8.1.1 Components
+
+* Calixto Cards. Each NP Faction has six Calixto cards that
+provide instructions for selecting and executing Operations and
+Special Activities.
+
+Non-Player Game Aids. There are three Non-Player aid sheets:
+one foldout aid containing Priorities, Eligibility, and Event tables
+for all four NP Factions; one single sheet aid containing Event
+Instructions on both sides; and one single sheet aid containing
+Propaganda Round Instructions on one side, and a reminder of
+the Golden Rules on the reverse side.
+
+Priorities Tables. Calixto includes three types of Priorities
+tables: Space Selection, Move, and Pieces. Each Faction uses
+its own Space Selection Priorities table. All Factions share the
+Move Priorities and Piece Priorities tables.
+
+Eligibility Table. The Eligibility table determines how an Eli-
+gible NP Faction will act on the Current Event card.
+
+Event Tables. There are four Event tables: Event Cards, Effec-
+tive Events, Event Instructions, and Additional Capability &
+Momentum Instructions.
+
+Propaganda Round Instructions. The Propaganda Round
+Instructions guide the actions of each NP Faction during Pro-
+paganda Rounds.
+
+C8.2 Golden Rules
+
+C8.2.1 Golden Rules
++ NP Factions Follow the Rules (Almost). NP Factions abide by
+all applicable Cuba Libre rules, with these exceptions:
+© NP Factions never remove pieces from the map to Available
+when lacking pieces for an Operation, Special Activity, or
+Event (1.4.1).
+© NP Government, NP 26J, and NP Directorio do not track
+Resources. Ignore any instructions to increase or decrease
+Resources for these NP Factions. If an Operation, Special
+Activity, or Event would transfer Resources between one
+of these NP Factions and a player Faction or NP Syndicate,
+the player Faction or NP Syndicate will just gain or lose the
+indicated number of Resources.
+© NP Syndicate tracks and spends Resources in the same way as
+a player Faction. Aid should be tracked even if Government
+is an NP Faction, as it can have an effect on some Events.
+
+© NP Factions roll against an Activation Number to limit total
+spaces selected (C8.5.4).
+
+Skip Illegal Instructions. Calixto will only tell you what to do, it
+will not tell you how to do it or even ifits instructions constitute
+a legal move given the state of the board and available pieces.
+Always carry out Calixto’s instructions as much as possible, but
+if Calixto ever gives you an instruction that cannot be carried
+out legally, just skip it.
+
+Implement All Instructions Literally. Do not infer more to an
+instruction than what the text actually specifies.
+
+Placing Friendly Pieces. When executing Operations, Special
+Activities, or Events that allow the acting Faction to place pieces
+in multiple spaces, NP Factions place pieces one at a time. In
+such cases, select the destination for each piece one at a time,
+using the NP Faction’s Space Selection Priorities table. During
+Train and Rally Operations, NP Factions will place as many
+pieces as possible, following the directions on the Calixto card
+and the limits of the given Operation. If multiple types of pieces
+could be placed, determine the pieces to be placed using the
+Piece Priorities table.
+
+Removing Friendly Pieces. When given a choice, NP Factions
+remove pieces one at a time, from the space with the most pieces
+belonging to the affected NP Faction. Use the Piece Priorities
+table to select pieces to remove from each selected space reading
+from the bottom up and right to left.
+
+Operation and Special Activity to the Maximum Extent. NP
+Factions always execute a selected Operation or Special Activity
+to the maximum extent allowed, given the state of the board,
+available pieces, and Activation Number die rolls.
+
+Using Cash. NP Government, NP 26J, and NP Directorio will
+always use held Cash markers for a free Limited Operation at
+the first opportunity, i.e., when they next perform an Operation
+Only or Limited Operation. Draw an additional Calixto card to
+execute this free Limited Operation. NP SYN will never do so.
+Removing Cash. When forced to remove Cash, NP Factions
+will pass it to another of their pieces in the same space if possi-
+ble, then to another NP Faction in the same space, in the order
+NP Government, NP Directorio, NP 26J, NP Syndicate. If no
+other NP Faction can receive the Cash then they will remove
+it to Available.
+
+When in Doubt, Randomize. Whenever NP Factions need to
+select from among several options and supplied instructions have
+been exhausted, select one option at random.
+
+Important Calixto Terms
+
+1d6, 2d6, 3d6, 1d3
+
+Die or dice roll to generate a random number. 1d6 means roll
+the die once; 2d6 means sum two dice, etc. 1d3 means roll one
+die and halve the result, rounding up.
+
+Activation Number (AN)
+
+A limit on the total number of spaces selected by NP Factions for
+most Operations. When present, an NP Faction must roll greater
+than its Activation Number to select another space (C8.5.4).
+
+© 2025 GMT Games, LLC
+===== calx-03.png =====
+Calixto Card-Based Non-Player Rules 3
+
+Effective Event
+An Event is Effective if one or more of its effects are listed for
+that NP Faction on the Effective Events table (C8.5.5).
+
+Enemy Forces
+
+All other forces that do not belong to the acting NP Faction:
+cubes, Guerrillas, Bases, and Open Casinos. Ignore Closed
+Casinos when checking for enemy forces.
+
+Get
+
+Move just enough pieces to the destination to meet the instruc-
+tion, taking into account any pieces already present in the space.
+If no additional pieces are needed to meet the instruction, move
+none. If there are insufficient pieces to meet the instruction,
+move as many as possible. When a ‘get’ instruction might
+involve several spaces, select the one where it is possible to
+accomplish as much of the instruction as possible.
+
+Keep
+
+Leave just enough pieces in the origin to meet the instruction.
+If there are insufficient pieces to meet a particular instruction,
+ignore it.
+
+Most/Least Support/Opposition
+
+Among all spaces with Support, spaces with the most Support
+are those with the most Total Support (1.6.3). Spaces with the
+least Support are those with no Support first (Neutral and Oppo-
+sition spaces), then spaces with the least Total Support. Among
+all spaces with Opposition, spaces with the most Opposition
+are those with the most Total Opposition. Spaces with the least
+Opposition are those with no Opposition first (Neutral and
+Support spaces), then spaces with the least Total Opposition.
+
+NP
+Non-Player.
+
+Vulnerable Bases
+Open Casinos and 26J or Directorio Bases in spaces without
+friendly Underground Guerrillas.
+
+Vulnerable Enemies
+
+Insurgent pieces that could be removed or closed by a Gov-
+ernment Assault: Active Guerrillas, and Insurgent Bases/Open
+Casinos in spaces without friendly Underground Guerrillas.
+
+Within Reach
+
+A space is within reach of moving pieces if those pieces could
+move to that space during the selected Operation or Special
+Activity.
+
+C8.3 Victory
+C8.3.1 Playing Solitaire
+
+When playing solitaire against Calixto, the player may only win
+during the final Propaganda Round. NP Factions may win during
+the Victory Phase of any Propaganda Round.
+
+C8.3.2 Playing With Two or Three Players
+When playing with two or three players, any Faction may win
+during any Propaganda Round.
+
+C8.4 Setup
+C8.4.1 Setting Up NP Factions
+
+* Create the Calixto Deck. Each NP faction will use six Calixto
+cards marked with their Faction color and symbol. Shuffle the
+cards for all NP Factions being used into one deck, face up.
+
+* Resource Cylinders. Set aside NP Government, NP 26J, and/
+or NP Directorio Resource cylinders. NP Syndicate is the only
+NP Faction that will track Resources.
+
+C8.5 Sequence of Play
+
+C8.5.1 Overview
+
+Generally, NP Factions make the same decisions that player Fac-
+tions do. First, Eligible NP Factions determine if and how they
+will act on the current Event card. The Calixto card deck is used
+to select Operations and Special Activities and provide instructions
+to execute that action. Event tables guide an NP Faction’s selection
+and execution of Events. Priorities tables are used to select spaces
+where NP Factions will act, how NP Factions move pieces, and
+which friendly and enemy pieces are affected by an action.
+
+C8.5.2 NP Sequence of Play and Eli
+Table
+
+lity
+
+NP Factions follow the base game Sequence of Play and Eligible
+NP Factions choose from the same options as player Factions. Use
+the Eligibility table and the Event Cards table to determine the
+choice made by an Eligible NP Faction. If the NP Faction selects
+an Operation plus Special Activity, Operation Only, or Limited
+Operation, use the active NP Faction’s Calixto cards and the
+various Priorities tables to select and execute the Operation and
+any Special Activity. If the NP Faction selects an Event, execute
+the Event using the various Event and Priorities tables. If the NP
+Faction selects Pass, there is no additional effect (EXCEPTION:
+NP Syndicate will gain +1 Resource when they Pass).
+
+If NP Government, NP 26J, or NP Directorio is holding a Cash
+marker and performs an Operation Only or Limited Operation,
+they will remove it to perform an additional free Limited Opera-
+tion. Draw an additional Calixto card to execute this free Limited
+Operation.
+
+© 2025 GMT Games, LLC
+
+===== calx-04.png =====
++ Calixto Card-Based Non-Player Rules
+
+x Activation
+
+Number
+Se gG
+
+Condition pra
+Underground DR G ‘Oppostion or
+
+Active Support? (v 5: Ignore Active New
+
+Opposition) Card
+
+=
+
+Select 1 Special Activit DT A
+A VSN is player Assassinate to close a Casino Flip
+Special
+
+remove
+@ Assossinate to remove a Base using Remove Card
+© Assossinate using Remove
+
+Activity
+
+Operation | 8 ng site mat nei sce wth on
+
+Support or Opposition
+@on allEcs, highest volue first
+mY ORB cain: Only where 2+ Under-
+
+ground DR Guerrilos
+> No AN oll after Terror on ECs
+
+©
+
+C8.5.3 Executing Operations and Special
+Activities with Calixto Cards
+
+Each NP Faction has six Calixto cards that provide instructions for
+selecting and executing Operations and Special Activities (skip any
+Special Activity instructions if performing a Limited Operation or
+Operation without Special Activity).
+
+* Face Up and Face Down. Face up sides are identified by a a
+icon at center top. Except when acting as the active card, Calixto
+cards should be face up.
+
+Setting Up the Calixto Deck. At the start of the game and during
+the Reset Phase of each Propaganda Round, shuffle together all
+Calixto cards for NP Factions into a single deck, face up. These
+are the only times that the deck is shuffled.
+
+Drawing Calixto Cards. First, move the top card to the bottom
+of the deck (even if this top card matches the active NP Faction).
+Continue moving cards to the bottom, one at a time, until a card
+matching the active NP Faction is the top card. Always place
+cards on the bottom of the deck face up. The played card then
+remains on the top of the deck until a new card needs to be drawn.
+Reading Calixto Cards. Start with the first blue box at the top
+of the card. If the condition in the box is true, follow the green
+arrow; if it is false, follow the red arrow.
+
+Drawing a New Card and Flipping a Card. [fan arrow points
+to the & icon, draw a new card. If an arrow points to the ©]
+icon, flip the card to its face down side.
+
+Executing Operations. Execute each numbered instruction in
+order, as much as possible (i.e., execute instruction @ inas many
+spaces as possible, then @, and so on — remembering that NP
+Factions follow all of the usual rules about space selection, etc.).
+Follow the instructions on the Calixto card to select spaces, using
+the active NP Faction’s Space Selection Priorities table when
+directed. Text in bold specifies the column of that NP Faction’s
+
+Space Selection Priorities table to use. Arrowed instructions
+serve as reminders for the implementation of the preceding
+instruction. Starred instructions are executed immediately when
+they are reached on a card, and do not require any Activation
+Number rolls (C8.5.4). Instructions that follow a red conditional
+are only executed if that condition is true. If there are no legal
+spaces for the selected Operation, draw a new Calixto card te
+select a different Operation. See C8.6 Operations Reference for
+detailed instructions of each Operation.
+
+Executing Special Activities. Execute one Special Activity from
+the list, selecting the first possible in letter order (i.e., select a
+
+if possible, then ©, and so on). Underlined text specifies the
+Special Activity. Within each Special Activity, execute each
+numbered instruction in order, as much as possible (i.e., execute
+instruction @ in as many spaces as possible, then ©. and o
+on — remembering that NP Factions follow all of the usual rules
+about space selection, etc.). Text in bold specifies the column ef
+the Space Selection Priorities table to use when selecting spaces
+if multiple spaces could be selected within the instructions giy-
+en on the card. If a Special Activity cannot be executed, or its
+red condition is not true, skip it and execute the next one. If ae
+Special Activity can be executed, select either Operation Only
+(if Ist Eligible), or select Operation and Special Activity without
+performing any Special Activity. See C8.7 Special Activities
+Reference for detailed instructions of each Special Activity.
+
+Important — Remember not to execute a Special Activity if
+the NP Faction is performing a Limited Operation!
+
+Loops and Edge Cases. Before executing any Special Activity
+for an NP Faction, check that the accompanying Operation cam
+be performed; if it cannot, draw a new Calixto card to select &
+different Operation and Special Activity. In rare cases, a Special
+Activity may be performed that would preclude a legal Opera
+tion; in this case, skip that Operation and end the NP Faction»
+turn after placing their Eligibility cylinder in the Operation and
+Special Activity box in the Sequence of Play. If at any time, a
+Calixto cards for a given Faction are drawn without finding ©
+legal Operation for the NP Faction to perform, continue to the
+next line of the NP Eligibility table, or that NP Faction will pass
+if already at the bottom of the table.
+
+C8.5.4 Activation Numbers
+The total number of spaces that NP Factions select for Operations
+are limited by an Activation Number. Activation Numbers am
+found on the upper right of all Calixto cards and are indicated Sy
+a die icon; that number is used for all Operations on that side et
+the card. NP Government Activation Numbers are always equal
+the current value of the US Alliance track. Limited Operations ae
+not trigger Activation Number rolls as they are performed in om
+one space. Do not make Activation Number rolls when executing
+free Operations granted by Events.
+
++ Checking the Activation Number. After executing an NE
+Operation in a selected space, roll 1d6. If the result is less ae
+or equal to the Activation Number, the NP Faction will mm
+select any additional spaces; implement any starred Operations
+
+© 2025 GMT Games, LLC
+
+===== calx-05.png =====
+Calixto Card-Based Non-Player Rules 5
+
+instructions and then proceed to the next instruction on the
+card. If the result is greater than the Activation Number, the
+NP Faction will select another space for Operations. Continue
+rolling as above after executing the Operation in each selected
+space until the Activation Number roll is less than or equal to
+the Activation Number, or there are insufficient pieces or spaces
+to continue the Operation.
+
+Activation Number Exceptions. NP Factions do not make
+Activation Number rolls in three situations:
+
+o NP Government Garrison.
+
+© NP Insurgent March after moving onto ECs.
+
+© NP Insurgent Terror that targets ECs.
+
+Note: these instructions on the Calixto cards are numbered
+with a black-on-white numeral as a reminder.
+
+NP Government Train allows one additional action executed
+at the conclusion of the Operation, even after failing the Acti-
+vation Number roll: NP Government will attempt Civic Action
+or place a Base, following the instructions on the Calixto card.
+
+Resources. Only NP Syndicate will use Resources. The NP
+Syndicate Faction continues to make Activation Number rolls
+as required, but will not execute an Operation or Civic Action
+if there are insufficient Resources to pay for that action (just
+like a player Faction). Other NP Factions do not track or use
+Resources. If an Operation, Special Activity, or Event would
+transfer Resources between an NP Faction and a player Faction
+or NP Syndicate, the player Faction or NP Syndicate will just
+gain or lose the indicated number of Resources.
+
+C8.5.5 Executing Events
+
++ Event Tables. There are four Event tables: Event Cards, Effec-
+tive Events, Event Instructions, and Additional Capability &
+Momentum Instructions. The Event Cards table lists whether
+each Event is Critical, Performed, or not executed for each NP
+Faction, and notes if there are additional instructions for an Event
+on the Event Instructions table. The Effective Events table lists
+the types of Event actions that are effective. When given a choice,
+NP Factions only execute actions that are effective. The Event
+Instructions table gives specific instructions for executing certain
+Events. The Additional Capability & Momentum Instructions
+table, found on the back of this rulebook, specifies the effects of
+certain Capability and Momentum cards that are in play (most
+are self-explanatory and do not require any additional notes).
+Events Executed by Ist and 2nd Eligible NP Factions. A Ist
+Eligible NP Faction will execute an Event if it is marked Critical
+for the acting NP Faction and, if executed, would result in one
+or more of the effects listed for the acting NP Faction on the
+Effective Events table. A 2nd Eligible NP Faction will execute
+an Event if it is marked either Critical or Performed for the
+acting NP Faction and, if executed, would result in one or more
+of the effects listed for the acting NP Faction on the Effective
+Events table.
+
+Event Instructions. Some Events require additional instructions
+to guide NP Faction play. These Events are marked with a *
+on the Event Cards table. See the Event Instructions table for
+additional instructions.
+
+* Unshaded or Shaded? Unless otherwise noted on the Event
+Instructions table, NP Government and NP Syndicate will always
+select the shaded Event text, and NP 26J and NP Directorio will
+always select the unshaded Event text.
+
+Place Friendly, Remove Enemy. When given a choice, NP Fac-
+tions only place friendly pieces and only remove enemy pieces.
+Selecting Spaces. Select spaces using the column of the active
+NP Faction’s Space Selection Priorities that matches the effec-
+tive Event action. If the Event includes more than one effective
+action, use the leftmost matching column.
+
+Events that allow Operations or Special Activities. Draw a
+Calixto card for the active NP Faction to select an Operation or
+Special Activity. If the Event specifies the Operation or Special
+Activity, draw Calixto cards until a matching Operation or Spe-
+cial Activity is drawn (check both sides).
+
+Faction Specific Reference: See C8.8 Events Reference for NP
+Faction-specific guidelines.
+
+C8.5.6 Space Selection Priorities Tables
+
+There are four Space Selection Priorities tables, one for each NP
+Faction. Use an NP Faction’s Space Selection Priorities table to
+select spaces for Operations, Special Activities, Events, and during
+Propaganda Rounds. First determine the type of action the NP
+Faction will execute to determine the column to use on the Space
+Selection Priorities table. During Operations and Special Activi-
+ties, use the column specified by the bold text on the Calixto card.
+During Events, use the column that matches the effective action
+specified in the Event text. If an Event specifies more than one type
+of effective action, use the leftmost column on the Space Selection
+Priorities table. During Propaganda Rounds, follow the instructions
+on the Propaganda Round Instructions sheet.
+
+* Selecting a Space. When executing an Operation, Special Ac-
+
+tivity, or Event, select each space one at a time:
+
+Step 1. Start at the top of the column and read down. For each
+row with a dot in that column, check its condition
+against all spaces that could be selected. Some rows
+contain conditional statements, marked by a red check-
+mark, that must be true for a red dot to apply. If no
+spaces meet the condition, skip that row and continue
+to the next. If only one space meets this condition,
+execute the Operation, Special Activity, or Event in
+this space. Otherwise,
+
+Step 2. If more than one space meets this condition, continue
+down the column to the next condition that is met.
+Continue to skip conditions that are not met or whose
+red conditional statement is not true. If only one space
+meets both the original condition and the new condi-
+tion, execute the action in this space (as in Step 1).
+
+Step 3. Continue this process, checking each row below and
+applying all meeting conditions, until a single space
+is selected.
+
+Step 4. Repeat this process from Step 1 for each space to be
+selected.
+
+© 2025 GMT Games, LLC
+
+===== calx-06.png =====
+6 Calixto Card-Based Non-Player Rules
+
++ Random Spaces. To select a space at random, assign equal
+probability to each candidate space and roll a die or use any other
+sufficiently random method of selecting a space.
+
+NP 26 JUL si
+£
+£
+ie
+g
+Event: 8 3
+Execute 2 s
+the leftmost 8 5
+effective action. È =
+Vulnerable 26 Base
+most 26) Guerrilos .
+v highest Econ oe .
+not at Active Opposition | @ ee .
+most Population | @ e e e e@ .
+‘enemy piece with Cash marker ee ee
+‘Open Casino eee
+v Gov is player: most Support | @ DINO
+Province or City without 26 Control | @ e e e @ .
+fewest enemy forces (ignore closed Casinos) | @ eee .
+most Underground 26 Guerrilias .
+1-2.264 Guerrilos ond room for an Available 26) Base | ee
+select at random from remaining spaces
+
+ee
+C8.5.7 Move Priorities Table
+
+Whenever an NP Faction needs to move its pieces on the map,
+use the Move Priorities table. Read down the column that matches
+the active NP Faction, executing each instruction in a dotted row.
+Dotted rows with a red conditional only apply if the condition is
+true. See C8.6 Operations Reference and C8.7 Special Activities
+Reference for detailed instructions of Operations and Special
+Activities that move pieces.
+
+Step A. Select a destination space using the column of the active
+NP Faction’s Space Selection Priorities table that matches the
+selected Operation or Special Activity.
+
+Step B. Select an origin space (not already selected as a des-
+tination) within reach of the destination space with the most
+moveable pieces belonging to the acting NP Faction. Use the
+Move Priorities table (C8.5.7) to check which pieces will be kept
+(and are therefore not moveable) in each possible origin space.
+Keep Pieces in Origin. Reading down the column that match-
+es the active NP Faction, keep pieces in the selected origin as
+instructed by each dotted row. Instructions that follow a red
+conditional are only executed if that condition is true.
+
+Get Pieces to Destination. Reading down the column that
+matches the active NP Faction, move pieces into the selected
+destination as instructed by each dotted row. Instructions that
+follow a red conditional are only executed if that condition
+
+is true. If an NP Faction would move no forces to a selected
+destination, return to Step A and select a new destination space
+(without having to make an AN roll).
+
+Important — Only move pieces as necessary to fulfill the
+acting NP Faction’s ‘get’ instructions on the Move Priorities
+table. This may sometimes mean that no pieces are moved,
+in which case you should skip straight to selecting a new
+destination space.
+
+Step C. After all moving pieces have moved from the first origin,
+check to see if additional origins or destinations will be selected.
+To select a new destination, return to Step A. To select a new
+origin, return to Step B. Note that the NP Faction may need to
+pass an Activation Number roll to select additional destination
+spaces during Operations (C8.5.4).
+
+Important — Unless otherwise specified by the current
+Calixto card or Move Priorities table instructions, select
+moving pieces using the Piece Priorities table (within the
+constraints of the Operation, Special Activity, or Event being
+executed).
+
+C8.5.8 Piece Priorities Table
+
+When an NP Faction needs to select pieces from among several
+different types, use the Piece Priorities table. Always remove, re-
+place, or Activate player pieces before NP pieces. When placing,
+moving, or using friendly pieces or moving, removing, replacing,
+or Activating enemy pieces, start from the top and read down;
+within boxes, read left to right. When removing friendly pieces,
+start from the bottom and read up; within boxes, read right to left.
+
+C8.5.9 Propaganda Rounds
+Follow the instructions on the Propaganda Round Instructions
+sheet for all NP Factions.
+
+Important — The rules that follow are written out versions
+of procedures found on the Calixto cards and various play
+aids, and are intended to be used as a reference.
+
+C8.6 Operations Reference
+
+C8.6.1 Selecting an Operation
+
+* Draw Calixto Cards. Draw Calixto cards (C8.5.3) for the active
+NP Faction to select an Operation.
+
++ No Spaces Selected. If there are no spaces that could be selected
+for the selected Operation, select a new Operation by drawing
+a new Calixto card.
+
+© 2025 GMT Games, LLC
+
+===== calx-07.png =====
+Calixto Card-Based Non-Player Rules 7
+
+C8.6.2 Executing an Operation using Calixto
+Cards
+
+Follow all Base Game Rules. Except for Resources (C8.5.4),
+NP Factions follow all base game rules for Operations.
+Numbered Instructions First. Execute each Operation num-
+bered instruction in order as much as possible before moving
+on to the next instruction. If an instruction cannot be executed,
+skip it.
+
+Selecting Spaces. Use the active NP Faction’s Space Selection
+Priorities table to select spaces for the Operation.
+
+Operations that Move Pieces. Use the Move Priorities table to
+execute Sweep, Garrison, and March Operations.
+
+Red Conditionals. Only implement an instruction following a
+red conditional if that condition is true.
+
+Arrowed Notes. Some instructions are followed by notes marked
+with an arrow; these serve as reminders for the execution of the
+preceding instruction.
+
+Activation Numbers. After executing the Operation in each
+selected space, make an Activation Number roll (C8.5.4), un-
+less this Operation is one of the exceptions (C8.5.4). Once the
+Activation Number roll has failed, select no additional spaces
+for the Operation. Do not make an Activation Number roll after
+executing instructions numbered by a white circle.
+
+Starred Instructions Last. Execute any starred instructions
+once all allowed spaces have been selected for the Operation.
+Syndicate Resources. Spend Syndicate Resources for NP Syn-
+dicate Operations as if a human player.
+
+C8.6.3 Capability & Momentum Instructions
+See the Additional Capability & Momentum Instructions table
+(located on the back page of this rulebook) for the effects of certain
+Capability and Momentum cards that are in play on Operations. Not
+all such cards are listed here, as most effects are self-explanatory
+and do not require any additional NP instructions.
+
+C8.6.4 NP Government Operations
+
+NP Government executes each Operation as much as possible,
+given available pieces and the state of the board. Follow all pro-
+cedures for the selected Operation. Execute the selected Operation
+as much as possible.
+
+Follow the directions for each instruction, in the order given by
+the NP Government Calixto card.
+
+NP Government Train Procedures:
+
+Place cubes, in sets of 4 only. Use the Place Cubes column of
+the NP Government Space Selection Priorities table to select
+spaces. Per the Piece Priorities table, alternate placing one
+Police then one Troop. Only place cubes in a selected space
+if it is possible to place exactly four.
+
+After all cubes have been placed (if any), perform the first
+applicable of the following instructions (regardless of whether
+the Operation’s Activation Number roll has failed or not, and
+even if no spaces were selected to place pieces):
+
+Shift Toward Active Support. Use the Shift Toward Active
+Support column to select one space that meets the criteria for
+Civic Action, then remove Terror and shift it towards Support
+for a total of 1d3 markers removed/shifts. Unless this is a
+Limited Operation, the space selected for Civic Action could
+be an additional one that was not selected for Train, with no
+Activation Number roll required to select the space (if it is a
+Limited Operation, only the single space selected for Train
+may be shifted towards Support).
+
+Place Base. Replace two cubes (one Police and one Troop
+if possible) with one Government Base. Unless this is a
+Limited Operation, the space selected to place a Base could
+be an additional one that was not selected for Train, with no
+Activation Number roll required to select the space (if it is a
+Limited Operation, only the single space selected for Train
+could be selected to place a Base).
+
+NP Government Garrison Procedures:
+
+Use Move Priorities. Use the Garrison column of the NP Gov-
+ernment Space Selection Priorities table to select destinations;
+and the Move Priorities table to select origins, pieces to keep
+in selected origins, and pieces to move into selected destina-
+tions. Use the Remove column of the NP Government Space
+Selection Priorities table to select one eligible EC for Assault.
+
+NP Government Sweep Procedures:
+
+Use Move Priorities. Use the Sweep column of the NP Gov-
+ernment Space Selection Priorities table to select destinations;
+and the Move Priorities table to select origins, pieces to keep
+in selected origins, and pieces to move into selected destina-
+tions. NP Government will Sweep in selected destinations
+with Underground Guerrillas even if they do not move any
+Troops there. In each destination, Activate any Underground
+Guerrillas per 3.2.3, after all moving pieces have entered
+each destination.
+
+NP Government Assault Procedures:
+
+Select spaces using Remove. Use the Remove or Replace
+column of the NP Government Space Selection Priorities table
+to select spaces for Assault. Only select spaces where Assault
+would have some effect.
+
+C8.6.5 NP Insurgent Operations
+
+NP Insurgents (26 July, Directorio, and Syndicate) execute each
+Operation as much as possible, given available pieces and the state
+of the board. Follow all procedures for the selected Operation.
+
+Follow the directions for each instruction, in the order given by
+the current Calixto card.
+
+NP Insurgent Rally Procedures:
+
+Place 1 Base where 3+ 26J/DR Guerrillas. Use the Place
+Bases column of the NP Space Selection Priorities table to
+select one space with three or more friendly Guerrillas and
+place a Base there.
+
+© 2025 GMT Games, LLC
+
+===== calx-08.png =====
+Calixto Card-Based Non-Player Rules
+
+Select spaces using Place Guerrillas: Use the Place Guerrillas
+column of the NP Space Selection Priorities table to select
+spaces to place Guerrillas (possibly restricted to spaces with
+acting Faction Bases).
+
+Important — NP Syndicate (only), once they have no
+Available Guerrillas remaining, will instead flip an Active
+Guerrilla Underground in each selected Rally space. This
+simulates a Syndicate player’s ability to remove and place
+an Active Guerrilla during Rally, effectively flipping it
+Underground.
+
+Open Casinos. Use the Open Casinos column of the NP
+Syndicate Space Selection Priorities table to select spaces
+where Casinos could be opened for Construct, and open a
+Casino there.
+
+Important — NP Syndicate tracks Resources, meaning that
+they will only Construct if they possess sufficient Resources
+to do so. They will typically only place new Casinos unless
+this is the final Campaign (i.e., there is only one Propaganda
+card remaining in the deck).
+
+Flip Guerrillas where most Active. Among all spaces with
+Guerrillas and Bases, select spaces with the most Active
+Guerrillas. In each, flip all Active Guerrillas Underground.
+
+NP Insurgent March Procedures:
+
+Use Move Priorities. Use the March Destination column of the
+NP Space Selection Priorities table to select destinations; and
+the Move Priorities table to select origins, pieces to keep in
+selected origins, and pieces to move into selected destinations.
+
+Important — NP Insurgents do not make an Activation
+Number roll after Marching into ECs.
+
+NP 26J/DR Attack Procedures:
+
+Select spaces with 4+ Guerrillas. Use the Remove or Replace
+column of the NP Space Selection Priorities table to select
+spaces for Attack with four or more Guerrillas belonging to
+the active Faction.
+
+Select spaces where all Guerrillas already Active. Use the Re-
+move or Replace column of the NP Space Selection Priorities
+table to select spaces for Attack where all Guerrillas belonging
+to the active Faction are already Active.
+
+NP Insurgent Terror Procedures:
+
+Select spaces using Place Terror. Use the Shift Toward Neu-
+tral/Shift Toward Active Opposition column of the NP Space
+Selection Priorities table to select spaces for Terror. If a
+selected space contains a friendly Base and is not Mountain,
+only execute Terror if there are at least two Underground
+Guerrillas there.
+
+Important — NP Insurgents do not make an Activation
+Number roll after executing Terror in ECs.
+
+NP Syndicate Construct Procedures:
+
+Place Casinos. Use the Place Casinos column of the NP Syn-
+dicate Space Selection Priorities table to select spaces with
+room for Casinos for Construct, and place a new Casino there.
+
+C8.7 Special Activities Reference
+
+C8.7.1 Selecting a Special Activity
+
+* Use the Current Calixto Card. The Calixto card and side that
+selected the Operation also selects the Special Activity (a few
+cards select the Special Activity first, and then may instruct you
+to flip the card to find an Operation).
+
+Execute One Special Activity. Unlike instructions boxes for
+Operations, Special Activity instructions boxes often contain
+more than one Special Activity. Execute the first Special Activity
+on the list that will have an effect.
+
+Red Conditionals. Only implementa Special Activity or instruc-
+tion following a conditional if that condition is true.
+
+No Spaces Selected. If there are no spaces that could be selected
+to meet the instructions for the chosen Special Activity, select the
+next Special Activity on the list. If this was the last Special Ac-
+tivity listed, the NP Faction does not execute a Special Activity.
+
+C8.7.2 Executing a Special Activity
+
+Follow all Base Game Rules. NP Factions follow all base game
+rules for Special Activities.
+
+Numbered Instructions First. Execute each Special Activ-
+ity numbered instruction in order as much as possible before
+moving on to the next instruction. If an instruction cannot be
+executed, skip it.
+
+Selecting Spaces. Use the active NP Faction’s Space Selection
+Priorities table to select spaces for the Special Activity.
+Special Activities that Move Pieces. Use the Move Priorities
+table to execute Transport Special Activities.
+
+Red Conditionals. Only implement an instruction following a
+red conditional if that condition is true.
+
+Starred Instructions Last. Execute any starred instructions once
+all allowed spaces have been selected for the Special Activity.
+
+C8.7.3 Capability & Momentum Effects
+
+See the Additional Capability & Momentum Instructions table
+(located on the back page of this rulebook) for the effects of certain
+Capability and Momentum cards that are in play on Operations. Not
+all such cards are listed here, as most effects are self-explanatory
+and do not require any additional NP instructions.
+
+© 2025 GMT Games, LLC
+
+===== calx-09.png =====
+Calixto Card-Based Non-Player Rules
+
+C8.7.4 NP Government Special Activities
+
+NP Government executes each Special Activity as much as pos-
+sible, given available pieces and the state of the board. Follow all
+
+procedures for the selected Special Activity (4.2).
+
+Follow the directions for each instruction, in the order given by
+
+the NP Government Calixto card.
+
+NP Government Transport Procedures:
+
+Transport using Move Priorities. Use the Transport column
+of the NP Government Space Selection Priorities table to
+select the destination; and the Move Priorities table to select
+the origin, pieces to keep in the selected origin, and pieces to
+move into the selected destination.
+
+NP Government Air Strike Procedures:
+
+Air Strike using Remove. Use the Remove or Replace column
+of the NP Government Space Selection Priorities table to select
+target spaces (possibly restricted to spaces with Vulnerable
+Bases/Casinos).
+
+NP Government Reprisal Procedures:
+
+Reprisal using Reprisal. Use the Reprisal column of the NP
+Government Space Selection Priorities table to select target
+spaces.
+
+Important — NP Government moves any pieces moved by
+Reprisal to the adjacent Province with the most Opposition,
+then least Population.
+
+C8.7.5 NP 26 July Special Activities
+
+NP 26 July executes each Special Activity as much as possible,
+given available pieces and the state of the board. Follow all pro-
+
+cedures for the selected Special Activity (4.3).
+
+Follow the directions for each instruction, in the order given by
+
+the NP 26J Calixto card.
+
+NP 26 July Infiltrate Procedures:
+
+Infiltrate using Replace. Use the Remove or Replace column of
+the NP 26J Space Selection Priorities table to select one space
+where a Government cube could be replaced with a Guerrilla.
+
+NP 26 July Ambush Procedures:
+
+Ambush using Remove. Use the Remove or Replace column
+of the NP 26J Space Selection Priorities table to select one
+space where Ambush could remove any enemy pieces.
+
+NP 26 July Kidnap Procedures:
+
+Kidnap using Kidnap. Use the Kidnap column of the NP 26J
+Space Selection Priorities table to select one eligible space,
+then Terror there first before performing Kidnap. Target player
+Government first, otherwise Syndicate if possible. Use Cash
+Ransom before rolling for Resources. Remove target Faction
+Resources but do not add to NP 26J Resources as these are
+not tracked (C8.4.1).
+
+C8.7.6 NP Directorio Special Activities
+
+NP Directorio executes each Special Activity as much as possible,
+given available pieces and the state of the board. Follow all pro-
+cedures for the selected Special Activity (4.4).
+
+Follow the directions for each instruction, in the order given by
+the NP Directorio Calixto card.
+
+NP Directorio Subvert Procedures:
+
+Subvert using Shift Toward Neutral. Use the Shift Toward
+Neutral column of the NP Directorio Space Selection Priorities
+table to select spaces for Subvert. Do not add resources to
+NP Directorio (C8.4.1). In the case where NP Directorio can
+only select spaces already at Neutral for Subvert, they will
+not perform a Special Activity.
+
+NP Directorio Ambush Procedures:
+
+Ambush using Remove. Use the Remove or Replace column
+of the NP Directorio Space Selection Priorities table to select
+one space where Ambush could remove any enemy pieces.
+
+NP Directorio Assassinate Procedures:
+
+Close Casinos using Remove. Use the Remove or Replace
+column of the NP Directorio Space Selection Priorities table
+to select one space with an open Casino, then Terror there first
+before performing Assassinate.
+
+Assassinate using Remove. Use the Remove.or Replace
+column of the NP Directorio Space Selection Priorities table
+to select one space with enemy forces, then Terror there first
+before performing Assassinate.
+
+C8.7.7 NP Syndicate Special Activities
+
+NP Syndicate executes each Special Activity as much as possible,
+given available pieces and the state of the board. Follow all pro-
+cedures for the selected Special Activity (4.5).
+
+Follow the directions for each instruction, in the order given by
+the NP Syndicate Calixto card.
+
+* NP Syndicate Profit Procedures:
+Place Cash. Use the Place Cash column of the NP Syndicate
+Space Selection Priorities table to place Cash with Syndicate
+Guerrillas, Underground first.
+
+Close all Casinos. Close all open Casinos (gaining 3 Resources
+for each Casino closed). NP Syndicate will not close Casinos
+during the final Campaign.
+
+Remove all Cash. Remove all Cash held by Syndicate Guer-
+rillas (gaining 3 Resources for each Cash removed).
+
+NP Syndicate Muscle Procedures:
+
+Select Spaces using Muscle. Use the Muscle Destination
+column of the NP Syndicate Space Selection Priorities table
+to select one destination space. Move two cubes there, first
+moving Police from ECs with Syndicate Guerrillas if possible,
+
+© 2025 GMT Games, LLC
+
+===== calx-10.png =====
+10 Calixto Card-Based Non-Player Rules
+
+then moving cubes from spaces with Open Casinos and Gov-
+ernment Control, then finally using the Muscle Destination
+column of the NP Syndicate Space Selection Priorities table.
+
+NP Syndicate Bribe Procedures:
+
+Bribe using Remove. Use the Remove or Replace column of
+the NP Syndicate Space Selection Priorities table to select
+spaces where Bribe could remove any enemy pieces.
+
+C8.8 Events Reference
+
+When given a choice, NP Factions execute effective Event actions
+according to the following guidelines:
+
+C8.8.1 NP Government Events
+
+* Choose to Increase. NP Government increases the US Alliance
+Track.
+
+Choose to Decrease. NP Government decreases Insurgent Re-
+sources whenever possible.
+
+Shift Toward Active Support. NP Government shifts Population
+towards Active Support.
+
+C8.8.2 NP Insurgent Events
+
+* Choose to Increase. NP Syndicate (only) increases Resources
+as much as possible.
+
+Choose to Decrease. NP Insurgents decrease player or Syndi-
+cate Resources and the US Alliance Track as much as possible.
+Shift Toward Active Opposition or Neutral. NP 26 July shifts
+Population towards Active Opposition. NP Directorio and NP
+Syndicate shift Population towards Neutral.
+
+C8.9 Non-Player Example of Play
+This example of play assumes that you are already familiar with
+the main multiplayer rules for Cuba Libre. If not, you should
+instead begin with the example of play in the original Cuba Libre
+Playbook, and ideally play at least one game with other players
+before attempting to use the Calixto Non-Player (NP) system. The
+example of play focuses on explaining how to use the Non-Player
+system, so it does not explicitly instruct you to perform routine
+tasks from the main rules, such as updating the victory totals for
+each Faction.
+
+Set up the board using the standard deployment, then create the
+Event deck as follows, from top to bottom: #8 GENERAL STRIKE, #20
+Tue Twelve, #28 Morgan, #37 HerBERT MATTHEWS, #11 BATISTA
+FLees, #35 Derections, #38 Meyer Lansky, #49 PROPAGANDA. All
+four Factions will be controlled by the Calixto Non-Player sys-
+tem for this example of play (usually at least one Faction would
+be controlled by a human player). The Non-Player Government,
+Directorio, and 26 July Factions do not use or track Resources,
+so remove the Resource cylinders for those three Factions. The
+Non-Player Syndicate Faction tracks Resources as normal, which
+is important for its victory total, so leave the Syndicate Resource
+cylinder in play. Finally, find the Calixto card deck and Non-Player
+Aid sheets and place them nearby for reference.
+
+Card 1: General Strike
+
+NP GOV is Ist Eligible on this Event, so we check the Ist Eli-
+gible section of the NP Eligibility Table to see what action they
+will choose to execute. The first row on this table begins with a
+red check-marked instruction, indicating that it only applies if the
+acting Faction is GOV, which is the case, so we check if there are
+any Underground DR or 26J Guerrillas in Havana. There are two
+Underground DR Guerrillas, so NP GOV will perform an Opera-
+tion with a Special Activity, without having to check whether the
+current Event is Critical.
+
+We now draw a Calixto card for NP GOV to determine which
+Operation and Special Activity they will perform. Normally all
+Calixto cards for the NP Factions being used are shuffled together
+then we would draw through the deck until we found a GOV caré
+(placing each card face-up on the bottom of the deck after we draw
+it), but for this example of play we will select specific cards to be
+“drawn” instead. The first NP GOV card we draw is Y, and the
+blue box at the top of this card asks us if there are any Economic
+Centers (ECs) with Guerrillas, which there are not, so we follow:
+the red arrow down to the “redraw” symbol and place this card er
+the bottom of the deck before drawing a new card. The next NP
+GOV card we draw is U, which first asks us if there are any Cities
+not at Active Support. Neither Camagiiey nor Santiago de Cuba ame
+at Active Support, so we follow the green arrow down to the met
+blue box, which asks us if there are any Underground Guerrilla
+at Support. There are, in Havana, so we follow the green arme
+again to reach an Operation box: Sweep.
+
+© 2025 GMT Games, LLC
+
+===== calx-11.png =====
+Calixto Card-Based Non-Player Rules 11
+
+=] GOV-U [e] AN= US Alliance
+{ Any city not at Active support? a
+=
+
+| underground Guerrilla at Support? Il
+
+Tua
+
+Sweep:
+@ Using Move Priorities
+> Sweep to Activate Guerrillas even if no Troops
+
+moved
+
+Select 1 Special Activity:
+@® Air Strike in a space with a Vulnerable Base
+‘or Casino using Remove
+
+® ¥ GOV Control at Opposition: Reprisal using
+Reprisal
+
+© Transport using Move Priori
+
+{ © Airstrike using Rem
+
+fo)
+
+NP GOV card U
+
+The Sweep Operation box on card U tells us to use the Move Pri-
+orities table, and also to Sweep to Activate Guerrillas even if no
+Troops are moved. Step A of the Move Priorities table refers us
+to the NP GOV Space Selection Priorities table to find an initial
+destination, using the Sweep Destination column. The first dotted
+row in this column is “Havana”, which immediately narrows down
+our choices to just one potential destination, Havana (but we will
+only actually select this space as a destination if Sweep will have
+any effect there). Next we would usually return to the Move Pri-
+orities table and select an origin space adjacent to Havana with
+the most moveable GOV forces, but the only adjacent space, La
+Habana, does not contain any GOV forces, so we will skip this
+step. As there is no viable origin for this Sweep, NP GOV will not
+use it to move any forces, but can still use it to “Sweep in place”
+to Activate Guerrillas in Havana (as indicated by the additional
+instruction on card U). So the Sweep in Havana is complete, and
+we Activate both DR Guerrillas there (while this technically only
+happens at the end of the full Operation, we can do it now for
+convenience and to make sure that we don’t forget).
+
+NP Government Sweep in Havana
+
+When performing a full Operation, NP Factions typically need to
+pass an Activation Number (AN) roll to select each additional space
+after the first. The target AN value that must be exceeded on each
+roll to select an additional space for the Operation can usually be
+found at the top right of each Calixto card, but in this case NPGOV
+instead rolls against the current US Alliance value (simulating the
+variable Operation cost a GOV player would be faced with). The
+US Alliance value is currently ‘2’, and we roll a 3, so NP GOV
+will select an additional Sweep destination space. Returning to the
+Sweep Destination column of the NP GOV Space Selection Prior-
+ities table, we can see that the first priority, “Havana”, no longer
+applies to any spaces (as we have already selected Havana). So
+we skip this priority and proceed to the next one, “Underground
+Guerrillas”, which applies to La Habana, Camagiiey (Province),
+Sierra Maestra, and Santiago de Cuba. We then continue down the
+list of priorities, using them to narrow down this initial selection
+until only one space remains.
+
+* The next priority, “most Support”, applies only to La Habana,
+but as there are no cubes already in it and no viable origin spaces
+adjacent to it we will skip it (Havana is ruled out because NP
+Factions will never use a space that they have already selected
+as a destination as an origin, in order to avoid illegal movement
+loops).
+
+The fourth priority, “enemy Base/Open Casino”, only applies to
+Sierra Maestra (of the spaces with Underground Guerrillas that
+we have already narrowed down to), so we will select it as the
+next Sweep destination.
+
+There is only one viable origin space (with moveable GOV forc-
+es) — Santiago de Cuba. Going back to the “keep” section of the
+Move Priorities chart, we can see that NP GOV will keep sufficient
+forces in the origin space to not change (add or remove) Control,
+and will keep both one Police and one Troop in Cities (if possible).
+This means that only one Troop can be moved from Santiago de
+Cuba, which we move to Sierra Maestra in order to try and fulfill
+the “get sufficient acting Faction pieces for Control” instruction.
+
+© 2025 GMT Games, LLC
+
+===== calx-12.png =====
+12 Calixto Card-Based Non-Player Rules
+
+No more forces can be moved from Santiago de Cuba and NP
+GOV does not yet have Control in Sierra Maestra, so if possible
+we would select another adjacent origin. However, in this case
+there is not another adjacent space with GOV forces that could be
+selected as a second origin, so instead we complete this Sweep by
+Activating one 26J Guerrilla in Sierra Maestra. Our next AN roll
+is a 1, which is not greater than the US Alliance value of ‘2°, so
+the Sweep Operation is complete.
+
+NP GOV Sweep into Sierra Maestra
+
+NP GOV is still able to perform a Special Activity, so we follow
+the black arrow on card U down to the Special Activity box. The
+first instruction is to perform Air Strike in a space with a Vulnerable
+Base or Casino, using the Remove column of the NP GOV Space
+Selection Priorities table if necessary to select between them. There
+are two viable spaces with Vulnerable Casinos, Pinar del Rio and
+La Habana, and the former has more Support, so we select Pinar del
+Rio and close the Casino there. The NP GOV turn is now complete.
+
+NP DR is next Eligible, and they are not Ist Eligible on the up-
+coming Event nor did NP GOV perform the current Event, so the
+NP Eligibility table indicates that they will perform the current
+Event if it is Critical or Performed, and effective (meaning that it
+will have one of the effects listed on the Effective Events table).
+Checking the NP Events table we can see that the Event is marked
+“P” for Performed for them, and it is effective because it will
+both reduce Support (by shifting toward Neutral) and place DR
+Guerrillas. NP DR therefore performs the Event, shifting Havana
+to Passive Support and Camagiiey (City) to Neutral, and placing
+one DR Guerrilla in each City (NP Factions will always place their
+own pieces, if given a choice). The NP DR turn is complete, so we
+adjust Eligibility and reveal the next card.
+
+Card 2: The Twelve
+
+NP 26] is Ist Eligible, this Event is Critical for neither them nor NP
+SYN (next Eligible), and they will not be Ist Eligible on the next
+Event, so they will perform an Operation with a Special Activity.
+
+We draw Calixto card M for them, which first asks us to check
+whether there are any 2+ Population spaces without Active Oppo-
+sition (there are several), then whether a roll of 1d6 is less than or
+equal to the number of Available 26J Guerrillas. As there are more
+than six Available 26J Guerrillas this will be true regardless of the
+roll, so we can skip it and move on to the Operation box, Rally
+
+Qu @ n
+
+{ Any 2+ Pop space without Active ww
+Re di
+[146 = available 26 Guerrillas? Il
+
+w
+<> 6)
+
+Rally:
+
+@ Place 1 Base where 3+ 26J Guerrillas
+
+ev ble 26) Guerrillas: Using Place Guer-
+las in spaces with 26J Bases
+
+@ Using Place Guerrillas
+
+@ Flip Guerrillas where most Active
+
+Select 1 Special Activity:
+@ infiltrate using Replace
+
+NP 26J card M
+
+The first instruction in the Rally box is to place a Base where there
+are at least three 26J Guerrillas, but as there are no such spaces we
+move on to the next instruction, to place Guerrillas in spaces watt
+26J Bases, so long as there are at least four Available 26] Guernilitas.
+There is only one space with a 26J Base, Sierra Maestra, so they
+will Rally there first, placing four Guerrillas (NP Factions wa)
+always place the maximum number of pieces that they are atte
+to). After each space selected for an NP Operation we make am&®
+roll, this time needing to roll more than 2 to continue the Operates
+as indicated by the AN number at the top right of Calixto cand MW
+
+Our first AN roll is a 3, and there are no more spaces with Dm
+Bases, so we proceed to the next instruction, which is to selen
+any spaces using the Place Guerrillas column of the NP 26] Spas
+Selection Priorities table. There are no Vulnerable 26] Bases ami
+GOV is not a player, so we skip the first two priorities. The tet
+
+ne, “not at Active Opposition”, only rules out Sierra Macs
+which has already been selected anyway, so we move on t “mm
+Population”, which limits us to Las Villas or Oriente (as amm
+
+O 2025 GMT Games, LLC
+
+===== calx-13.png =====
+Calixto Card-Based Non-Player Rules 13
+
+cannot be selected for 26J Rally due to the presence of Support).
+None of the next few instructions helps us decide between these,
+but “fewest enemy forces” prioritizes Oriente over Las Villas, so
+we place a 26J Guerrilla in Oriente.
+
+Our next AN roll is a 4, and we already know that the next Rally
+space will be Las Villas, so we place a 26J Guerrilla there. Our
+third AN roll is a 2, which is not greater than the AN value on card
+M, so the Rally Operation is now complete. We follow the black
+arrow down to the Special Activity box, which only contains one
+instruction, to Infiltrate using the Replace column of the NP 26J
+Space Selection Priorities table. We can quickly determine that the
+only viable spaces for Infiltrate are Las Villas, Sierra Maestra, and
+Santiago de Cuba, and Las Villas has the most Population without
+26J Control, so we select it and replace a Troop with a 26J Guerrilla
+there. The NP 26J turn is now complete.
+
+NP 26J Rally and Infiltrate
+
+NP SYN is next Eligible, and as neither this Event nor the next
+are Critical or Performed for them, and they are not Ist Eligible
+on the next Event, they will perform a Limited Operation. We
+draw Calixto card N for them, which first checks if there are any
+Available Casinos (there are), then whether SYN Resources are
+greater than 5 (they are) and whether there are any spaces where
+Construct could place a Casino (there are).
+
+J
+Bw
+=
+
+SYN Resources > 5, and any space where Con-
+struct could place a Casino (or open a Casino if
+final Campaign)?
+
+O smn
+
+[ Any available Casinos?
+
+a
+
+>
+
+Construct:
+@ Vinal ca
+Cosinos
+@ Place Casinos
+
+ypoign: Open Casinos until 8 Open
+
+Y
+
+YN Guerrillas
+yn: Close all Casinos
+Remove all Cash
+
+© V'SYN Resourc Bribe using Remove
+
+© Muscle using Muscle Destination, moving cubes:
+Police from ECs with SYN Guerrillas
+
+From spaces with Open Casinos and GOV Control
+@ From spaces using Remove
+
+NP SYN card N
+
+We move down to the Construct Operation box, which first instructs
+us to Open Casinos until eight are open, but only if this is the final
+Campaign, which it is not. So we will use the Place Casinos column
+of the NP SYN Space Selection Priorities table to place a Casino
+in one space. Construct is restricted to spaces with Syndicate or
+Government Control, there are no spaces with Underground SYN
+Guerrillas or SYN Control (remember that Closed Casinos are not
+counted for Control), and Havana has the most Support, so NP
+SYN will Construct to place a Closed Casino there. Note that NP
+SYN still tracks Resources, unlike the other NP Factions, so we
+also reduce their Resources by 5 to pay for Construct. As this is
+a Limited Operation we skip the Special Activity box, so the NP
+SYN turn is now complete.
+
+Card 3: Morgan
+
+NP DR is Ist Eligible and the Event is marked “C” (for Critical)
+for them on the Event Cards table, so they will perform it. The
+Event just puts the Morcan Capability into play, then the NP DR
+turn is complete.
+
+NP GOV is 2nd Eligible and will perform an Operation with Special
+Activity, as they will not be Ist Eligible on the next Event (nor is
+it Critical for them). We draw Calixto card Z for them, which first
+asks if there are any 2-Population Provinces without Government
+Control (there are), then whether Assault could remove either three
+
+© 2025 GMT Games, LLC
+
+===== calx-14.png =====
+14 Calixto Card-Based Non-Player Rules
+
+or more Guerrillas, or a Base or Casino. Assault in Havana could
+remove (close) a Casino, so we follow the green arrow down to
+the Special Activity box.
+
+® Gov-z 9 AN=US Alliance
+
+{ Any 2-Pop Province without GOV Control? Il
+
+=)
+
+Assault in one space could remove 3+ Guerrillas
+
+or 1 Base/Casino?
+
+Select 1 Special Activity:
+
+@® Air Strike in a space with a Vulnerable Base
+or Casino using Remove
+
+@ Transport using Move Priorities
+
+© Air Strike using Remove
+
+© Reprisal using Reprisal
+
+Assault:
+
+fo remove Bases and close Casinos using Remove
+
+@ Using Remove
+
+NP GOV cardZ
+
+In this case NP GOV will perform their Special Activity first, using
+Air Strike to close the Casino in La Habana (as there are no other
+viable targets where a Base could be removed or a Casino closed).
+Then we move on to the Assault Operation box, which will first
+select spaces where Bases could be removed or Casinos closed, in
+this case just Havana, so NP GOV Assaults in Havana to close the
+Casino and remove the two Active DR Guerrillas. We then make
+an AN roll, again comparing it to the US Alliance value, and roll
+a 3, so we would select a second Assault space, but there are none
+that would be effective (NP GOV would require two Troops to
+remove the Active 26J Guerrilla in Sierra Maestra). So the Assault
+is finished and the NP GOV turn is over.
+
+Card 4: Herbert Matthews
+
+NP SYN is Ist Eligible, the current Event is not Critical for them
+or the next Eligible Faction, and they will not be Ist Eligible on
+the next Event, so they will perform an Operation with Special
+Activity. We draw Calixto card R, which first asks whether a roll
+of 1d3 (half the result of a six-sided die, rounded up) is less than
+or equal to the number of Available and/or Active SYN Guerrillas.
+There are currently six Available SYN Guerrillas, so we can skip
+this roll and follow the green arrow down to the next box, which
+
+© 2025 GMT Games, LLC
+
+asks whether there are any spaces with an Underground Guerrilla.
+Support or Opposition, and no Open Casino. There are not, so we
+follow the red arrow and flip the card to its reverse side, RR.
+
+@ Using Place Guerrillas
+> If no Available SYN Guerrillas, instead flip 1 Active
+SYN Guerrilla Underground in each selected space
+
+{ select 1 special activit
+® Profit
+@ Place Cash with SYN Guerrillas
+@ V Not Final Campaign: Close all Casinos
+© VSYN Resources = 5:Remove all Cash
+© VSYN Resources > 8: Bribe using Remove
+© Muscle using Muscle Destination, moving cubes:
+@ Police from ECs with SYN Guerrillas
+From spaces with Open Casinos and GOV Control
+From spaces using Remove
+
+NP SYN card RR
+
+The first box at the top of card RR indicates that NP SYN will per
+form a Rally Operation, using the Place Guerrillas column of ie
+NP SYN Space Selection Priorities table. There is also an additions!
+instruction to flip an Active SYN Guerrilla Underground in ease
+selected space, ifno SYN Guerrillas are Available — this simulates.
+the ability a player would have to remove Active Guerrillas =
+Available, which the NP Factions do not make use of (but is espe
+cially important for SYN given their small number of Guerrillas”
+
+The NP SYN Space Selection Priorities table indicates that they wal
+first place Guerrillas in spaces with Vulnerable Open Casinos, Sat
+as all Casinos are Closed we skip this line. The next two priorities
+only apply to player-controlled Factions, so we skip them as well
+bringing us to “most Support”, which applies only to Havana sr
+we place a Guerrilla there. We now make an AN roll, resulting:
+in a 4, which is greater than the AN value of ‘3’ on this card. se
+we place another Guerrilla in Pinar del Rio (which has the mms
+Support after Havana), then roll a 5 for the second AN roll ant
+place a third Guerrilla in La Habana (with the most Support out et
+the remaining spaces). The third AN roll is a 3, so the Operation =
+now over, costing NP SYN 3 Resources (down to 7).
+
+===== calx-15.png =====
+Calixto Card-Based Non-Player Rules 15
+
+NP SYN will also perform a Special Activity, so we follow the
+black arrow down to the Special Activity box. The first instruction
+is to use Profit to place Cash, but as there are no Open Casinos this
+isn’t currently possible. The next instruction is to use Profit to close
+all Casinos (unless it is the final Campaign), but again this isn’t
+possible as there are no Open Casinos. The third instruction is to
+remove all Cash if SYN Resources are less than 5, but as this is not
+the case (and there is no Cash out anyway) we also skip this line.
+
+We move on the Bribe instruction, but NP SYN will only perform
+this if they have more than 8 Resources, which they currently don’t,
+so we skip this as well. This finally brings us to Muscle, which NP
+SYN will use first to move Police from ECs with SYN Guerrillas
+(there are none), then from spaces with Open Casinos and GOV
+Control (there are none), and then finally using the Remove column
+of the NP SYN Space Selection Priorities table. However, first we
+need to pick a destination using the Muscle Destination column of
+the NP SYN Space Selection Priorities table, restricted to ECs as
+there are no Open Casinos. This selects the EC with the highest
+Econ, then fewest enemy forces, then random, selecting the 3-Econ
+EC between Pinar del Rio and La Habana. NP SYN will move two
+Troops there, taking them both from Las Villas (fewest enemy
+forces, then random between Las Villas and Camagiiey City). The
+NP SYN turn is now complete.
+
+na
+3 ‘or
+te
+4 Emidrpona
+
+NOAIE Ste
+
+Each Support Phase (621:
+1 Suppor 18.0 bss, shit own 1 box
+
+as
+a
+
+a
+Ps:
+
+Pinar.del Rio so
+
+ont
+(Sete
+d| "Contror
+-
+
+NP SYN Rally and Muscle
+
+NP 26J is next Eligible, the Event is not Critical or Performed for
+them, and they will not be Ist Eligible on the next Event, so they
+will perform a Limited Operation. We draw Calixto card G, which
+first asks if there are any Underground 26J Guerrillas in spaces not
+at Active Opposition (there are many), then whether a roll of 1d6
+is less than or equal to the number of Available 26J Guerrillas. We
+roll a 5, greater than the four Available 26J Guerrillas, so we flip
+the card to its reverse side, GG.
+
+2+ moveable 26J Guerrillas adjacent to a Province
+or City without 264 Control?
+
+March:
+@ Using Move Priorities
+> No AN roll after March onto ECs
+
+Select 1 Special Activity:
+
+| © Kidnap using Kidnap
+
+* First perform Terror in space
+selected for Kidnap
+
+> Target player GOV if possible,
+then SYN
+
+» Take Cash before Resources
+
+Terror:
+| @ using shift Toward Active Opposition
+in spaces without Active Opposition
+@Onall ECs, highest value first
+» v/26J Base in non-Mountain: Only
+where 2+ Underground 26d Guerrillas
+> No AN roll after Terror on ECS
+
+Select 1 Special Activity:
+@ infiltrate using Replace
+
+NP 26J card GG
+
+Card GG first asks us if there are at least two moveable 26J Guerril-
+las in one space adjacent to a Province or City without 26J Control,
+where “moveable” means that they would not be required to stay in
+the space by the “keep” instructions on the Move Priorities table.
+There are three moveable Guerrillas in Sierra Maestra, so this
+condition is met and we move down to the March Operation box,
+which instructs us to use the Move Priorities table to execute the
+March (note that there is an instruction indicating that no AN roll
+is made after March onto ECs, but as this Operation is Limited it
+is not currently relevant to us).
+
+The Move Priorities table first instructs us to use the March Des-
+tination column of the NP 26J Space Selection Priorities table to
+select a destination, which we can restrict to spaces adjacent to
+moveable 26] Guerrillas (which notably rules out Havana, as the
+only adjacent space, La Habana, does not have Active Opposition).
+Oriente is not at Active Opposition and has the most Population,
+so we select it as our March destination. The only adjacent space
+with moveable (or any) 26J Guerrillas is Sierra Maestra, so that
+will be our origin. We need to keep three 26J Guerrillas in Sierra
+Maestra (as there is room for an Available Base), but the other
+three are all moveable. We also check the Piece Priorities table,
+which indicates that we should move Underground Guerrillas first.
+Moving two 26J Guerrillas into Oriente is sufficient to get three
+26J Guerrillas, but as it is adjacent to a space without 26J Control
+(Camagiiey Province) we will also move in an additional 1d6 26J
+
+© 2025 GMT Games, LLC
+
+===== calx-16.png =====
+16 Calixto Card-Based Non-Player Rules
+
+Guerrillas, in this case just one (as that is the most that can still be
+moved from Sierra Maestra). The 26J Limited March Operation
+is now complete, and the round is over.
+
+NP 26J Limited March
+
+Card 5: Batista Flees
+
+NP GOV is Ist Eligible, and as there is an Underground DR
+Guerrilla in Havana they will perform an Operation with Special
+Activity. We draw Calixto card V, which first asks whether there
+are at least three Troops not needed for Control in one City or at
+a Province with a GOV Base. There are, in Havana, and there is
+also an Available GOV Base, so we move down to perform the
+Transport Special Activity.
+
+6 GOV-V 8 AN=US Alliance
+
+3+ Troops not needed for Control in any City or in
+
+any Province with a GOV Base?
+a G
+
+{ Available Gov Base? |
+Select 1 Special Activity:
+@ Transport using Move Priorities
+
+Train:
+
+@ Place Cubes in sets of 4 only
+
+* Place Base in a Province without a GOV Base
+
+* Buy Civic Action using Shift Toward Active Sup-
+port for max 1d3 markers removed + shifts
+
+» Unless Operation is Limited, Civic Action or Place
+Base may target a space not yet selected for Train
+
+NP GOV card V
+
+The Transport Destination column of the NP GOV Space Selection
+Priorities table first prioritizes a Province with room for a GOV
+Base, then a space without GOV Control, then with most Popu-
+lation, then with fewest enemy forces, which will be Las Villas.
+We move three Troops from Havana to Las Villas (the maximum
+amount that Transport can move, but also required by the Move
+Priorities table instruction to get GOV Control).
+
+Next we move on to the Train Operation box, which will first place
+cubes in sets of four only (will not place cubes if there are fewer
+than four Available). The Place Cubes column of the NP GOV
+Space Selection Priorities table first selects Havana, with the most
+Population (as all the other priorities apply equally to Camagiiey
+City and Santiago de Cuba), and we place two Police and twe
+Troops there (as indicated by the Piece Priorities table, NP GOW
+will alternate placing Police and Troops). We make an AN roll and
+get a 4, so we will select a second space to place cubes, this time
+Camagiiey City with fewest enemy forces, where we place another
+two Police and two Troops.
+
+Our second AN roll is a 1, so NP GOV will not select any addi
+tional spaces to place cubes with Train, but they can still carry out
+one of the additional starred instructions. The first of these is t
+place a Base in a Province without a GOV Base, and the arrowed
+
+© 2025 GMT Games, LLC
+
+===== calx-17.png =====
+Calixto Card-Based Non-Player Rules 17
+
+instruction indicates that NP GOV can do this in a space not yet
+selected for Train, so we replace two Troops in Las Villas with a
+GOV Base. The NP GOV turn is now complete.
+
+NP DR is 2nd Eligible, but the next Event is Critical for them (in-
+cluding the starred instruction requiring at least two Available DR
+Guerrillas), they will be Ist Eligible on it, and the current Event is
+not Critical for them, so they Pass (without gaining a Resource, as
+they do not track Resources).
+
+Card 6: Defections
+
+NPDR is Ist Eligible and the Event is Critical for them (the starred
+Event instruction just indicates that they will only perform it ifthey
+have at least two Available Guerrillas, which they do), so they will
+perform it. We use the Remove or Replace column of the NP DR
+Space Selection Priorities table to decide where to carry out the
+Event, and select Santiago de Cuba as the space with both DR and
+enemy forces (required for the Event), no DR Control, and fewest
+enemy forces. The Piece Priorities table indicates that NP DR will
+replace Police cubes first, so we replace both Police cubes with
+DR Guerrillas, then the NP DR turn is complete.
+
+NP SYN is next Eligible, but the upcoming Event is Critical for
+them, so they will pass, gaining 1 Resource as usual (unlike other
+passing NP Factions that do not track Resources). NP 26J is Eli-
+gible now, and will perform an Operation with a Special Activity.
+We draw Calixto card J, which first asks if there are any moveable
+26) Guerrillas adjacent to a Province or City without 26J Control
+(there are, in Oriente and Las Villas), then whether there are any
+Underground 26J Guerrillas in spaces with 2+ Population and
+no Active Opposition. Both Oriente and Las Villas qualify for
+these conditions, so we move down to the Special Activity box
+to perform Kidnap.
+
+@u»: 8 a
+
+Any moveable 26J Guerrillas adjacent to a Province
+
+or City without 26J Control?
+cs
+n
+
+Underground 26J Guerrillas in any 2+ Population
+space not at Active Opposition? (v Pact of Cara-
+cas: Ignore Passive Opposition)
+
+Le S
+Select 1 Special Activity:
+@® Kidnap using Kidnap
+* First perform Terror in space selected for Kidnap
+
+> Torget player GOV if possible, then SYN
+» Take Cash before Resources J
+
+Terror:
+
+@ Using Shift Toward Active Opposition in spaces
+without Active Opposition
+
+@On all ECs, highest value first
+
+»vV26) i ‘ain: Only where 2+ Un-
+derground 26 Guerrillas
+
+> No AN roll after Terror on ECS
+
+D
+
+NP 26J card J
+
+The Kidnap Special Activity can only be performed in a space
+selected for Terror, but to simplify the decision procedure NP 26J
+will first select a space for Kidnap, then automatically perform Ter-
+ror there before they Kidnap. In this case the only viable space for
+Kidnap is Santiago de Cuba, so NP 26J select it for Terror, and we
+Activate their Guerrilla there, shift the space to Passive Opposition,
+and place a Terror marker. It is technically then selected for Kidnap
+as well, which would transfer a die roll of Resources from GOV to
+26J, but as both are NP Factions that do not track Resources we do
+not need to worry about this roll. However, note that NP 26J would
+deduct a die roll of Resources from a player-controlled GOV, or
+from either player-controlled or NP SYN. A player-controlled 26J
+can also still gain a die roll of Resources if they target NP GOV
+with Kidnap, even though the latter do not track any Resources.
+Finally, note that NP 26J using Kidnap would always take Cash
+before Resources if possible (but in this case it is not).
+
+The Special Activity is complete, so we move on to the Operation
+box, where NP 26] will continue performing Terror so long as they
+pass AN rolls, selecting spaces without Active Opposition using
+the Shift Toward Active Opposition column of the NP 26J Space
+Selection Priorities table. The first AN roll is passed, and the next
+space selected for Terror is Las Villas, not at Active Opposition,
+with the most Population, and without 26J Control. After that we
+make an AN roll against the AN value of ‘2’ on card J, and roll a
+2, so the Operation and the NP 26J turn is complete.
+
+© 2025 GMT Games, LLC
+
+===== calx-18.png =====
+18 Calixto Card-Based Non-Player Rules
+
+Card 7: Meyer Lansky
+
+NP SYN is Ist Eligible, the current Event is Critical and effective
+for them, so they will perform it. The starred instruction for this
+Event indicates that the Event is only Critical if it will open at
+least two Casinos, which it will, and that we should then use the
+Place Casinos column of the NP SYN Space Selection Priorities
+table to relocate all Casinos in play before opening them. The
+instruction also tells us to temporarily remove all the Casinos we
+are relocating from the map, which is not strictly what a player
+would do but makes the process simpler for us to resolve. The
+Place Casinos column indicates that we should first place Casinos
+where there is an Underground SYN Guerrilla, then where there is
+SYN Control, so we place the first two Casinos in Pinar del Rio,
+hitting the stacking limit. Then we move on to the next priority,
+most Support, and place the other two Casinos in Havana. Finally
+we open all four Casinos and the NP SYN turn is complete.
+
+NP GOV is next Eligible and will perform an Operation with a
+Special Activity. We draw Calixto card U again, and it is still the
+case that there are Cities not at Active Support and Underground
+Guerrillas at Support, so they will perform a Sweep Operation.
+
+Havana is the first destination priority, but again there are no ad-
+jacent Troops to move in, so we just activate both Guerrillas there
+and make an AN roll. The die result is a 4, so we select another
+destination, this time Pinar del Rio with an Underground Guerrilla
+and the most Support. We move in both Troops from the adjacent
+EC to attempt to get Control (as there are no Guerrillas on the EC
+the Troops do not need to be kept there), also Activating the SYN
+Guerrilla, then make another AN roll as there are no more adjacent
+Troops to move in. The die result is a 5 and the next destination is
+Sierra Maestra, with Underground Guerrillas and an enemy Base
+(we skip La Habana as there are no cubes in it and no adjacent
+Troops that could be moved into it). The single adjacent Troop
+in Santiago de Cuba is no longer required to be kept there, as the
+instruction to keep 1 Troop and 1 Police cannot be met due to
+there being no Police, so we move the Troop into Sierra Maestra
+and Activate two Guerrillas there. The third AN roll is a 1, so the
+Sweep is complete.
+
+We move down to the Special Activity box, and NP GOV will Air
+Strike in Pinar del Rio, with a Vulnerable Open Casino and the
+most Support, removing one SYN Guerrilla. The NP GOV turn
+is now complete.
+
+Card 8: Propaganda
+
+The next Event is Propaganda, so we will conduct a Propaganda
+Round, using the additional instructions on the NP Propaganda
+Round Instructions sheet where necessary.
+
+Victory? No Faction has reached their Victory threshold, so the
+game continues. Note that if you are playing solitaire, against three
+NP Factions, you cannot win until the final Propaganda Round
+(so play would continue even if you had reached your Victory
+threshold).
+
+Resources: We skip the Earnings steps for the three NP Factions
+that do not track Resources, but still check it for NP SYN, who gain
+6 Resources from their Open Casinos (note that NP Factions will
+Skim to reduce player or NP SYN Resources, even though they
+would not gain any, so NP SYN only gains 2 Resources from their
+Casinos in Havana). If any NP Faction had Cash they would now
+use it as instructed on the NP Propaganda Round Instructions sheet.
+
+Support: Total Support is below 19, so the US Alliance degrades
+one step and Aid is reduced by 10 (note that Aid is tracked even
+though NP GOV does not gain Resources from it, as it may still
+be relevant for some Events).
+
+The NP Propaganda Round Instructions sheet indicates that NP
+GOV is able to conduct a number of Civic Action “steps” (removing
+Terror or shifting toward Active Support) up to a roll of 1d3 plus
+the number of Economic Centers without Terror. In this case this
+will definitely be sufficient to shift both Havana and Camagiiey
+City (the only viable Civic Action targets) to Active Support, so
+we do that now.
+
+NP 26) is similarly able to conduct a number of Agitation steps
+equal to 1d3 plus the number of Bases they have in play, which in
+this case will definitely be sufficient to set Oriente (the only space
+they Control that’s not at Active Opposition) to Active Opposition,
+so we don’t need to roll for this either.
+
+Finally, NP DR will follow the normal Rally instructions on a
+Calixto card (it doesn’t matter which one). This indicates that they
+will replace two of their Guerrillas with a Base in Santiago de Cuba.
+
+Redeploy: The NP Propaganda Round Instructions sheet first in-
+dicates that NP GOV will get one Police to each space with GOV
+Control, but this is already the case so we skip it. We also skip the
+next two instructions, as there are no Provinces with GOV Control
+and no ECs with Guerrillas. Finally we move the two Troops in
+Pinar del Rio and the two Troops in Sierra Maestra, placing two
+each in Havana and Camagiiey City (spreading them evenly be-
+tween the eligible spaces).
+
+Reset: In addition to all the normal Reset steps we also shuffle the
+Calixto deck, then we are ready to continue play.
+
+This example of play is now complete! If you would like to con-
+tinue playing you can take over from one of the NP Factions, or
+alternatively you can reset and start a fresh game. Good luck!
+
+© 2025 GMT Games, LLC
+
+===== calx-19.png =====
+Calixto Card-Based Non-Player Rules 19
+
+Designer Notes
+
+When I was first asked to design the Jacquard system for Cuba
+Libre, I had three main areas of concern to address. First, the overall
+design: it’s been said that Cuba Libre is a fist fight in a phone booth,
+and I wanted the cards to be able to reflect the back-and-forth nature
+and large swings between winning and falling behind. Secondly,
+the Syndicate faction posed an interesting problem compared to
+other volumes in that resource tracking, traditionally something
+ignored by NP Jacquard factions, was inherently part of their win
+condition. And lastly, there is less freedom between Operation and
+Special Activity combinations.
+
+The first concern turned out to be quite the benefit. Much as a
+human player does, the NP factions in Calixto can change strategy
+to respond to more immediate threats without losing too much
+momentum. The cards are designed to be more responsive to on-
+map elements. However, each faction was also designed with an
+overall goal in mind. For example, the Directorio wants to put out
+as many pieces as possible in order to reposition them for control,
+so their cards will heavily feature Rally Operations until they have
+enough Guerrillas to start Marching.
+
+When it comes to the Syndicate, I tried a few options for tracking
+Resources and Open Casinos. The first draft tracked Resources
+just as a human player would. We then toyed with the alternative
+of a new counter to track how many Casinos could be built. While
+maybe slightly cleaner — there are no odd numbers of resources
+to worry about — this was effectively the same as having to track
+them anyways, so I tried to not track them at all. However, this
+ran into a problem very quickly of how to design the cards with
+appropriate Activation Numbers for Construct. Ultimately, it was
+decided that just keeping the same Syndicate Resource tracking for
+Construct and for Cash income was the simplest. Most players of
+Calixto would be familiar with this already from playing the base
+game, and the added fidelity was worth the cost of including the
+slight extra overhead of tracking Syndicate Resources.
+
+Lastly, the combinations of Operation and Special Activities are
+far fewer than we had to play with when designing Jacquard bots
+for Fire in the Lake. This meant that, unfortunately, designing
+the cards from an Operation-first perspective resulted in fewer
+branching paths. This was a high-level concern I kept an eye on
+during the entire testing process, but it didn’t seem to cause any
+strategic or competitive issues. In cases where the bot goes first,
+this can sometimes block a player from getting more than a Limited
+Operation, and in cases where the bot goes second, sometimes
+an Operation only — the bread-and-butter of Cuba Libre — is fine
+enough to get an edge over a human player.
+
+All in all, I’m very happy with what the development team has
+put together and I find the Calixto bots to be very competitive and
+strategic. We hope you enjoy playing against them!
+
+Kevin Crooks
+Colorado, USA
+July 2025
+
+Credits
+
+Original COIN Series Design: Volko Ruhnke
+Calixto Solitaire System Design: Kevin Crooks
+Calixto Solitaire System Development: Jason Carr & Joe Dewhurst
+
+Jacquard Solitaire System Design: Bruce Mansfield
+Original Game Design: Volko Ruhnke & Jeff Grossman
+COIN Series Development: Jason Carr
+
+Card & Player Aid Layout: Tomasz Niedzifiski
+Booklet Layout: Nicanor Valdez
+
+Playtesters: Fabian Amstad, Charles Hasegawa, Georgios “Jorge” losifidis, Gabor Kiss, Brian Krasnopolsky, J.J. O’Malley,
+John-Paul Pizzica, Shawn Rynearson, Javier J. Villa
+Proofreading: Fabian Amstad, Zoey Kurtz, Michael Neubauer, John-Paul Pizzica, David Wilkinson, Evan Yoak
+
+Production Coordinator: Kai Jensen
+
+© 2025 GMT Games, LLC
+
+===== calx-20.png =====
+20
+
+Calixto Card-Based Non-Player Rules
+
+Armored
+Cars
+
+Rolando
+Masferrer
+
+MAP
+
+EI Che
+
+Pact of
+Caracas
+
+Ratl
+
+Morgan
+
+Mafia
+Offensive
+
+Additional Capabi
+
+ity & Momentum Instructions
+
+NP GOV will not choose to move any Troops.
+NP GOV performing Sweep with a Special Activity will Assault in one Sweep space using Remove.
+
+NP GOV will perform a Special Acti
+Special Activity.
+
+ity with every Limited Operation as if performing Operation with
+
+NP 26J performing a March Operation will flip all moving Guerrillas Underground in the first destination
+where any are Active after moving (note: this may not technically be the first destination, but a 26J player
+could have chosen to select it first).
+
+NP 26J or NP DR will remove two Bases to cancel this Capability if the other Faction is over its victory
+threshold. Remove Bases from lowest Population spaces first, then most enemy forces, then random. Some
+Calixto cards have additional instructions if Pact of Caracas is in effect.
+
+NP 26J will reroll all failed Attack rolls and any Kidnap result less than 4.
+
+NP DR performing March Operations may select origin spaces up to two spaces away and move Guerrillas
+from there to the selected destination.
+
+NP SYN performing a Special Activity with Terror will use Assassinate first to Remove one enemy piece if
+possible, then use Bribe if not. Perform Terror in the space selected for Assassinate, if any.
+
+© 2025 GMT Games, LLC
+

@@ -5,9 +5,9 @@ extends Control
 ## Fazioni, Aiuti, i 4 marcatori di vittoria sul tracciato perimetrale 0–49, e il marcatore
 ## dell'Alleanza USA nella sua casella. I segnalini con lo stesso valore vengono sfalsati.
 
-const BASE_OFF := 18.0   # scostamento sotto la riga dei numeri
-const STACK := 22.0      # scostamento per segnalini sulla stessa cella
-const MK := 26.0         # dimensione segnalino
+const BASE_OFF := 2.0    # i segnalini stanno sulla riga dei numeri (non nei riquadri sotto)
+const STACK := 14.0      # scostamento per segnalini sulla stessa cella
+const MK := 24.0         # dimensione segnalino
 
 
 func _track_norm(value: int) -> Vector2:
