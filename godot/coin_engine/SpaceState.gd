@@ -19,6 +19,10 @@ var control: String = ""
 ## Marker generici: nome -> conteggio (es. "terror", "sabotage").
 var markers: Dictionary = {}
 
+## Segnalini Denaro (Cash) presenti nello spazio: faction_id -> conteggio.
+## (Posti "sotto" una Guerriglia/cubo della Fazione; qui ne tracciamo proprietà e luogo.)
+var cash: Dictionary = {}
+
 
 func _init(p_space_id: String = "") -> void:
 	space_id = p_space_id
@@ -114,6 +118,7 @@ func to_dict() -> Dictionary:
 		"support": int(support),
 		"control": control,
 		"markers": markers.duplicate(true),
+		"cash": cash.duplicate(true),
 	}
 
 
@@ -123,3 +128,16 @@ func apply_dict(d: Dictionary) -> void:
 	support = int(d.get("support", CoinEnums.Support.NEUTRAL))
 	control = String(d.get("control", ""))
 	markers = (d.get("markers", {}) as Dictionary).duplicate(true)
+	cash = (d.get("cash", {}) as Dictionary).duplicate(true)
+
+
+func cash_for(faction: String) -> int:
+	return int(cash.get(faction, 0))
+
+
+func add_cash(faction: String, n: int = 1) -> void:
+	var v := cash_for(faction) + n
+	if v <= 0:
+		cash.erase(faction)
+	else:
+		cash[faction] = v

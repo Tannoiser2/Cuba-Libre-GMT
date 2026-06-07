@@ -239,6 +239,52 @@ func set_support(space_id: String, level: CoinEnums.Support) -> void:
 		spaces[space_id].support = level
 
 
+# ---------------------------------------------------------------------------
+# Denaro (Cash) — limite globale 4 segnalini sulla mappa (Cuba Libre 4.5.2)
+# ---------------------------------------------------------------------------
+
+const CASH_LIMIT := 4
+
+func total_cash_on_map() -> int:
+	var total := 0
+	for sid in spaces.keys():
+		for fid in spaces[sid].cash.keys():
+			total += int(spaces[sid].cash[fid])
+	return total
+
+
+## Piazza `n` segnalini Denaro per una Fazione (dal pool), entro il limite. Restituisce piazzati.
+func place_cash(space_id: String, faction: String, n: int = 1) -> int:
+	if not spaces.has(space_id):
+		return 0
+	var room := CASH_LIMIT - total_cash_on_map()
+	var k: int = clampi(n, 0, room)
+	if k > 0:
+		spaces[space_id].add_cash(faction, k)
+	return k
+
+
+## Sposta la proprietà del Denaro a un'altra Fazione nello stesso spazio (Requisizione/Riscatto).
+func transfer_cash(space_id: String, from_faction: String, to_faction: String, n: int = 1) -> int:
+	if not spaces.has(space_id):
+		return 0
+	var st: SpaceState = spaces[space_id]
+	var k: int = mini(n, st.cash_for(from_faction))
+	if k > 0:
+		st.add_cash(from_faction, -k)
+		st.add_cash(to_faction, k)
+	return k
+
+
+func remove_cash(space_id: String, faction: String, n: int = 1) -> int:
+	if not spaces.has(space_id):
+		return 0
+	var st: SpaceState = spaces[space_id]
+	var k: int = mini(n, st.cash_for(faction))
+	st.add_cash(faction, -k)
+	return k
+
+
 func _resolve_state(type: String, state: String) -> String:
 	if state != "__default__":
 		return state

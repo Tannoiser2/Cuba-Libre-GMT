@@ -38,8 +38,9 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [x] Stato di gioco: serializzazione (save/load JSON).
 - [x] Sequenza di gioco: carta Evento, Disponibilità, Passare, opzioni 1ª/2ª Fazione, Carta Finale.
 - [x] Operazioni (Train/Garrison/Sweep/Assault, Rally/March/Attack/Terror/Build) + test.
-- [ ] Attività Speciali (tutte le 12).
-- [ ] Sistema Denaro (Cash) e Riciclaggio.
+- [x] Attività Speciali (tutte le 12) + test.
+- [x] Sistema Denaro (Cash) — segnalini, proprietà, trasferimento, limite 4.
+- [ ] Riciclaggio (Launder) collegato alla sequenza di gioco.
 - [ ] Round di Propaganda (Vittoria, Risorse, Supporto, Spostamento, Sistemazione).
 - [ ] Condizioni e margini di vittoria.
 - [ ] Test unitari del motore (incl. l'esempio guidato del Playbook come scenario di test).

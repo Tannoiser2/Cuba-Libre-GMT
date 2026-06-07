@@ -172,6 +172,69 @@ func can_place_base(state: GameState, space_id: String, is_casino: bool) -> bool
 
 
 # ---------------------------------------------------------------------------
+# Helper condivisi da Operazioni e Attività Speciali
+# ---------------------------------------------------------------------------
+
+func faction_has_non_base(st: SpaceState, fid: String) -> bool:
+	return st.count(fid, "guerrilla") > 0 or st.count(fid, "troops") > 0 or st.count(fid, "police") > 0
+
+
+## Attiva fino a `n` Guerriglie Clandestine nemiche nello spazio (qualsiasi Fazione).
+func activate_guerrillas(state: GameState, space_id: String, n: int, exclude: String = "") -> int:
+	var st: SpaceState = state.space_state(space_id)
+	var order := ["m26", "directorio", "syndicate"]
+	if exclude != "":
+		order.erase(exclude)
+	var activated := 0
+	for fid in order:
+		if activated >= n:
+			break
+		var avail := st.count(fid, "guerrilla", "underground")
+		var k: int = mini(n - activated, avail)
+		state.flip_pieces(fid, "guerrilla", space_id, "underground", "active", k)
+		activated += k
+	return activated
+
+
+## Rimuove fino a `capacity` pezzi nemici esposti da uno spazio (Assalto/Attacco/Aereo/Imboscata).
+## opts: { active_g, underground_g, cubes, bases }. Restituisce il numero rimosso.
+## Il Denaro dei pezzi rimossi viene trasferito a un'altra Fazione presente o eliminato.
+func remove_enemy_pieces(state: GameState, space_id: String, capacity: int,
+		attacker: String, opts: Dictionary) -> int:
+	var st: SpaceState = state.space_state(space_id)
+	var order := ["m26", "directorio", "syndicate", "government"]
+	order.erase(attacker)
+	var removed := 0
+	while removed < capacity:
+		var done := true
+		for fid in order:
+			if opts.get("active_g", false) and st.count(fid, "guerrilla", "active") > 0:
+				st.remove_piece(fid, "guerrilla", 1, "active"); removed += 1; done = false; break
+			if opts.get("underground_g", false) and st.count(fid, "guerrilla", "underground") > 0:
+				st.remove_piece(fid, "guerrilla", 1, "underground"); removed += 1; done = false; break
+			if opts.get("cubes", false) and st.count(fid, "police") > 0:
+				st.remove_piece(fid, "police", 1, ""); removed += 1; done = false; break
+			if opts.get("cubes", false) and st.count(fid, "troops") > 0:
+				st.remove_piece(fid, "troops", 1, ""); removed += 1; done = false; break
+		if done:
+			break
+	if opts.get("bases", false):
+		while removed < capacity:
+			var done2 := true
+			for fid in order:
+				if faction_has_non_base(st, fid):
+					continue
+				if st.count(fid, "base") > 0:
+					st.remove_piece(fid, "base", 1, ""); removed += 1; done2 = false; break
+				if fid == "syndicate" and st.count("syndicate", "casino", "open") > 0:
+					state.flip_pieces("syndicate", "casino", space_id, "open", "closed", 1)
+					removed += 1; done2 = false; break
+			if done2:
+				break
+	return removed
+
+
+# ---------------------------------------------------------------------------
 # Metriche / Vittoria specifiche di Cuba Libre
 # ---------------------------------------------------------------------------
 

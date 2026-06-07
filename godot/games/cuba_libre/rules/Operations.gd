@@ -48,67 +48,6 @@ func _adjacent(a: String, b: String) -> bool:
 	return sd != null and sd.adjacent.has(b)
 
 
-## Rimuove fino a `capacity` pezzi nemici esposti da uno spazio (usato da Assalto,
-## Attacco, Attacco Aereo). Restituisce il numero rimosso.
-## opts: { active_g, underground_g, cubes, bases } -> quali tipi sono rimovibili.
-func _remove_enemy_pieces(space_id: String, capacity: int, attacker: String, opts: Dictionary) -> int:
-	var st: SpaceState = state.space_state(space_id)
-	var order := ["m26", "directorio", "syndicate", "government"]
-	order.erase(attacker)
-	var removed := 0
-	# 1) Pezzi non-Base (guerriglie/cubi) secondo le opzioni.
-	while removed < capacity:
-		var done := true
-		for fid in order:
-			if opts.get("active_g", false) and st.count(fid, "guerrilla", "active") > 0:
-				st.remove_piece(fid, "guerrilla", 1, "active"); removed += 1; done = false; break
-			if opts.get("underground_g", false) and st.count(fid, "guerrilla", "underground") > 0:
-				st.remove_piece(fid, "guerrilla", 1, "underground"); removed += 1; done = false; break
-			if opts.get("cubes", false) and st.count(fid, "police") > 0:
-				st.remove_piece(fid, "police", 1, ""); removed += 1; done = false; break
-			if opts.get("cubes", false) and st.count(fid, "troops") > 0:
-				st.remove_piece(fid, "troops", 1, ""); removed += 1; done = false; break
-		if done:
-			break
-	# 2) Basi/Casinò di Fazioni "ripulite" (senza altri pezzi nello spazio).
-	if opts.get("bases", false):
-		while removed < capacity:
-			var done2 := true
-			for fid in order:
-				if _faction_has_non_base(st, fid):
-					continue
-				if st.count(fid, "base") > 0:
-					st.remove_piece(fid, "base", 1, ""); removed += 1; done2 = false; break
-				if fid == "syndicate" and st.count("syndicate", "casino", "open") > 0:
-					# il Casinò aperto viene chiuso, non rimosso (1.4.5)
-					state.flip_pieces("syndicate", "casino", space_id, "open", "closed", 1)
-					removed += 1; done2 = false; break
-			if done2:
-				break
-	return removed
-
-
-func _faction_has_non_base(st: SpaceState, fid: String) -> bool:
-	return st.count(fid, "guerrilla") > 0 or st.count(fid, "troops") > 0 or st.count(fid, "police") > 0
-
-
-## Attiva fino a `n` Guerriglie Clandestine nemiche nello spazio (qualsiasi Fazione).
-func _activate_guerrillas(space_id: String, n: int, exclude: String = "") -> int:
-	var st: SpaceState = state.space_state(space_id)
-	var order := ["m26", "directorio", "syndicate"]
-	if exclude != "":
-		order.erase(exclude)
-	var activated := 0
-	for fid in order:
-		if activated >= n:
-			break
-		var avail := st.count(fid, "guerrilla", "underground")
-		var k: int = min(n - activated, avail)
-		state.flip_pieces(fid, "guerrilla", space_id, "underground", "active", k)
-		activated += k
-	return activated
-
-
 # ===========================================================================
 # OPERAZIONI DEL GOVERNO (COIN)
 # ===========================================================================
@@ -219,7 +158,7 @@ func sweep(params: Dictionary) -> Dictionary:
 		var st: SpaceState = state.space_state(sid)
 		var cubes := st.count("government", "troops") + st.count("government", "police")
 		var act := cubes if sd.terrain != "forest" else int(cubes / 2)
-		var n := _activate_guerrillas(sid, act)
+		var n := mod.activate_guerrillas(state, sid, act)
 		if n > 0:
 			log.append("Sweep: attivate %d Guerriglie a %s" % [n, sid])
 	return _ok(cost, log)
@@ -252,7 +191,7 @@ func _assault_in_space(space_id: String) -> int:
 		capacity = troops + int(troops / 2)
 	else:
 		capacity = troops
-	return _remove_enemy_pieces(space_id, capacity, "government",
+	return mod.remove_enemy_pieces(state, space_id, capacity, "government",
 		{"active_g": true, "underground_g": false, "cubes": false, "bases": true})
 
 
@@ -278,7 +217,7 @@ func garrison(params: Dictionary) -> Dictionary:
 		var st: SpaceState = state.space_state(sid)
 		var cubes := st.count("government", "troops") + st.count("government", "police")
 		if cubes > 0:
-			var n := _activate_guerrillas(sid, cubes)
+			var n := mod.activate_guerrillas(state, sid, cubes)
 			if n > 0:
 				log.append("Garrison: attivate %d Guerriglie a %s" % [n, sid])
 	# Assalto gratuito opzionale in 1 EC
@@ -421,7 +360,7 @@ func attack(params: Dictionary) -> Dictionary:
 		var num_g := st.count(f, "guerrilla")
 		var roll := int(die_rolls.get(sid, randi() % 6 + 1))
 		if roll <= num_g:
-			var removed := _remove_enemy_pieces(sid, 2, f,
+			var removed := mod.remove_enemy_pieces(state, sid, 2, f,
 				{"active_g": true, "underground_g": true, "cubes": true, "bases": true})
 			log.append("Attacco a %s (tiro %d ≤ %d): rimossi %d pezzi" % [sid, roll, num_g, removed])
 			if roll == 1:

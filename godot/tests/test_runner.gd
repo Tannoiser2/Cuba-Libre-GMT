@@ -29,6 +29,10 @@ func _initialize() -> void:
 	_test_op_attack()
 	_test_op_terror()
 	_test_op_build()
+	_test_sa_government()
+	_test_sa_m26()
+	_test_sa_directorio()
+	_test_sa_syndicate()
 
 	print("\n-- Risultato: %d passati, %d falliti --" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
@@ -424,6 +428,155 @@ func _test_op_build() -> void:
 	_eq("nuovo Casinò chiuso a Pinar",
 		state.space_state("pinar_del_rio").count("syndicate", "casino", "closed"), 1)
 	_eq("Casinò totali a Pinar", state.space_state("pinar_del_rio").count("syndicate", "casino"), before + 1)
+
+
+func _sa() -> Array:
+	# [mod, gd, state, specials]
+	var r := _new_game()
+	var sa := CubaLibreSpecials.new(r[2], r[0])
+	return [r[0], r[1], r[2], sa]
+
+
+func _test_sa_government() -> void:
+	print("\n[Att.Speciale — Governo]")
+	# Transport
+	var r := _sa()
+	var state: GameState = r[2]
+	var sa: CubaLibreSpecials = r[3]
+	var res = sa.transport({"from": "havana", "to": "la_habana", "count": 3})
+	_check("transport ok", res.ok)
+	_eq("Truppe a Havana dopo Transport", state.space_state("havana").count("government", "troops"), 3)
+	_eq("Truppe a La Habana dopo Transport", state.space_state("la_habana").count("government", "troops"), 3)
+	# Air Strike normale
+	var r2 := _sa()
+	var st2: GameState = r2[2]
+	var sa2: CubaLibreSpecials = r2[3]
+	st2.space_state("matanzas").add_piece("m26", "guerrilla", 1, "active")
+	var res2 = sa2.air_strike({"space": "matanzas"})
+	_check("air strike ok", res2.ok)
+	_eq("Guerriglia rimossa da Air Strike", st2.space_state("matanzas").count("m26", "guerrilla"), 0)
+	# Air Strike vietato in Embargo
+	var r3 := _sa()
+	var st3: GameState = r3[2]
+	var sa3: CubaLibreSpecials = r3[3]
+	st3.tracks["us_alliance"] = 2
+	st3.space_state("matanzas").add_piece("m26", "guerrilla", 1, "active")
+	var res3 = sa3.air_strike({"space": "matanzas"})
+	_check("air strike bloccato in Embargo", not res3.ok)
+	# Reprisal
+	var r4 := _sa()
+	var st4: GameState = r4[2]
+	var sa4: CubaLibreSpecials = r4[3]
+	st4.space_state("matanzas").add_piece("government", "troops", 2)  # Govt controlla, Opp Passiva (-1)
+	st4.space_state("matanzas").add_piece("m26", "guerrilla", 1, "active")
+	st4.recompute_all_control()
+	var res4 = sa4.reprisal({"space": "matanzas", "move": {"faction": "m26", "to": "la_habana"}})
+	_check("reprisal ok", res4.ok)
+	_eq("Reprisal: Terrore a Matanzas", st4.space_state("matanzas").marker("terror"), 1)
+	_eq("Reprisal: Opposizione -> Neutrale", st4.space_state("matanzas").support, CoinEnums.Support.NEUTRAL)
+	# La Habana ha già 1 Guerriglia M26 nello schieramento iniziale -> dopo lo spostamento 2
+	_eq("Reprisal: Guerriglia spostata a La Habana", st4.space_state("la_habana").count("m26", "guerrilla"), 2)
+	_eq("Reprisal: Guerriglia rimossa da Matanzas", st4.space_state("matanzas").count("m26", "guerrilla"), 0)
+
+
+func _test_sa_m26() -> void:
+	print("\n[Att.Speciale — 26 Luglio]")
+	# Infiltrate
+	var r := _sa()
+	var state: GameState = r[2]
+	var sa: CubaLibreSpecials = r[3]
+	state.space_state("oriente").add_piece("government", "police", 1)
+	state.space_state("oriente").add_piece("m26", "guerrilla", 1, "underground")
+	var res = sa.infiltrate({"space": "oriente"})
+	_check("infiltrate ok", res.ok)
+	_eq("Polizia rimossa da Infiltrazione", state.space_state("oriente").count("government", "police"), 0)
+	_eq("Guerriglia M26 piazzata", state.space_state("oriente").count("m26", "guerrilla"), 2)
+	# Ambush
+	var r2 := _sa()
+	var st2: GameState = r2[2]
+	var sa2: CubaLibreSpecials = r2[3]
+	st2.space_state("matanzas").add_piece("m26", "guerrilla", 1, "underground")
+	st2.space_state("matanzas").add_piece("government", "police", 2)
+	var res2 = sa2.ambush("m26", {"space": "matanzas"})
+	_check("ambush ok", res2.ok)
+	_eq("Ambush rimuove 2 Polizia", st2.space_state("matanzas").count("government", "police"), 0)
+	# Kidnap con tiro
+	var r3 := _sa()
+	var st3: GameState = r3[2]
+	var sa3: CubaLibreSpecials = r3[3]
+	st3.space_state("havana").add_piece("m26", "guerrilla", 5, "underground")  # 5 > 4 Polizia
+	var gov_before := st3.get_resources("government")
+	var m26_before := st3.get_resources("m26")
+	var res3 = sa3.kidnap({"space": "havana", "target": "government", "die": 4})
+	_check("kidnap ok", res3.ok)
+	_eq("Kidnap: -4 Risorse Govt", st3.get_resources("government"), gov_before - 4)
+	_eq("Kidnap: +4 Risorse M26", st3.get_resources("m26"), m26_before + 4)
+	_eq("Kidnap: Casinò chiuso a Havana", st3.space_state("havana").count("syndicate", "casino", "closed"), 1)
+	# Kidnap con Denaro del Riscatto
+	var r4 := _sa()
+	var st4: GameState = r4[2]
+	var sa4: CubaLibreSpecials = r4[3]
+	st4.space_state("havana").add_piece("m26", "guerrilla", 5, "underground")
+	st4.place_cash("havana", "syndicate", 1)
+	sa4.kidnap({"space": "havana", "target": "syndicate"})
+	_eq("Kidnap: Denaro trasferito a M26", st4.space_state("havana").cash_for("m26"), 1)
+
+
+func _test_sa_directorio() -> void:
+	print("\n[Att.Speciale — Directorio]")
+	# Subvert (Camagüey Provincia: DR controllata, Pop 1, Opp Passiva)
+	var r := _sa()
+	var state: GameState = r[2]
+	var sa: CubaLibreSpecials = r[3]
+	var dr_before := state.get_resources("directorio")
+	var res = sa.subvert({"space": "camaguey_province"})
+	_check("subvert ok", res.ok)
+	_eq("Subvert: +1 Risorse DR", state.get_resources("directorio"), dr_before + 1)
+	_eq("Subvert: spazio Neutrale", state.space_state("camaguey_province").support, CoinEnums.Support.NEUTRAL)
+	# Assassinate
+	var r2 := _sa()
+	var st2: GameState = r2[2]
+	var sa2: CubaLibreSpecials = r2[3]
+	st2.space_state("camaguey_province").add_piece("government", "troops", 1)  # bersaglio
+	var res2 = sa2.assassinate({"space": "camaguey_province"})
+	_check("assassinate ok", res2.ok)
+	_eq("Assassinio rimuove la Truppa", st2.space_state("camaguey_province").count("government", "troops"), 0)
+
+
+func _test_sa_syndicate() -> void:
+	print("\n[Att.Speciale — Sindacato]")
+	# Profit cash
+	var r := _sa()
+	var state: GameState = r[2]
+	var sa: CubaLibreSpecials = r[3]
+	var res = sa.profit({"mode": "cash", "spaces": ["havana"]})
+	_check("profit cash ok", res.ok)
+	_eq("Denaro Sindacato a Havana", state.space_state("havana").cash_for("syndicate"), 1)
+	# Profit convert (chiude Casinò a Pinar -> +3)
+	var r2 := _sa()
+	var st2: GameState = r2[2]
+	var sa2: CubaLibreSpecials = r2[3]
+	var syn_before := st2.get_resources("syndicate")
+	sa2.profit({"mode": "convert", "close": ["pinar_del_rio"]})
+	_eq("Profit convert: +3 Risorse", st2.get_resources("syndicate"), syn_before + 3)
+	_eq("Casinò chiuso a Pinar", st2.space_state("pinar_del_rio").count("syndicate", "casino", "closed"), 1)
+	# Muscle (Polizia verso Havana, Città con Casinò aperto)
+	var r3 := _sa()
+	var st3: GameState = r3[2]
+	var sa3: CubaLibreSpecials = r3[3]
+	var res3 = sa3.muscle({"type": "police", "from": "camaguey_city", "to": "havana", "count": 2})
+	_check("muscle ok", res3.ok)
+	_eq("Polizia mossa a Havana", st3.space_state("havana").count("government", "police"), 6)
+	# Bribe (rimuove 2 cubi, -3 Risorse)
+	var r4 := _sa()
+	var st4: GameState = r4[2]
+	var sa4: CubaLibreSpecials = r4[3]
+	st4.space_state("matanzas").add_piece("government", "troops", 2)
+	var syn4 := st4.get_resources("syndicate")
+	var res4 = sa4.bribe({"space": "matanzas", "action": "cubes", "count": 2})
+	_check("bribe ok", res4.ok)
+	_eq("Bribe: -3 Risorse Sindacato", st4.get_resources("syndicate"), syn4 - 3)
+	_eq("Bribe: 2 Truppe rimosse", st4.space_state("matanzas").count("government", "troops"), 0)
 
 
 func _test_victory_initial() -> void:
