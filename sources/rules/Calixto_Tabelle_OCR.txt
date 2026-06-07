@@ -1,0 +1,899 @@
+===== tab-1.png =====
+24
+
+25
+
+26
+
+27
+
+29
+
+30
+
+31
+
+32
+
+33
+
+34
+
+35
+
+36
+
+38
+
+a
+
+42
+
+43
+
+44
+
+45
+46
+
+48
+
+Only performed if
+2+ Available cubes.
+
+Only Critical if Cash could be
+transferred to a Government
+piece, otherwise not performed.
+Perform unshaded effect, se-
+lecting space where most Cash
+could be placed with cubes,
+then fewest enemy forces.
+
+Perform unshaded effect
+and close a Casino.
+
+Only Critical if any City at
+
+Opposition, otherwise not
+
+performed. Select one City
+with Opposition in this order:
+Havana, Camagiey, Santiago.
+
+Perform unshaded effect.
+Perform unshaded effect.
+
+Perform unshaded effect.
+
+Perform unshaded effect
+and select NP SYN
+as the Insurgent Faction.
+
+Only performed if
+2+ Available SYN Guerrillas.
+
+Only Critical if would open 2+
+Casinos, otherwise not per-
+formed. Use Place Casinos to
+relocate all Casinos (temporar-
+ily remove them from the map
+while doing so).
+
+Only Critical if
+it could place a Casino. Use
+Place Casinos to select a City.
+
+Select human player with most
+Resources first, 26J if tied.
+If both Factions are NP then
+NP SYN just gains a die roll of
+Resources.
+
+Only Critical if
+any Available DR Bases,
+otherwise not performed.
+
+Only Critical if any Available
+DR Guerrillas; otherwise not
+performed. Use Place Guerril-
+las, then Ambush if any enemy
+forces present, otherwise Rally.
+
+Only Critical if
+any Available DR Bases,
+otherwise not performed.
+
+Perform shaded effect.
+
+Only Critical if
+any Available DR Bases,
+otherwise not performed.
+
+Only Critical if
+any Available DR Bases.
+Perform shaded effect.
+
+Only Critical if
+2+ Available DR Guerrillas,
+otherwise not performed.
+
+Only Critical if
+2+ Available DR Guerrillas.
+
+Only Critical if Cash could be
+transferred to a DR piece, oth-
+erwise not performed. Select
+spaces where most Cash could
+be placed with DR Guerrillas,
+then fewest enemy forces.
+
+Close a Casino if possible.
+
+Draw a Calixto card to perform
+a Limited Terror Operation,
+treating all SYN Guerrillas as
+DR Guerrillas.
+
+Only Critical if DR Guerrilla in a
+space with a Government Base,
+otherwise performed. Use Re-
+move to select a space witha
+Government Base if possible.
+
+Select a space with Support
+first if possible.
+
+Perform shaded effect.
+
+Perform shaded effect.
+
+Perform shaded effect.
+
+Perform unshaded effect if any
+Available 26J Bases, otherwise
+perform shaded effect.
+
+Only performed if
+any Available 26J Bases.
+
+Only performed if any Available
+26J forces could be placed.
+
+Only performed if
+2+ Available 26J Guerrillas.
+
+Only performed if
+any Available 26J Guerrillas.
+Perform shaded effect.
+
+Only Critical if Cash could be
+transferred to a 26J piece, oth-
+erwise not performed. Select
+spaces where most Cash could
+be placed with 264 Guerrillas,
+then fewest enemy forces.
+
+Close a Casino if possible.
+
+Only Critical if
+any Available 26J Bases,
+otherwise not performed.
+
+Draw a Calixto card to perform
+a Limited Terror Operation,
+treating all SYN Guerrillas as
+26J Guerrillas,
+
+Only Critical if 26 Guerrilla ina
+space with a Government Base,
+otherwise performed. Use Re-
+move to select a space witha
+Government Base if possible.
+
+Notes:
+
++ Use the Piece Priorities table (C8.5.8) to select affected pieces and markers.
+
++ An Additional Capability & Momentum Instructions table can be found on the back of the Non-Player rulebook.
+
+===== tab-2.png =====
+CARD
+
+GOV
+
+DR
+
+26J
+
+10
+
+n
+
+14
+
+16
+
+16
+
+19
+
+21
+
+23
+
+Only Momentum if US Alliance
+is at Embargoed,
+otherwise not performed.
+
+Use Remove to select a Prov-
+
+ince or City with Underground
+
+Guerrillas where Assault would
+be effective (after Sweep).
+
+Only Critical if any City at
+Opposition, otherwise not
+performed.
+
+Open a Casino where Govern-
+ment Control, then where most
+cubes, then where fewest
+Guerrillas, then at random.
+
+Only Critical if US Alliance not
+at Firm and not final Campaign,
+otherwise not Performed.
+Remove Troops from Provinces
+with most Troops, then Cities
+with most Troops, keeping
+GOV Control and 2 cubes
+where GOV Base if possible.
+
+Only performed if 26J is player.
+
+Use Place Bases to select a
+Province without a Government
+Base if possible, then use Place
+
+Cubes to select any space.
+
+Use March Destination
+to select a space
+with enemy forces.
+
+Only Critical if 2+ Active DR
+Guerrillas in one space with
+Troops, otherwise not per-
+formed. Use Move Priorities
+to March from one space with
+Troops and most Active Guer-
+rillas.
+
+Only Critical if Troops in a
+Province at Active Support,
+or in a Province adjacent to a
+Province at Active Support;
+otherwise not performed.
+Use Shift to Neutral to select a
+Province at Active Support and
+one adjacent Province to set
+to Passive Opposition.
+
+Only Critical if
+2+ Available DR Guerrillas
+
+Perform unshaded effect
+
+Perform shaded effect.
+
+Only Critical if any DR Bases in
+spaces at Active Support or
+Active Opposition, otherwise
+
+performed. Use Place Guerrillas
+to Rally at these Bases first.
+
+Only performed if 26J is player.
+
+Only Critical if
+any Available DR Bases,
+otherwise not performed.
+
+Perform shaded effect.
+
+Use March Destination
+to select a space
+with enemy forces
+
+Only Critical if 2+ Active 26J
+Guerrillas in one space with
+Troops, otherwise not per-
+formed. Use Move Priorities
+to March from one space with
+Troops and most Active Guer-
+rillas.
+
+Not performed if 2+ Cities
+with any Opposition.
+
+Only Critical if
+2+ Available 26J Guerrillas.
+
+Only Critical if any Available
+26J Bases, otherwise not per-
+formed.
+
+Only Critical if 3+ Available
+26J Guerrillas. Use Place Guer-
+rillas to place 1 Guerrilla each in
+three different spaces.
+
+Only Critical if any 26J Bases
+in spaces at Active or Passive
+Support, otherwise not per-
+formed. Use Place Guerrillas to
+Rally at these Bases first.
+
+Only Critical if
+any Available 26J Bases,
+otherwise not performed.
+
+Use Shift Toward Active Oppo-
+sition, selecting a City witha
+26J piece and no Opposition if
+possible.
+
+===== tab-3.png =====
+OTT ‘SewD IW 9Z0Z @
+
+4998p 03X09 8Y3 e14sNYS
+
+‘Aupssedeu 4! Aqold aulUejap 0} saqnd ednid Buisn ‘(AjUo eSNG AOD D YIM SBOU|AOId,
+PUD Se!719) [013U0D AOD YIM saonds 03 a[qIssod sp A|UBAS SO SOJ UO PUD ASO AOD D ANOYIUM SEdUIACId U| SdoosL BAOW (H)
+
+“Ysuly UOJ JseyB1y ‘SO3 U! SHII|4EN} ||D |Onba 03 ed!od eAoW ©)
+“SD AOD OU PUD [O43UOD AOD YIM SEOUIAOJd || UI (SCUISDD Paso|o Bulpnjoul) seos0J JUaGNsu| Paeoxe 03 Bd!|0d aAOW @)
+*]0.4U0D AOD YAM Bonds Yoos 0} sd1|0d 1385 ©
+
+“sdood] JSOW 843 YIIM SeODdS WO1 SUI} D 3D BUO U9Y} ‘ISJIJ ESO ACH D INOYM SedUIAd’d WOLJ SdOOsL BAOW »
+‘01|Od JSOW 943 YIIM SeoDdS WO PUU!Z D ID BUD Bd1|Od OAOW +
+'s800ds UO!IDUIJSEP 399/9S 0} Seqnd edDid Bulsn saqno aAow ‘UO!IJONIISU! PEJeqUUNU YODE UIYAM +
+
+:seuljepin6B
+Buimo}joj ayy ulyyMm eduo AjUO aqnd YODe aAOW $9040} JUaHiNsU ||D PeeOxe 0} $8010} AOD deey ‘esog AOD D JnoyzM so
+-OUIAOId Bulqixe Sdood, Jo yjNsei D sp ydeoxg ‘seonds JUeINO JI9yj Ul Seqno J84IO deex PUD Mo|>aq PaUl|}No so saqnd aAoW
+
+AQ1d3034
+
+SOSDg YC e|qos9aujnA J0J Buryooyo.
+uaym punosBiepun spd spywend YG aAI}OY $3913 ING ‘sUO!JONAASU! AjJDY 40 PDO 07X//OD DO SMOIP UG dN :Bupjong yodx3g
+
+‘dow! ey} uo sespg P9z JO Jequunu 843 snjd Epl 03 |onbe siylys pud peAnowisd 10142] JO Jequunu WNW
+-IxpW D 03 dn ‘uoijisoddo ealzoy papMmoL aylys Buisn UoI{Isoddo SsAOY PMO} IJIUS 0] SeoDds sjd8/9S 797 dN :UODUBY
+
+“aBpJOgDS jNoYIM si9qUSD DIWOUODJ 4O JequuNu 98y3 sNid Ep 0} jonbe sjyiys pub PeAowei JOUaL Jo Jequinu
+winwiixpww p 03 dn ‘y4oddng enjoy pupmoL ag1ys Guisn quoddng anijoy psoMmo} IJIYs 0] SeoDds $}209/8S AOD dN :UO!}OW SIAID
+
+LuOddns
+
+“seounosay UIDB 03 Us} ‘soUuIsOD
+uado g ap aay) JI]JUN soulsn9 uado 0} ‘punoy NpUDBododd |DUy JI A|UO ‘UAL ‘SoUISDD ed] OF YSOD SOSN NAS dN *
+
+“qoayye
+JayzNJ OU YUM B/QDIIOAY 03 YSOD |OUOIZIPpo AuD UJNI@J UY} ‘a|q|ssod J! SesDg @ODId 0} YSDD BSN P9Z dN PUD YG dN *
+
+@IQO|IOAY 02 PauiNjed YSOO [OUOIIIPPO Yobe Joy esDUd Joddns 84} U! ||01 BIP UO!IJOW
+SIND 84} 02 JalJIPOW [+ D SUIDB UAY} ‘a|qISSod J! Sesog AOD INOYIM SOUIAOJd U| SES BODId 0} YSDD SESN AOD dN *
+
+:sj1sodeq yspo
+*[DJO} SOUNOSOY NAS WO PSAOWAL ||I9S 91D SUOIJOD4 dN O} PSEJSUDI} SSOINOSSY “WIS OYL
+
+‘79% dN PUD ‘UC dN ‘AOD dN Joy Sdeqs sBuludDg e10ub|
+
+saounosau
+
+‘punoy DpunBodoig july ey S! 3! JI UIM AjUO ADW SUOIIODY dN 989443 YSUIDBD au!oI}}0s BulAnid uOWUNY y :y9eYD A10991A,
+
+ZAMOLOIA
+
+(6°S°89) SNOILONULSNI GNNOY VANVSWdOud dN
+
+===== tab-4.png =====
+“wopunJ 3p uoIydo euo JoOeIes ‘paysnDyxe useq aADY SUOI}ONJYSU! paliddns
+pun suoido josenes BUOWN WOJJ 198/8S 0 PS88U SUOIJOD dN JEASUSYM “eZIWOpUDY ‘3qNoq Ul UAYM +
+
+“@|QO|IDAY 0} 3! EAOWAL |IIM A9Y EY} YSOO OU} BAI9O91 UDO UO!IOD4 dN J9YIO OU JI “NAS dN ‘[9Z dN ‘Yd
+dN ‘AOD dN J8ps0 uy} UI ‘eonds eWDS ey} U! UOIJOD4 dN J@4IOUD 0} UA) ‘a|qissod 4! soDds esuiDs 843
+ul sedeid 41843 YO 18YJOUD 03 }! SSNd |JIM SUOIODY dN ‘YSDD BAOWA 0} PedJ0) USYM “YSDD Buyaowey +
+
+“OS OP JOABU |JIM NAS dN ‘UO!JOJEdO paezW!T BesJ SIU 8{NDEXe 0} PADD 07ZX!OD |OUOIJIPPD UD MODI
+“uolosedo pez 40 AjUO UO!WDJEedO UD WHOjJed yxeu Asya UeUM “a'l ‘AjUN Oddo Ys4IJ 84} DO UO!IO
+-10d0 parwiy 944 D JOJ Sia4JOW YSOD P|@y @sn SADMIO |I!M Yd dN PUD ‘T9Z dN ‘AOD dN “"YSDD Buisn +
+
+“S|]O1 BIP JOQUUNN UOIQDAIZOY Pun ‘seoeld
+BIQD|IDAD ‘pipog ey3 JO 6303S 843 UEAIB ‘pemol|D JUE}xe LUNWIXOWW ayy 07 AJAIOY [DID@ds JO UODIE
+-do peqosjas p eynoexe sAom|p SUOIJODY dN *3U87Xy WNWIXDW 43 03 AWAY [DIDedS puD UO!zD4edO +
+
+“449| 02 1461 pud dn wojjoq ay} Wolds Bulppes sonds pajoajes YONS WO SAOWAJ OF Sedsid JOaIEs
+0} 8[qN} SEO 898d 8Y} ASN “UOIODJ dN PE}098JyO 943 03 BulBUojeq sedeid Jsow ey} YIM BoDds
+84 WO, ‘StUI} D JO EUO Sedeid SAO SUOIION dN ‘ed!0Yo D UaAIB UEYM ‘sedeld Ajpualsd Bujaowey +
+
+“8|D} SEO 8dalq 84} Bulsn peonid aq 0} sadaid ey] eulWejep ‘peonid eq pinoo
+saoaid jo sed} ajdiajnuu 4] ‘uooiedo uanibB ay} JO Sj] 84 PUD PuNd 07X//DD BY} UO SUO!JOSIIP 847
+Buimojo, ‘aiqissod sp seoeid Aunt sp 80nid jm suoiqon4 dN ‘SuoIDsedo Ajjby pud ulo4, Buling ‘a|q02
+$9IJJOlid UOIJOE\9g BONdS S,UOIOD4 dN 8U} Buisn ‘awi} DD aUO ad~aId YOne JO UOOUIISEp 84} 3O9/9S
+‘SasD9 YONS Ul ‘@lI} D OD BUC SEed~aid Bond SUOIIOD4 dN ‘SeoNds g/dizjNW UI sadeid eoN|d 0} UOIAODY Bul
+-}0D 84} Mo}|D JOU $yUSAZ JO ‘SEIAIQOY |DIDedS ‘suO!I{OEedO Bul{noexe UaYM "sedeld A[puelsy BuloDid ©
+
+‘salyloeds
+AlJONOD 3X9} 94} JOUM UD UOIZONAYSU! UD OF eJOW JEJU! JOU Og *A}}_40317 SUOIZONAYSU] |] JUaWE|duy| +
+
+“4 drys ysnl ‘Ajj106a] Jno paipo eq JouUDS
+3HY3 UO!JONIASUI UD NOA saAib 499 02x 41 INQ ‘a|qissod sp YON SD SUO!ONAISU! $,0ZXOD NO A109
+shomly ‘se0ald a|qD|IOAD PUD PADOG OU} JO 8303S 84} UBAIB eAow |OHe| D 83NI13SUOD SUd!}ONJISU! $7! JI
+UBAB JO 1 OP OF MOY NOA }]9} JOU IIIM 3! ‘OP OF OYM NoA |J83 A[UO |IIM 07X/OD *suoIAONJZsSUI [OBeI]I djs +
+
+“(v'¢°80) peyoejes seonds |030} FW] OF JEQUUNN UO!DAIQOY UD YSUIDBD ||O1 SUOIJODY dN ©
+“S]USAZ PWOS UO JOS9JJO UD SADY UND 2! SD ‘UO!IIODA dN UD SI AOD J! UBAS
+
+pe}400.3 eq Pinoys ply ‘uoIODY JeAD|d D so ADM aus 94} UI SeduNOSeY SpUeds PUD S901} NAS dN oO
+“SEOJNOSEY JO JEQLUNU Pa}DOIPU! 84} aso] JO UIDB Asn |IIM eyDOIPUAS dN JO UOIIODS
+dakpjd ay ‘ayoIPUAS dN JO UOIJODY JeAD|d PUD SUOIZODY dN eS8Y} JO Bud UBEM}eq SedINOsSEy
+48JSUDJ} PINOM JUAAg JO ‘AJAIQOY JOIDeds ‘UO!ZOIEdO UD J] ‘Pex904} OU 81D Agyi UaYyM S8OuNOseEY dN
+
+a@spaJOEp JO BsNaJOU! OF SUO!ZONJYSU! AUD B10} "S9dINOSOY 49N4} JOU OP YC dN PUD F9Z dN ‘AOD dN ©
+‘(Li'L) Juang Jo ‘ATAIOY |DIOedsS
+
+‘uolzn4edo uD Joy seoaid Bulyon| UaYM aIqD|IDAY 07 dow ay Wo SadaId SAOWA JOASU SUO!IOD4 dN ©
+
+:suoljdeoxe esau}
+yam ‘Saini auq/7 OGND e|qnoliddp |p Aq apiqo suo!OD4 dN *(3soW]y) Ssejny ey} Mojjos SUOIZOD4 dN
+
+7°80) S371NY NIG105 dN
+
+===== tab-5.png =====
+‘O71 ‘SeWDD LW 9z0z
+
+eounilly SA
+PW AOE
+seoinosey JeAD|d JO NAS dN
+quoddns
+
+(soulsp9 sesojo 40)
+dow ay woly seo105 Aweug
+
+SpIlWuen r9z YaIM YsoO
+88010 °9Z
+uoiisoddo
+
+Aygqodog uBiodwio9 jc
+do wi 40 ‘ys ‘do rez v
+
+souniily sn
+piv ie
+seounosey JeA0|d 10 NAS dN
+uo}aisoddo 40 qu0ddng
+
+(souiso9 sesojo so)
+dow y3 wo seou05 Aweua
+
+Spjjueng Ya YaIM YsoD
+880105 4a
+
+Auuqodog ul
+do wi 40 ‘ys ‘do ua v
+
+seounosay JeAD|d
+uolsoddo 40 juoddns
+dow 43 wo4y s80J05 Aweua
+
+SOIIEND NAS YIM SOD
+soulso9 uedo
+$8010) NAS
+s80unosey NAS
+
+do wi so ‘ws ‘do NAS ¥
+
+Ayiqodog -usjodwio9 july 20N A
+
+seounosey JeA0|d 10 NAS dN
+uoiisoddo,
+
+(soulsn9 sesojo so)
+dow ey3 wo. seos0) Aweua
+
+eountlv sn
+seqgno ym ysoo,
+$8010} AOD
+qoddns
+
+wnquewow
+
+do wi 40 ‘ys ‘do nod v
+
+:seonpey Jo senowey
+
+ua ‘rez ‘NAS @
+ennov ‘punouBsspun @®
+
+ysoo uM @
+ispjjien5
+
+(sdoouy
+vay? ‘ISuy Bolo Buropid e0us83}0 :\05
+) sdoous ‘e010 @
+
+ysoo win @
+sseqno
+
+sa'rez@
+saqno Jo pjjtusens 1 Ajuo Yai oulspo uedo
+4O 9Sbg Y3IM UOIZOD4
+
+roz ‘ua ‘NAS@
+roulspgjespg 91q0
+“JOUINA Yam UO!Z9D4 Jo sDIILEND
+
+roz ‘ua 'NAS@®
+ssoulspg/sespg
+
+engov ‘punoiBiepun @
+noo ua 'r9z@
+74s
+
+yim seod0g a
+
+(8°S°89) SaILIMOINd 3Dald dN
+
+:SespeJoUl 10 spy
+
+31
+
+($°g°89) SLN3A3 SAILO3443
+
+Ee eaueng 9 ennpenie pup jpo13
+quezino Aup @3noexe JoUUD9 pub qUeNg |po/3110 Bujuioodh Uo
+
+Aine 9% dN
+
+0140398410 dN
+
+eqnolpuds dN
+
+U@WILIEACD dN
+
+90433
+$s] Uol30 3UeAg UY
+
+2116113 ask
+
+“esimuey30 ©)
+ssbd 28/3 [D939 Bulwood) Uo 8/q6}I ssl 8q IM UORODJ Buoy ()
+Ayuo do gaueng JDO;AUD enjQo9JJ9 esooyo pinod eIq/6113 x0N ©
+queng eN1394J2 PUD [DOIIID Ss! JUENZ JueLIND ()
+ws+do GEOUDADH Ul DIIEND F9z JO YG PuNosBsepuN AO: ®©
+
+($80) 31aVL ALITISIDI13 dN
+
+===== tab-6.png =====
+| @. 6 ee @ -e
+
+| e
+| eo ee
+|
+e e
+| ee
+
+| 3 2
+| | 3
+S 8
+oa 2
+3 o
+3 ri
+a oD
+S
+z
+=
+faa
+sas
+|
+. oo Se
+. . .
+ce .
+. .
+e e
+e
+.
+. °
+e e e
+
+188d YOIOW
+
+0n|dey Jo exowey
+uonpul
+
+JpuINAN ps MoL, IWlUS
+uonounsed ajosny
+
+p109.03x/09 Meu MOJp-
+seonds Uojabiedo joBe] ou
+
+seonds Bululowe, wouy Wopuds 30 yo9I8s
+
+‘9808 YC e|qO|IOy UD
+40j WOOs pu SoIILWEND Ya Z-L
+
+spjjyuan6 Ya punosB.epun sow
+juoddng ysow
+
+uorsoddo sow
+
+uoo3 yseySiy
+
+0UIRONd
+
+uorpindog sow:
+
+ousog vedo.
+
+JonUOD Ya ynoYRIM A3I9 10 soUNRoid 03 queoDIpD
+(soulso9 paso|o eioub}) seos0} Awous seme)
+JexJ0U yso9 yam aoaid Aweue
+
+spjuen9 yg ysow
+
+J021U09 4a aNOYIM A319 40 eoUIROIA
+
+‘sg Ya eIqoJ8UINA
+
+“uojzo0 9n)3094J9
+3s0wajo] 0Y3
+e3noexa
+
+squeng
+
+OlWOLDauIG dN
+
+seo0ds Bululowe, Woy
+wopubs 30 308/98
+
+© | se010y Aweue ysoney
+
+Jonu09 AOD
+soo 10 oulsog uedo
+uoog seyBiy
+
+e | KID
+
+© | yoddng sow!
+uonisoddo sow 1040jd
+ou3U09 4a
+
+@ | joxquog NAS
+
+© | oljwueno NAS punoaBispun
+
+ouso9 usdo 30
+pylluend xairoz punoBispun
+
+oulso9 uado ajqosoujnn,
+
+‘wol300 011300450
+asowayey ey3
+(@3nDexz
+
+1QU@AZ
+
+) uadoyaonid
+
+OuIsD:
+
+ALVOIGNAS dN
+
+SDIILEND ed0Iq
+
+e0njday 10 enowey
+UonDulsed YoIOW
+
+e ee
+e eee
+e e
+e ee
+e e e
+ee ee
+e e e
+e
+e
+
+josudey
+eqn e0D|d
+
+uonoulseg yodsupi,
+
+89) SAILINOId NOILOATAS 30vdS
+
+u MOJp
+
+seonds Bulujowes wo1 wopuns yp osjes
+‘9809 P92 21q0}!0AY UD 104 Wood pun sojUAND PZ 2-1
+sojjueng r9z punouBiepun sow
+
+(soulso9 pasojo aioubi) s80104 Awaue ysemey
+JouqU09 P9z INoYaIM A319 40 eOUIAOId
+
+qoddng ysow
+
+oulso9 vedo.
+
+48x10 yso9 Yam eoeld Aweue
+
+uonypindog 3sow.
+
+uonisoddo engoy 30 30u
+
+uooa sayBiy
+
+‘spjjueng r9z you!
+
+aspg 792 alqos8uInA
+
+‘wo}300 enl308458
+380UN349) 843
+eqnoexg
+
+seonds Bululpuies Woy wopuns 0 309}9s
+© | (soulsog pasoj aious}) seouoy Aweue ysomey
+© — uonpindog asow
+uoo3 yseyBiy
+® | uonisoddo ysow.
+@ | AN
+@ | JonUED AOD INOYAIM AzI9 10 BOUINOIg
+S08 AOD AIqDIIDAY 404 WOO YrIM BOUINOId
+‘oulso9 uedoyesog AWweue
+quoddns sow
+sojjiuzen5 punouBsepun
+© | pupnoH
+© | eoy}04 3noyym asda ACD
+
+@ | yuoddng engoy 30 0u
+
+=
+
+AINSWNYAAOD dN
+
+s
+
+‘uorz00 enyzoe4se
+380349] 943
+eqnoexg
+
+s3U0Ng
+
+OL 3414
+
+quoddng eayoy puoi
+
+===== tab-7.png =====
+° uolqDUIIsap Meu D JoOeI8s PUD V# dels 03 06
+
+uiBlio meu b JoOajas pud g# days 07 06
+So rieat 2 | uoousep meu b oe/es pud v# days 03 06
+uolDUIySep Mau D JOajEs puD W# days 07 06.
+
+DIIW4eNd NAS PuNosBsepun | eB -V0/20U/)
+
+DII44eND Ya 40 NAS puNosBsepuN 1 3@B Lio/2/s00d/0 JO 2.
+
+201|0d UDY} 183026 spji|LeNy Uo!ZOD4 Bul390 396 -
+
+segno upy 1830846 spjjend Ya+r9z 306 03 5) VO!2DUI)
+
+Sb]|4END voIO_4 Bul30p JouO!ZIppo 9pL 3B /0
+
+spend ad € 386 W/0/7/S00 oy 40 quoddng
+
+spjiiasens r9z ¢ 3B “J /0ddns ou PUD <
+
+pyI4eEND gz punosBsepun 1 306 + ldo é
+
+seqno ¢ 306 AOD ul 6) uonbulsep
+
+saqno z 306
+
+DjjleND Jed eqno 1 306 oO.
+
+:UO]}DUIJSEP 03 PACU 03 S8dJ0J 399/95
+
+eoeid Awaue 18d sdoous z 306
+
+pIILeNd punosBepun Jed seqno Z eB }sa/0.
+
+@d1]0d L 0B 20U)NO/ed 10 AID S/ VONOUIASS
+
+J013U09 JO sedeld Uo!ZOD4 Bulz9p ualolyyns 3aB
+
+by}4eN} NAS punosBsepun 1 daey 5/0 SDD UaC
+
+pyI44eND Yd 40 NAS punosBepun | deex
+
+9801/0 UD} 10]DeI6 spyueNyd uo!op4 Bulyop deey 97
+
+saqno uD} 49309,6 spj|leny Ya+gz dee, 07 <
+
+spjl449ND aAlzoy Uo!ZOD4 Buljon Z Jo Djjl4and punosBsepun uolz9p4 Bul30p | daey UNO ul esDg uO
+
+pjI4eny punosBsepun uoljzon4 Burzop | deey 1/510
+
+spend yd € dee, vo
+
+piIl44eny r9z punosBsapun 1 daey -Vo/q/soddo ano INOYIIM BOU! ID $1 ulBUO
+
+40 ul daa 03 $9010} 399/aS
+
+spjjieny r9z ¢ deey 2 /GOMIONY 404 WOO. ui
+
+Djjlenyd sed aqno 1 deay
+
+e01]0d L pup dooal | deey 90
+
+J013U09 ou aBuDYo 03 sedeld quelolsyns deey
+
+seconds Bulujowies Wooly WOPUD, 1D JOa|es
+
+MoO|aq SUO!IONJASUI 49d UBIO Ul UIDLUSJ OF pasinbas JOU S9dJ0J B|qoeAow JSOW
+
+:UOIQDUIJSEP D SD pejoejes ApPe.|0 JOU PU_ UO!JOUISEp 843 JO YODA UIYIIM eoDds UIBHO UD yOe/eS
+
+UoDUIASEp D SD pezde/8s ApDe.|D JOU PUD 2/40} SEIj1OLd UO!IOEIeS e00dS S,UOIJOD4 dN 84} ‘9UOU J! ‘JO
+pid 02xI/09 JUeINo ay Aq palsioeds eonds uo!DUIASep D 399/8S
+
+*(paznoaxe Bulag 3uang Jo ‘AAIQOV |DINed§ ‘Uo!yD4edO @43 JO S3UID43SUOD 943 LYM)
+14D} S913U0ld 9ald ey3 Buisn sederd Bulaow joajes
+‘SU01}9NJ3SU! B/D} S8IZ}J0l4d SAOW 40 PAD 03x1/DD JUatuNd aya Aq palstoeds asimsayzO SSe|UN
+
+Ayarzoy pi9eds (1'z"y) 340dsupsL 3 suoIzD4edo (zZ’¢"e) YOuDW pun ‘(Z°Z"e) UOS|ID5 ‘(e*Z"e) deems Burunp esn
+
+cece! < | mt
+
+e3poipuds
+queuuen05
+
+(29°85) SAILINOId JAOW
+
+===== tab-8.png =====
+8/0} SUOIJONAYSU] JUBAZ BOS
+
+POWOJJAd JON : =
+
+PEWOJJ8d JON SSIMJ9YIO ‘UBIOdWIND JO SPIDD € ASJIJ JO BUO JI JOOIQUO :W
+POWOLJad i'd
+
+3°
+
+|DOID +
+d d 2 xd | 8p *9 : z 3 v2
+- : : d ly 2 xd d d &%
+d d 2 xd oo” : 2 : 2 zz
+d d 2 xd | gp x9 : 2 = | iz
+*3 *S *S ‘ch vv ict d ist = 02
+¥*d ¥*d 2 = ev *O *O = *- 6 |
+“9 E xo | xo | @ 2 4 2 2 al
+¥*d ¥*d = ¥*d i lb *O9 *O *d ¥*d a
+d d : d ob 3 ¥d d d 9
+Py d 2 - | 6 9 : : g.
+xd | xq | xo | xa | ee 9 - : 3 vl
+- - : - le 2 : : : el
+*d *9 a = 9€ d d *d = aL
+xd | xo | xa | xd ge : : : x9 mn
+: - xd : ve xo | ¥9 : W ol
+- x9 : : ee = d : : 6
+xd : : : ze *9 d 2 *9 8
+xo | ¥9 : 2 le 2 d : *9 L
+: xd : - oe d d : : 9
+xo | *9 2 A 6% 3 x9 : W $
+: 3 : 2 8% d a : W y
+xd 9 d a 2 xo | x9 : x9 €
+xd | ¥9 d d 92 : : : *W z
+xa | *9 2 d 92 xa | ¥d . L
+
