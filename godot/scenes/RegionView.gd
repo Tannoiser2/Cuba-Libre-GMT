@@ -99,8 +99,10 @@ func _add_marker(parent: Node, t: Texture2D) -> void:
 		return
 	var tr := TextureRect.new()
 	tr.texture = t
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	tr.custom_minimum_size = Vector2(13, 13)
+	tr.custom_minimum_size = Vector2(15, 15)
+	tr.size = Vector2(15, 15)
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(tr)
 
