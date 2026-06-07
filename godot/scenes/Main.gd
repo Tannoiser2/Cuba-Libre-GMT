@@ -34,8 +34,13 @@ const OP_KIND := {
 }
 
 var _space_views: Dictionary = {}     # space_id -> SpaceView
-var _board: Control
+var _board: ScrollContainer
 var _map: TextureRect
+var _bar: HFlowContainer
+var _side: PanelContainer
+var _track_overlay: TrackOverlay
+var _card_img: TextureRect
+var _zoom := 1.0
 var _card_label: RichTextLabel
 var _faction_label: RichTextLabel
 var _track_label: RichTextLabel
@@ -79,21 +84,24 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	# Barra azioni in alto
-	var bar := _build_action_bar()
-	add_child(bar)
+	# Barra azioni in alto (va a capo automaticamente: niente troncamento)
+	_bar = _build_action_bar()
+	add_child(_bar)
+	_bar.resized.connect(_layout_board)
 
-	# Area mappa (sinistra)
-	_board = Control.new()
-	_board.position = Vector2(8, 52)
+	# Area mappa scrollabile (per lo zoom/pan)
+	_board = ScrollContainer.new()
+	_board.position = Vector2(8, 96)
 	add_child(_board)
 
-	# Sfondo: immagine reale della mappa (riempie esattamente la sua size; aspetto 2640x2040)
+	# Sfondo: immagine reale della mappa
 	_map = TextureRect.new()
 	_map.texture = CLAssets.map()
 	_map.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_map.stretch_mode = TextureRect.STRETCH_SCALE
 	_map.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_map.size_flags_horizontal = 0
+	_map.size_flags_vertical = 0
 	_board.add_child(_map)
 
 	# Zone poligonali sagomate sui contorni (figlie della mappa).
@@ -110,9 +118,14 @@ func _build_ui() -> void:
 		_map.add_child(rv)
 		_space_views[sid] = rv
 
+	# Overlay dei segnalini sui tracciati (sopra la mappa)
+	_track_overlay = TrackOverlay.new()
+	_track_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_map.add_child(_track_overlay)
+
 	# Pannello laterale (destra)
-	var side := _build_side_panel()
-	add_child(side)
+	_side = _build_side_panel()
+	add_child(_side)
 
 	resized.connect(_layout_board)
 	_layout_board()
@@ -124,10 +137,11 @@ func _load_regions() -> Dictionary:
 	return data.get("regions", {}) if typeof(data) == TYPE_DICTIONARY else {}
 
 
-func _build_action_bar() -> Control:
-	var bar := HBoxContainer.new()
-	bar.position = Vector2(8, 10)
-	bar.add_theme_constant_override("separation", 6)
+func _build_action_bar() -> HFlowContainer:
+	var bar := HFlowContainer.new()
+	bar.position = Vector2(8, 6)
+	bar.add_theme_constant_override("h_separation", 5)
+	bar.add_theme_constant_override("v_separation", 3)
 
 	_faction_select = OptionButton.new()
 	for f in GameController.game_def.factions:
@@ -207,17 +221,37 @@ func _build_action_bar() -> Control:
 	btn_new.pressed.connect(func(): GameController.new_game())
 	bar.add_child(btn_new)
 
+	bar.add_child(VSeparator.new())
+	var btn_zin := Button.new()
+	btn_zin.text = "🔍+"
+	btn_zin.pressed.connect(func(): _set_zoom(_zoom * 1.25))
+	bar.add_child(btn_zin)
+	var btn_zout := Button.new()
+	btn_zout.text = "🔍−"
+	btn_zout.pressed.connect(func(): _set_zoom(_zoom / 1.25))
+	bar.add_child(btn_zout)
+	var btn_zfit := Button.new()
+	btn_zfit.text = "Adatta"
+	btn_zfit.pressed.connect(func(): _set_zoom(1.0))
+	bar.add_child(btn_zfit)
+
 	_instr = Label.new()
 	_instr.add_theme_color_override("font_color", Color("f1c40f"))
 	bar.add_child(_instr)
 	return bar
 
 
-func _build_side_panel() -> Control:
+func _build_side_panel() -> PanelContainer:
 	var pc := PanelContainer.new()
-	pc.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
 	var vb := VBoxContainer.new()
 	pc.add_child(vb)
+
+	# Immagine della carta corrente
+	_card_img = TextureRect.new()
+	_card_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_card_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+	_card_img.custom_minimum_size = Vector2(360, 200)
+	vb.add_child(_card_img)
 
 	_card_label = RichTextLabel.new()
 	_card_label.bbcode_enabled = true
@@ -257,26 +291,45 @@ func _build_side_panel() -> Control:
 	return pc
 
 
+func _set_zoom(z: float) -> void:
+	_zoom = clampf(z, 0.5, 4.0)
+	_layout_board()
+
+
 func _layout_board() -> void:
+	if _bar == null or _board == null:
+		return
 	var side_w := 388.0
-	var bw: float = maxf(400.0, size.x - side_w - 16.0)
-	var bh: float = maxf(300.0, size.y - 60.0)
-	# Dimensiona la mappa mantenendo le proporzioni (2640x2040)
+	# La barra azioni occupa la larghezza utile e va a capo; il board parte sotto.
+	_bar.size.x = maxf(300.0, size.x - 16.0)
+	var top: float = _bar.size.y + 12.0
+	_board.position = Vector2(8, top)
+	_board.size = Vector2(maxf(300.0, size.x - side_w - 16.0), maxf(200.0, size.y - top - 8.0))
+	# Pannello laterale a destra, sotto la barra
+	_side.position = Vector2(size.x - side_w + 4.0, top)
+	_side.size = Vector2(side_w - 8.0, size.y - top - 8.0)
+	# Dimensione base della mappa per riempire il viewport, poi moltiplicata per lo zoom
 	var aspect := 2040.0 / 2640.0
-	var mw := bw
-	var mh := mw * aspect
-	if mh > bh:
-		mh = bh
-		mw = mh / aspect
+	var vw := _board.size.x
+	var vh := _board.size.y
+	var mw0 := vw
+	var mh0 := mw0 * aspect
+	if mh0 > vh:
+		mh0 = vh
+		mw0 = mh0 / aspect
+	var msize := Vector2(mw0, mh0) * _zoom
 	if _map != null:
-		_map.position = Vector2.ZERO
-		_map.size = Vector2(mw, mh)
-	# Le zone poligonali coprono l'intera mappa (la forma è definita da _has_point)
+		_map.custom_minimum_size = msize
+		_map.size = msize
 	for sid in _space_views.keys():
 		var rv: RegionView = _space_views[sid]
 		rv.position = Vector2.ZERO
-		rv.size = Vector2(mw, mh)
+		rv.size = msize
 		rv.relayout()
+	if _track_overlay != null:
+		_track_overlay.position = Vector2.ZERO
+		_track_overlay.size = msize
+		_track_overlay.queue_redraw()
 
 
 # ---------------------------------------------------------------------------
@@ -286,11 +339,15 @@ func _layout_board() -> void:
 func _refresh() -> void:
 	for sid in _space_views.keys():
 		_space_views[sid].refresh(GameController.state)
+	if _track_overlay != null:
+		_track_overlay.queue_redraw()
 	_refresh_side()
 
 
 func _refresh_side() -> void:
 	var s: GameState = GameController.state
+	var cc: int = s.current_card
+	_card_img.texture = CLAssets.card(cc) if cc >= 0 else null
 	_card_label.text = GameController.current_card_text()
 	var vic := GameController.victory()
 	var txt := "[b]Fazioni[/b]\n"

@@ -22,7 +22,7 @@ func setup(p_from: String, p_faction: String, p_type: String, p_state: String, l
 	if _tex != null:
 		icon = _tex
 		expand_icon = true
-		custom_minimum_size = Vector2(18, 18)
+		custom_minimum_size = Vector2(30, 30)
 		flat = true
 		tooltip_text = "%s — trascina per spostare 1 pezzo" % label
 	else:
