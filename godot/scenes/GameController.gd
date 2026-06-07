@@ -93,6 +93,8 @@ func _start_card_sequence() -> void:
 	if state.current_card > 0:
 		var card: CardDef = game_def.card(state.current_card)
 		seq = SequenceOfPlay.new(state, module, card)
+		# Carta Evento finale (2.3.9): ultima carta del mazzo -> solo Operazioni Limitate.
+		seq.final_event_card = cards_left() == 0
 
 
 func _reset_turn_flags() -> void:
@@ -112,6 +114,16 @@ func seq_status() -> Dictionary:
 		"legal": seq.legal_actions(),
 		"done": seq.is_done(),
 	}
+
+
+## Vero se la Fazione di turno può svolgere solo un'Operazione Limitata (1 spazio, no Att.Speciale).
+func seq_is_limited_only() -> bool:
+	if seq == null:
+		return false
+	var A := CoinEnums.ActionType
+	var legal := seq.legal_actions()
+	return legal.has(A.LIMITED_OPERATION) \
+		and not legal.has(A.OPERATION) and not legal.has(A.OPERATION_WITH_SPECIAL)
 
 
 ## La Fazione di turno Passa.
