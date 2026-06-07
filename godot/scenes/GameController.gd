@@ -14,6 +14,7 @@ var ops: CubaLibreOperations
 var specials: CubaLibreSpecials
 var propaganda: CubaLibrePropaganda
 var events: CubaLibreEvents
+var bots: CubaLibreBots
 
 
 func _ready() -> void:
@@ -30,6 +31,7 @@ func new_game(scenario: String = "standard") -> void:
 	specials = CubaLibreSpecials.new(state, module)
 	propaganda = CubaLibrePropaganda.new(state, module)
 	events = CubaLibreEvents.new(state, module)
+	bots = CubaLibreBots.new(state, module)
 	emit_signal("state_changed")
 
 
@@ -75,6 +77,14 @@ func run_event(number: int, side: String, faction: String, params: Dictionary = 
 	var res := events.apply(number, side, faction, params)
 	for line in res.get("log", []):
 		emit_signal("action_logged", String(line))
+	emit_signal("state_changed")
+	return res
+
+
+func run_bot_turn(faction: String) -> Dictionary:
+	var res := bots.take_turn(faction)
+	for line in res.get("log", []):
+		emit_signal("action_logged", "🤖 " + String(line))
 	emit_signal("state_changed")
 	return res
 

@@ -51,9 +51,8 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [x] Caricamento carte nel `GameDef`.
 - [x] Framework Eventi (`Events.gd`): gestori per carta + fallback "manuale".
 - [x] Registrazione Capacità Insorgenti / Momentum del Governo.
-- [~] Effetti automatizzati: 6 carte (Election, Batista Flees, Larrazábal, Carlos Prío,
-      US Speaking Tour, Sinatra). Le restanti sono giocabili in modalità manuale.
-- [ ] Rifinire `unshaded`/`shaded` per ogni carta (dal testo OCR) e automatizzare i restanti eventi.
+- [x] Effetti automatizzati per TUTTE le 48 carte (entrambi i lati), smoke test 96/96.
+- [ ] Applicare nelle Operazioni i modificatori duraturi di Capacità/Momentum (ora solo registrati).
 
 ### Fase 3 — Interfaccia utente
 - [x] Mappa interattiva (schematica) con pezzi trascinabili e stato leggibile.
@@ -69,7 +68,8 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
       + Attività Speciale secondo i flowchart, validati da test.
 - [ ] Aggancio alla scelta dell'Evento (richiede gli effetti delle carte, Fase 2).
 - [ ] Rifinitura tie-breaker e tabella Spazi Casuali (8.2-8.3).
-- [ ] Integrazione dei bot nella UI (turni automatici) e gioco in solitario.
+- [x] Integrazione dei bot nella UI: pulsanti "Gioca Bot (fazione sel.)" e "Tutti i Bot".
+- [ ] Gioco in solitario completo (loop carte + bot automatici).
 
 ### Fase 5 — Rifinitura
 - [ ] Scenari (Standard / Variabile / gioco breve), opzioni (Inganno, ecc.).

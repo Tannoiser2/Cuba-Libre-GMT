@@ -126,6 +126,16 @@ func _build_action_bar() -> Control:
 	var sep := VSeparator.new()
 	bar.add_child(sep)
 
+	var btn_bot := Button.new()
+	btn_bot.text = "Gioca Bot (fazione sel.)"
+	btn_bot.pressed.connect(func(): GameController.run_bot_turn(_cur_faction))
+	bar.add_child(btn_bot)
+
+	var btn_bots := Button.new()
+	btn_bots.text = "Tutti i Bot"
+	btn_bots.pressed.connect(_on_all_bots)
+	bar.add_child(btn_bots)
+
 	var btn_prop := Button.new()
 	btn_prop.text = "Round Propaganda"
 	btn_prop.pressed.connect(func(): GameController.run_propaganda())
@@ -283,6 +293,13 @@ func _on_execute() -> void:
 	var params := _build_params()
 	GameController.run_operation(_cur_action, params)
 	_on_cancel()
+
+
+func _on_all_bots() -> void:
+	# Esegue il turno di tutte le Fazioni Disponibili nell'ordine predefinito.
+	for f in GameController.game_def.factions:
+		if GameController.state.eligibility[f.id] == CoinEnums.Eligibility.ELIGIBLE:
+			GameController.run_bot_turn(f.id)
 
 
 func _on_cancel() -> void:
