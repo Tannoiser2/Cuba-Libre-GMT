@@ -1,0 +1,461 @@
+{
+  "_note": "Event Instructions Calixto (carte 1-48 x fazione). side=lato da giocare; critical=marcato Critical; player_only=eseguito solo se quella fazione e umana. Da OCR corretto utente.",
+  "events": {
+    "1": {
+      "directorio": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Use March Destination to select a space with enemy forces."
+      },
+      "m26": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Use March Destination to select a space with enemy forces."
+      }
+    },
+    "2": {
+      "government": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Only Momentum if US Alliance is at Embargoed, otherwise not performed."
+      }
+    },
+    "3": {
+      "government": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Use Remove to select a Province or City with Underground Guerrillas where Assault would be effective (after Sweep)."
+      },
+      "directorio": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if 2+ Active DR Guerrillas in one space with Troops, otherwise not performed. Use Move Priorities to March from one space with Troops and most Active Guerrillas."
+      },
+      "m26": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if 2+ Active 26J Guerrillas in one space with Troops, otherwise not performed. Use Move Priorities to March from one space with Troops and most Active Guerrillas."
+      }
+    },
+    "5": {
+      "directorio": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if Troops in a Province at Active Support, or in a Province adjacent to a Province at Active Support; otherwise not performed. Use Shift to Neutral to select a Province at Active Support and one adjacent Province to set to Passive Opposition."
+      }
+    },
+    "7": {
+      "government": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if any City at Opposition, otherwise not performed."
+      }
+    },
+    "8": {
+      "government": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Open a Casino where Government Control, then where most cubes, then where fewest Guerrillas, then at random."
+      },
+      "m26": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Not performed if 2+ Cities with any Opposition."
+      }
+    },
+    "10": {
+      "directorio": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if 2+ Available DR Guerrillas."
+      },
+      "m26": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if 2+ Available 26J Guerrillas."
+      }
+    },
+    "11": {
+      "government": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if US Alliance not at Firm and not final Campaign, otherwise not performed. Remove Troops from Provinces with most Troops, then Cities with most Troops, keeping GOV Control and 2 cubes where GOV Base if possible."
+      }
+    },
+    "12": {
+      "syndicate": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Perform unshaded effect."
+      }
+    },
+    "14": {
+      "m26": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if any Available 26J Bases, otherwise not performed."
+      }
+    },
+    "15": {
+      "m26": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if 3+ Available 26J Guerrillas. Use Place Guerrillas to place 1 Guerrilla each in three different spaces."
+      }
+    },
+    "16": {
+      "directorio": {
+        "critical": false,
+        "side": "shaded",
+        "player_only": false,
+        "text": "Perform shaded effect."
+      }
+    },
+    "17": {
+      "government": {
+        "critical": false,
+        "side": null,
+        "player_only": true,
+        "text": "Only performed if 26J is player."
+      },
+      "syndicate": {
+        "critical": false,
+        "side": null,
+        "player_only": true,
+        "text": "Only performed if 26J is player."
+      },
+      "directorio": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if any DR Bases in spaces at Active Support or Active Opposition, otherwise not performed. Use Place Guerrillas to Rally at these Bases first."
+      },
+      "m26": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if any 26J Bases in spaces at Active or Passive Support, otherwise not performed. Use Place Guerrillas to Rally at these Bases first."
+      }
+    },
+    "19": {
+      "government": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Use Place Bases to select a Province without a Government Base if possible, then use Place Cubes to select any space."
+      },
+      "directorio": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if any Available DR Bases, otherwise not performed."
+      },
+      "m26": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if any Available 26J Bases, otherwise not performed."
+      }
+    },
+    "21": {
+      "m26": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Use Shift Toward Active Opposition, selecting a City with a 26J piece and no Opposition if possible."
+      }
+    },
+    "23": {
+      "directorio": {
+        "critical": false,
+        "side": "shaded",
+        "player_only": false,
+        "text": "Perform shaded effect."
+      }
+    },
+    "24": {
+      "m26": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Select a space with Support first if possible."
+      }
+    },
+    "25": {
+      "directorio": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if any Available DR Bases, otherwise not performed."
+      },
+      "m26": {
+        "critical": false,
+        "side": "shaded",
+        "player_only": false,
+        "text": "Perform shaded effect."
+      }
+    },
+    "26": {
+      "directorio": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if any Available DR Guerrillas; otherwise not performed. Use Place Guerrillas, then Ambush if any enemy forces present, otherwise Rally."
+      },
+      "m26": {
+        "critical": false,
+        "side": "shaded",
+        "player_only": false,
+        "text": "Perform shaded effect."
+      }
+    },
+    "27": {
+      "m26": {
+        "critical": false,
+        "side": "shaded",
+        "player_only": false,
+        "text": "Perform shaded effect."
+      }
+    },
+    "29": {
+      "directorio": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if any Available DR Bases, otherwise not performed."
+      },
+      "m26": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Perform unshaded effect if any Available 26J Bases, otherwise perform shaded effect."
+      }
+    },
+    "30": {
+      "directorio": {
+        "critical": false,
+        "side": "shaded",
+        "player_only": false,
+        "text": "Perform shaded effect."
+      }
+    },
+    "31": {
+      "directorio": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if any Available DR Bases, otherwise not performed."
+      },
+      "m26": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Only performed if any Available 26J Bases."
+      }
+    },
+    "32": {
+      "m26": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Only performed if any Available 26J forces could be placed."
+      }
+    },
+    "33": {
+      "directorio": {
+        "critical": true,
+        "side": "shaded",
+        "player_only": false,
+        "text": "Only Critical if any Available DR Bases. Perform shaded effect."
+      }
+    },
+    "34": {
+      "syndicate": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Perform unshaded effect and select NP SYN as the Insurgent Faction."
+      }
+    },
+    "35": {
+      "government": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Only performed if 2+ Available cubes."
+      },
+      "syndicate": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Only performed if 2+ Available SYN Guerrillas."
+      },
+      "directorio": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if 2+ Available DR Guerrillas, otherwise not performed."
+      },
+      "m26": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Only performed if 2+ Available 26J Guerrillas."
+      }
+    },
+    "36": {
+      "directorio": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if 2+ Available DR Guerrillas."
+      },
+      "m26": {
+        "critical": false,
+        "side": "shaded",
+        "player_only": false,
+        "text": "Only performed if any Available 26J Guerrillas. Perform shaded effect."
+      }
+    },
+    "38": {
+      "government": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if Cash could be transferred to a Government piece, otherwise not performed. Perform unshaded effect, selecting space where most Cash could be placed with cubes, then fewest enemy forces."
+      },
+      "syndicate": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if would open 2+ Casinos, otherwise not performed. Use Place Casinos to relocate all Casinos (temporarily remove them from the map while doing so)."
+      },
+      "directorio": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if Cash could be transferred to a DR piece, otherwise not performed. Select spaces where most Cash could be placed with DR Guerrillas, then fewest enemy forces."
+      },
+      "m26": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if Cash could be transferred to a 26J piece, otherwise not performed. Select spaces where most Cash could be placed with 26J Guerrillas, then fewest enemy forces."
+      }
+    },
+    "41": {
+      "government": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Perform unshaded effect and close a Casino."
+      },
+      "directorio": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Close a Casino if possible."
+      },
+      "m26": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Close a Casino if possible."
+      }
+    },
+    "42": {
+      "government": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if any City at Opposition, otherwise not performed. Select one City with Opposition in this order: Havana, Camagüey, Santiago."
+      },
+      "syndicate": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if it could place a Casino. Use Place Casinos to select a City."
+      },
+      "m26": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if any Available 26J Bases, otherwise not performed."
+      }
+    },
+    "43": {
+      "directorio": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Draw a Calixto card to perform a Limited Terror Operation, treating all SYN Guerrillas as DR Guerrillas."
+      },
+      "m26": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Draw a Calixto card to perform a Limited Terror Operation, treating all SYN Guerrillas as 26J Guerrillas."
+      }
+    },
+    "44": {
+      "syndicate": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Select human player with most Resources first, 26J if tied. If both Factions are NP then NP SYN just gains a die roll of Resources."
+      },
+      "directorio": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if DR Guerrilla in a space with a Government Base, otherwise not performed. Use Remove to select a space with a Government Base if possible."
+      },
+      "m26": {
+        "critical": true,
+        "side": null,
+        "player_only": false,
+        "text": "Only Critical if 26J Guerrilla in a space with a Government Base, otherwise not performed. Use Remove to select a space with a Government Base if possible."
+      }
+    },
+    "45": {
+      "government": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Perform unshaded effect."
+      }
+    },
+    "46": {
+      "government": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Perform unshaded effect."
+      }
+    },
+    "48": {
+      "government": {
+        "critical": false,
+        "side": null,
+        "player_only": false,
+        "text": "Perform unshaded effect."
+      }
+    }
+  }
+}

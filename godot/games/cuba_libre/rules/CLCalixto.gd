@@ -39,6 +39,7 @@ func _init(p_state: GameState, p_module: CubaLibreModule) -> void:
 
 
 var _ss := {}   # space_selection per fazione
+var _events := {}   # Event Instructions per carta/fazione
 
 
 func _load_data() -> void:
@@ -53,6 +54,11 @@ func _load_data() -> void:
 		var dt = JSON.parse_string(ft.get_as_text())
 		if dt is Dictionary:
 			_ss = dt.get("space_selection", {})
+	var fe := FileAccess.open("res://games/cuba_libre/data/calixto_events.json", FileAccess.READ)
+	if fe != null:
+		var de = JSON.parse_string(fe.get_as_text())
+		if de is Dictionary:
+			_events = de.get("events", {})
 
 
 # Colonna della tabella Space Selection da usare per ogni Operazione.
@@ -199,16 +205,31 @@ func _pass(faction: String) -> Dictionary:
 	return {"ok": false, "action": "pass", "log": _log}
 
 
-## Scelta Evento (approssima "Critical/effective" della tabella Eligibility): simula i due
-## lati dell'Evento su una copia dello stato e gioca l'Evento se migliora il margine di
-## vittoria della Fazione di almeno `gain_min`. Restituisce {"play": bool, "side": String}.
-func event_choice(faction: String, card_number: int, gain_min: int = 2) -> Dictionary:
+## Scelta Evento guidata dalla tabella Event Instructions (lato + Critical) con verifica di
+## beneficio: simula i lati candidati su una copia dello stato e gioca se migliora il margine.
+## Soglia di guadagno più bassa se la carta è Critical per la Fazione. Restituisce
+## {"play": bool, "side": String}.
+func event_choice(faction: String, card_number: int) -> Dictionary:
 	if card_number <= 0:
 		return {"play": false}
+	var entry: Dictionary = _events.get(str(card_number), {}).get(faction, {})
+	# Eventi "solo se giocatore": gli NP non li eseguono.
+	if entry.get("player_only", false):
+		return {"play": false}
+	# Lati candidati: quello indicato dalla tabella, altrimenti entrambi.
+	var sides: Array = []
+	if entry.has("side") and entry["side"] != null:
+		sides = [String(entry["side"])]
+	else:
+		sides = ["unshaded", "shaded"]
+	# Soglia: Critical (per tabella) → basta non peggiorare; con istruzione → 2; senza → 3.
+	var gain_min := 3
+	if not entry.is_empty():
+		gain_min = 1 if entry.get("critical", false) else 2
 	var base: int = int(mod.victory_status(state)[faction].margin)
 	var best := base
 	var best_side := ""
-	for side in ["unshaded", "shaded"]:
+	for side in sides:
 		var copy := GameState.from_dict(state.game_def, state.to_dict())
 		var ev := CubaLibreEvents.new(copy, mod)
 		ev.apply(card_number, side, faction)
