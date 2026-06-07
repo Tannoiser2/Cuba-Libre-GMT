@@ -247,5 +247,203 @@
         ]
       }
     }
+  },
+  "_an_note": "AN dadi insorti DA CONFERMARE. Letti: 26J H=2, J=2, LL(retro)=3. Resto 'an':null.",
+  "m26": {
+    "G": {
+      "front": {
+        "an": null,
+        "flow": [
+          {"cond": "underground_26j_not_active_opp", "pact": "ignore_passive", "t": "next", "f": "draw"},
+          {"cond": "d6_le_avail_26j_guerrillas", "t": "op:rally", "f": "flip"}
+        ],
+        "ops": {"rally": {"type": "rally", "steps": [
+          {"n": 1, "do": "place_base", "where": "space_with_3plus_26j_guerrillas"},
+          {"n": 2, "cond": "avail_26j_guerrillas_4plus", "do": "place_guerrillas", "where": "spaces_with_26j_bases"},
+          {"n": 3, "do": "place_guerrillas"},
+          {"n": 4, "do": "flip_guerrillas", "where": "most_active"}
+        ]}},
+        "special": [{"sa": "infiltrate", "method": "replace"}]
+      },
+      "back": {
+        "an": null,
+        "flow": [{"cond": "moveable_2plus_26j_adj_uncontrolled", "t": "op:march", "f": "op:terror"}],
+        "ops": {
+          "march": {"type": "march", "steps": [{"n": 1, "priorities": "move"}, {"note": "Nessun tiro AN dopo March su EC"}]},
+          "terror": {"type": "terror", "steps": [
+            {"n": 1, "do": "shift_toward_active_opposition", "where": "spaces_without_active_opposition"},
+            {"n": 2, "do": "terror_all_ecs", "order": "highest_value_first"},
+            {"note": "26J Base in non-Mountain solo dove 2+ Guerriglie 26J Clandestine"},
+            {"note": "Nessun tiro AN dopo Terror su EC"}
+          ]}
+        },
+        "special_by_branch": {
+          "march": [{"sa": "infiltrate", "method": "replace"}],
+          "terror": [{"sa": "kidnap", "notes": ["prima Terror nello spazio scelto per Kidnap", "bersaglio GOV se possibile poi SYN", "prendi Cash prima delle Risorse"]}]
+        }
+      }
+    },
+    "H": {
+      "front": {
+        "an": 2,
+        "flow": [
+          {"cond": "guerrillas_4plus_any_space", "t": "next", "f": "draw"},
+          {"cond": "underground_26j_in_2pop_with_support", "t": "op:terror", "f": "flip"}
+        ],
+        "ops": {"terror": {"type": "terror", "steps": [
+          {"n": 1, "do": "shift_toward_active_opposition", "where": "spaces_without_active_opposition"},
+          {"n": 2, "do": "terror_all_ecs", "order": "highest_value_first"},
+          {"note": "26J Base in non-Mountain solo dove 2+ Guerriglie 26J Clandestine"},
+          {"note": "Nessun tiro AN dopo Terror su EC"}
+        ]}},
+        "special": [{"sa": "kidnap", "notes": ["prima Terror nello spazio scelto per Kidnap", "bersaglio GOV se possibile poi SYN", "prendi Cash prima delle Risorse"]}]
+      },
+      "back": {
+        "an": null,
+        "flow": [{"cond": "enemy_space_4plus_or_underground", "pact": "ignore_dr", "t": "op:attack", "f": "op:march"}],
+        "ops": {
+          "attack": {"type": "attack", "steps": [
+            {"note": "Negli spazi con 4+ Guerriglie 26J: Attack"},
+            {"note": "Negli spazi dove tutte le Guerriglie 26J sono Attive: Attack"}
+          ]},
+          "march": {"type": "march", "steps": [{"n": 1, "priorities": "move"}, {"note": "Nessun tiro AN dopo March su EC"}]}
+        },
+        "special_by_branch": {
+          "attack": [{"sa": "ambush", "method": "remove"}],
+          "march": [{"sa": "infiltrate", "method": "replace"}]
+        }
+      }
+    },
+    "J": {
+      "front": {
+        "an": 2,
+        "flow": [
+          {"cond": "moveable_26j_adj_uncontrolled", "t": "next", "f": "draw"},
+          {"cond": "underground_26j_in_2pop_not_active_opp", "pact": "ignore_passive", "t": "op:terror", "f": "flip"}
+        ],
+        "ops": {"terror": {"type": "terror", "steps": [
+          {"n": 1, "do": "shift_toward_active_opposition", "where": "spaces_without_active_opposition"},
+          {"n": 2, "do": "terror_all_ecs", "order": "highest_value_first"},
+          {"note": "26J Base in non-Mountain solo dove 2+ Guerriglie 26J Clandestine"},
+          {"note": "Nessun tiro AN dopo Terror su EC"}
+        ]}},
+        "special": [{"sa": "kidnap", "notes": ["prima Terror nello spazio scelto per Kidnap", "bersaglio GOV se possibile poi SYN", "prendi Cash prima delle Risorse"]}]
+      },
+      "back": {
+        "an": null,
+        "flow": [{"cond": "enemy_space_4plus_or_underground_no_control", "pact": "ignore_dr", "t": "op:attack", "f": "op:march"}],
+        "ops": {
+          "attack": {"type": "attack", "steps": [
+            {"note": "Negli spazi con 4+ Guerriglie 26J: Attack"},
+            {"note": "Negli spazi dove tutte le Guerriglie 26J sono Attive: Attack"}
+          ]},
+          "march": {"type": "march", "steps": [{"n": 1, "priorities": "move"}, {"note": "Nessun tiro AN dopo March su EC"}]}
+        },
+        "special_by_branch": {
+          "attack": [{"sa": "ambush", "method": "remove"}],
+          "march": [{"sa": "infiltrate", "method": "replace"}]
+        }
+      }
+    },
+    "K": {
+      "front": {
+        "an": null,
+        "flow": [
+          {"cond": "avail_26j_guerrillas_lt_d6", "t": "next", "f": "draw"},
+          {"cond": "guerrillas_3plus_no_support_room_for_base", "t": "op:rally", "f": "flip"}
+        ],
+        "ops": {"rally": {"type": "rally", "steps": [
+          {"n": 1, "do": "place_base", "where": "space_with_3plus_26j_guerrillas"},
+          {"n": 2, "cond": "avail_26j_guerrillas_4plus", "do": "place_guerrillas", "where": "spaces_with_26j_bases"},
+          {"n": 3, "do": "place_guerrillas"},
+          {"n": 4, "do": "flip_guerrillas", "where": "most_active"}
+        ]}},
+        "special": [{"sa": "infiltrate", "method": "replace"}]
+      },
+      "back": {
+        "an": 3,
+        "flow": [{"cond": "underground_26j_not_active_opp", "pact": "ignore_passive", "t": "op:terror", "f": "op:march"}],
+        "ops": {
+          "terror": {"type": "terror", "steps": [
+            {"n": 1, "do": "shift_toward_active_opposition", "where": "spaces_without_active_opposition"},
+            {"n": 2, "do": "terror_all_ecs", "order": "highest_value_first"},
+            {"note": "26J Base in non-Mountain solo dove 2+ Guerriglie 26J Clandestine"},
+            {"note": "Nessun tiro AN dopo Terror su EC"}
+          ]},
+          "march": {"type": "march", "steps": [{"n": 1, "priorities": "move"}, {"note": "Nessun tiro AN dopo March su EC"}]}
+        },
+        "special_by_branch": {
+          "terror": [{"sa": "kidnap", "notes": ["prima Terror nello spazio scelto per Kidnap", "bersaglio GOV se possibile poi SYN", "prendi Cash prima delle Risorse"]}],
+          "march": [{"sa": "infiltrate", "method": "replace"}]
+        }
+      }
+    },
+    "L": {
+      "front": {
+        "an": null,
+        "flow": [
+          {"cond": "avail_26j_guerrillas_lt_d6", "t": "next", "f": "draw"},
+          {"cond": "guerrillas_3plus_no_support_room_for_base", "t": "op:rally", "f": "flip"}
+        ],
+        "ops": {"rally": {"type": "rally", "steps": [
+          {"n": 1, "do": "place_base", "where": "space_with_3plus_26j_guerrillas"},
+          {"n": 2, "cond": "avail_26j_guerrillas_4plus", "do": "place_guerrillas", "where": "spaces_with_26j_bases"},
+          {"n": 3, "do": "place_guerrillas"},
+          {"n": 4, "do": "flip_guerrillas", "where": "most_active"}
+        ]}},
+        "special": [{"sa": "infiltrate", "method": "replace"}]
+      },
+      "back": {
+        "an": 3,
+        "flow": [{"cond": "enemy_space_4plus_or_underground", "pact": "ignore_dr", "t": "op:attack", "f": "op:march"}],
+        "ops": {
+          "attack": {"type": "attack", "steps": [
+            {"note": "Negli spazi con 4+ Guerriglie 26J: Attack"},
+            {"note": "Negli spazi dove tutte le Guerriglie 26J sono Attive: Attack"}
+          ]},
+          "march": {"type": "march", "steps": [{"n": 1, "priorities": "move"}, {"note": "Nessun tiro AN dopo March su EC"}]}
+        },
+        "special_by_branch": {
+          "attack": [{"sa": "ambush", "method": "remove"}],
+          "march": [{"sa": "infiltrate", "method": "replace"}]
+        }
+      }
+    },
+    "M": {
+      "front": {
+        "an": null,
+        "flow": [
+          {"cond": "any_2pop_without_active_opp", "t": "next", "f": "draw"},
+          {"cond": "d6_le_avail_26j_guerrillas", "t": "op:rally", "f": "flip"}
+        ],
+        "ops": {"rally": {"type": "rally", "steps": [
+          {"n": 1, "do": "place_base", "where": "space_with_3plus_26j_guerrillas"},
+          {"n": 2, "cond": "avail_26j_guerrillas_4plus", "do": "place_guerrillas", "where": "spaces_with_26j_bases"},
+          {"n": 3, "do": "place_guerrillas"},
+          {"n": 4, "do": "flip_guerrillas", "where": "most_active"}
+        ]}},
+        "special": [{"sa": "infiltrate", "method": "replace"}]
+      },
+      "back": {
+        "an": null,
+        "flow": [{"cond": "enemy_space_4plus_or_underground", "pact": "ignore_dr", "t": "op:attack", "f": "op:terror"}],
+        "ops": {
+          "attack": {"type": "attack", "steps": [
+            {"note": "Negli spazi con 4+ Guerriglie 26J: Attack"},
+            {"note": "Negli spazi dove tutte le Guerriglie 26J sono Attive: Attack"}
+          ]},
+          "terror": {"type": "terror", "steps": [
+            {"n": 1, "do": "shift_toward_active_opposition", "where": "spaces_without_active_opposition"},
+            {"n": 2, "do": "terror_all_ecs", "order": "highest_value_first"},
+            {"note": "26J Base in non-Mountain solo dove 2+ Guerriglie 26J Clandestine"},
+            {"note": "Nessun tiro AN dopo Terror su EC"}
+          ]}
+        },
+        "special_by_branch": {
+          "attack": [{"sa": "ambush", "method": "remove"}],
+          "terror": [{"sa": "kidnap", "notes": ["prima Terror nello spazio scelto per Kidnap", "bersaglio GOV se possibile poi SYN", "prendi Cash prima delle Risorse"]}]
+        }
+      }
+    }
   }
 }
