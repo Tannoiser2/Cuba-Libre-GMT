@@ -1,25 +1,42 @@
 class_name TrackOverlay
 extends Control
 
-## Disegna i segnalini originali sui tracciati di bordo mappa: cilindri Risorse delle 4
-## Fazioni, Aiuti, i 4 marcatori di vittoria sul tracciato perimetrale 0–49, e il marcatore
-## dell'Alleanza USA nella sua casella. I segnalini con lo stesso valore vengono sfalsati.
+## Disegna i segnalini sui tracciati e nelle caselle, usando le coordinate ESATTE estratte dal
+## modulo Vassal (board_layout.json): celle del tracciato perimetrale 0–49, caselle Available
+## Forces, US Alliance, Eligible/Ineligible. Cilindri Risorse, Aiuti, marcatori di vittoria,
+## Alleanza USA, pezzi disponibili e idoneità delle Fazioni.
 
-const BASE_OFF := 2.0    # i segnalini stanno sulla riga dei numeri (non nei riquadri sotto)
-const STACK := 14.0      # scostamento per segnalini sulla stessa cella
-const MK := 24.0         # dimensione segnalino
+const MK := 26.0       # dimensione segnalino su tracciato
+const STACK := 20.0    # scostamento per segnalini sulla stessa cella
+const AV_PC := 20.0    # dimensione pezzo in riserva
+
+var _track: Dictionary = {}   # "0".."49" -> [x,y] normalizzati
+var _box: Dictionary = {}     # nome -> [x0,y0,x1,y1] normalizzati
 
 
-func _track_norm(value: int) -> Vector2:
-	value = clampi(value, 0, 49)
-	if value <= 30:
-		return Vector2(0.037 + value * 0.03067, 0.072)
-	return Vector2(0.978, 0.115 + (value - 31) * 0.04722)
+func _ready() -> void:
+	var f := FileAccess.open("res://games/cuba_libre/data/board_layout.json", FileAccess.READ)
+	if f != null:
+		var d = JSON.parse_string(f.get_as_text())
+		if d is Dictionary:
+			_track = d.get("track", {})
+			_box = d.get("box", {})
+
+
+func _cell(value: int) -> Vector2:
+	var v := clampi(value, 0, 49)
+	var p: Array = _track.get(str(v), [0.5, 0.5])
+	return Vector2(p[0] * size.x, p[1] * size.y)
+
+
+func _box_rect(name: String) -> Rect2:
+	var b: Array = _box.get(name, [0, 0, 0, 0])
+	return Rect2(b[0] * size.x, b[1] * size.y, (b[2] - b[0]) * size.x, (b[3] - b[1]) * size.y)
 
 
 func _draw() -> void:
 	var s: GameState = GameController.state
-	if s == null:
+	if s == null or _track.is_empty():
 		return
 	var mod: CubaLibreModule = GameController.module
 	var chips := [
@@ -40,77 +57,22 @@ func _draw() -> void:
 		counts[v] = idx + 1
 		_marker(v, idx, ch[1])
 
-	# Alleanza USA nella sua casella (Firm/Reluctant/Embargoed)
+	# Alleanza USA nella casella attiva
 	var ai := int(s.tracks.get("us_alliance", 0))
-	var ay: float = [0.135, 0.185, 0.235][ai]
-	_blit(CLAssets.alliance_marker(), Vector2(0.145 * size.x, ay * size.y))
+	var abox: String = ["us_alliance_firm", "us_alliance_reluctant", "us_alliance_embargoed"][ai]
+	_blit(CLAssets.alliance_marker(), _box_rect(abox).get_center())
 
 	_draw_available(s)
 	_draw_eligibility(s)
 
 
-# Riquadri "Available Forces": origine (normalizzata) della riga "pezzo + xN" per fazione.
-const AVAIL := {
-	"government": {"types": ["troops", "police", "base"], "o": [0.27, 0.135]},
-	"syndicate": {"types": ["guerrilla", "casino"], "o": [0.625, 0.115]},
-	"directorio": {"types": ["guerrilla", "base"], "o": [0.025, 0.885]},
-	"m26": {"types": ["guerrilla", "base"], "o": [0.655, 0.90]},
-}
-const AV_PC := 20.0   # dimensione pezzo in riserva
-const AV_STEP := 62.0 # passo orizzontale tra i tipi
-
-
-func _draw_available(s: GameState) -> void:
-	var font := ThemeDB.fallback_font
-	for fid in AVAIL:
-		var cfg: Dictionary = AVAIL[fid]
-		var x: float = cfg["o"][0] * size.x
-		var y: float = cfg["o"][1] * size.y
-		for t in cfg["types"]:
-			var n := s.available(fid, t)
-			if n <= 0:
-				continue
-			var st := "closed" if t == "casino" else ("underground" if t == "guerrilla" else "")
-			var tex := CLAssets.piece(fid, t, st)
-			if tex != null:
-				draw_texture_rect(tex, Rect2(Vector2(x, y), Vector2(AV_PC, AV_PC)), false)
-			var label := "x%d" % n
-			var lp := Vector2(x + AV_PC + 3, y + AV_PC - 3)
-			draw_string(font, lp + Vector2(1, 1), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.BLACK)
-			draw_string(font, lp, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
-			x += AV_STEP
-
-
-# Sequenza di Gioco: colonne Disponibili / Non Disponibili (cilindri fazione).
-const ELIG_OK := [0.225, 0.60]
-const ELIG_NO := [0.44, 0.60]
-const ELIG_STEP := 26.0
-const ELIG_SZ := 22.0
-
-
-func _draw_eligibility(s: GameState) -> void:
-	var ok := 0
-	var no := 0
-	for fid in ["government", "m26", "directorio", "syndicate"]:
-		var elig: bool = int(s.eligibility.get(fid, 0)) == 0  # 0 = ELIGIBLE
-		var base: Array = ELIG_OK if elig else ELIG_NO
-		var idx := ok if elig else no
-		var c := Vector2(base[0] * size.x, base[1] * size.y + idx * ELIG_STEP)
-		var t := CLAssets.res_token(fid)
-		if t != null:
-			draw_texture_rect(t, Rect2(c, Vector2(ELIG_SZ, ELIG_SZ)), false)
-		if elig: ok += 1
-		else: no += 1
-
-
-
 func _marker(value: int, stack_idx: int, t: Texture2D) -> void:
-	var n := _track_norm(value)
-	var c := Vector2(n.x * size.x, n.y * size.y)
+	var c := _cell(value)
+	# Celle 0–30 in alto: impila verso il basso; 31–49 a destra: impila verso sinistra.
 	if value <= 30:
-		c.y += BASE_OFF + stack_idx * STACK
+		c.y += stack_idx * STACK
 	else:
-		c.x -= BASE_OFF + stack_idx * STACK
+		c.x -= stack_idx * STACK
 	_blit(t, c)
 
 
@@ -118,3 +80,53 @@ func _blit(t: Texture2D, center: Vector2) -> void:
 	if t == null:
 		return
 	draw_texture_rect(t, Rect2(center - Vector2(MK, MK) * 0.5, Vector2(MK, MK)), false)
+
+
+const AVAIL := {
+	"available_government": {"faction": "government", "types": ["troops", "police", "base"]},
+	"available_syndicate": {"faction": "syndicate", "types": ["guerrilla", "casino"]},
+	"available_directorio": {"faction": "directorio", "types": ["guerrilla", "base"]},
+	"available_m26": {"faction": "m26", "types": ["guerrilla", "base"]},
+}
+
+
+func _draw_available(s: GameState) -> void:
+	var font := ThemeDB.fallback_font
+	for box_name in AVAIL:
+		var cfg: Dictionary = AVAIL[box_name]
+		var r := _box_rect(box_name)
+		var x := r.position.x + 10.0
+		var y := r.position.y + 8.0
+		for t in cfg["types"]:
+			var n := s.available(cfg["faction"], t)
+			if n <= 0:
+				continue
+			var st := "closed" if t == "casino" else ("underground" if t == "guerrilla" else "")
+			var tex := CLAssets.piece(cfg["faction"], t, st)
+			if tex != null:
+				draw_texture_rect(tex, Rect2(Vector2(x, y), Vector2(AV_PC, AV_PC)), false)
+			var label := "x%d" % n
+			draw_string(font, Vector2(x + AV_PC + 4, y + AV_PC - 3), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.BLACK)
+			draw_string(font, Vector2(x + AV_PC + 3, y + AV_PC - 4), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
+			x += 60.0
+
+
+const ELIG_SZ := 24.0
+
+
+func _draw_eligibility(s: GameState) -> void:
+	var ok_r := _box_rect("eligible")
+	var no_r := _box_rect("ineligible")
+	var ok := 0
+	var no := 0
+	for fid in ["government", "m26", "directorio", "syndicate"]:
+		var elig: bool = int(s.eligibility.get(fid, 0)) == 0
+		var t := CLAssets.res_token(fid)
+		if t == null:
+			continue
+		var r := ok_r if elig else no_r
+		var idx := ok if elig else no
+		var pos := Vector2(r.get_center().x - ELIG_SZ * 0.5, r.position.y + 14.0 + idx * (ELIG_SZ + 8.0))
+		draw_texture_rect(t, Rect2(pos, Vector2(ELIG_SZ, ELIG_SZ)), false)
+		if elig: ok += 1
+		else: no += 1
