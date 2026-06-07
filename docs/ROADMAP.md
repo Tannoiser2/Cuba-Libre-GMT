@@ -41,9 +41,10 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [x] Attività Speciali (tutte le 12) + test.
 - [x] Sistema Denaro (Cash) — segnalini, proprietà, trasferimento, limite 4.
 - [ ] Riciclaggio (Launder) collegato alla sequenza di gioco.
-- [ ] Round di Propaganda (Vittoria, Risorse, Supporto, Spostamento, Sistemazione).
-- [ ] Condizioni e margini di vittoria.
-- [ ] Test unitari del motore (incl. l'esempio guidato del Playbook come scenario di test).
+- [x] Round di Propaganda (Vittoria, Risorse, Supporto, Sistemazione) + test.
+- [x] Condizioni e margini di vittoria.
+- [x] Test unitari del motore (147 test headless).
+- [ ] Spostamento (Redeploy) del Governo automatizzato.
 
 ### Fase 2 — Carte ed Eventi
 - [ ] Trascrivere testo e ordine fazioni delle 48 carte (da `images/Card_*.png`).

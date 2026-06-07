@@ -33,6 +33,9 @@ func _initialize() -> void:
 	_test_sa_m26()
 	_test_sa_directorio()
 	_test_sa_syndicate()
+	_test_propaganda_resources()
+	_test_propaganda_support_reset()
+	_test_propaganda_victory()
 
 	print("\n-- Risultato: %d passati, %d falliti --" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
@@ -577,6 +580,66 @@ func _test_sa_syndicate() -> void:
 	_check("bribe ok", res4.ok)
 	_eq("Bribe: -3 Risorse Sindacato", st4.get_resources("syndicate"), syn4 - 3)
 	_eq("Bribe: 2 Truppe rimosse", st4.space_state("matanzas").count("government", "troops"), 0)
+
+
+func _prop() -> Array:
+	var r := _new_game()
+	var prop := CubaLibrePropaganda.new(r[2], r[0])
+	return [r[0], r[1], r[2], prop]
+
+
+func _test_propaganda_resources() -> void:
+	print("\n[Propaganda — Risorse]")
+	var r := _prop()
+	var state: GameState = r[2]
+	var prop: CubaLibrePropaganda = r[3]
+	prop.resources_phase()
+	# Govt: 15 + (Econ 8 + Aiuti 15) + Cresta 2 (Havana, controllo Govt) = 40
+	_eq("Risorse Governo dopo Risorse", state.get_resources("government"), 40)
+	# M26: 10 + Basi(1) = 11
+	_eq("Risorse M26 dopo Risorse", state.get_resources("m26"), 11)
+	# DR: 5 + spazi con pezzi DR (Havana, Camagüey Prov) = 7
+	_eq("Risorse DR dopo Risorse", state.get_resources("directorio"), 7)
+	# Sindacato: 15 + 2*Casinò aperti(3) - Cresta 2 = 19
+	_eq("Risorse Sindacato dopo Risorse", state.get_resources("syndicate"), 19)
+
+
+func _test_propaganda_support_reset() -> void:
+	print("\n[Propaganda — Supporto + Sistemazione]")
+	var r := _prop()
+	var state: GameState = r[2]
+	var prop: CubaLibrePropaganda = r[3]
+	# Supporto: Totale Supporto 16 <= 18 -> Alleanza scende, Aiuti -10
+	prop.support_phase()
+	_eq("Alleanza USA scesa a Vacillante", int(state.tracks.get("us_alliance", 0)), 1)
+	_eq("Aiuti dopo -10", int(state.tracks.get("aid", 0)), 5)
+	# Sistemazione: Guerriglie -> Clandestine, Casinò -> aperti, marker rimossi, Disponibili
+	state.space_state("sierra_maestra").add_piece("m26", "guerrilla", 1, "active")
+	state.flip_pieces("syndicate", "casino", "pinar_del_rio", "open", "closed")
+	state.space_state("matanzas").add_marker("terror", 2)
+	state.eligibility["government"] = CoinEnums.Eligibility.INELIGIBLE
+	prop.reset_phase()
+	_eq("Guerriglie tornate Clandestine",
+		state.space_state("sierra_maestra").count("m26", "guerrilla", "active"), 0)
+	_eq("Casinò riaperti a Pinar",
+		state.space_state("pinar_del_rio").count("syndicate", "casino", "open"), 1)
+	_eq("Terrore rimosso", state.space_state("matanzas").marker("terror"), 0)
+	_eq("Disponibilità ripristinata", state.eligibility["government"], CoinEnums.Eligibility.ELIGIBLE)
+
+
+func _test_propaganda_victory() -> void:
+	print("\n[Propaganda — Vittoria]")
+	var r := _prop()
+	var state: GameState = r[2]
+	var prop: CubaLibrePropaganda = r[3]
+	# All'inizio nessun vincitore
+	_eq("Nessun vincitore iniziale", prop.victory_phase().winner, "")
+	# Forza vittoria M26: porta più spazi a Opposizione Attiva (Tot Opp + Basi > 15)
+	for sid in ["oriente", "las_villas", "la_habana", "matanzas", "camaguey_province", "sierra_maestra"]:
+		state.set_support(sid, CoinEnums.Support.ACTIVE_OPPOSITION)
+	# Tot Opp = 2*(2+2+1+1+1+1)=16 ; +1 Base M26 = 17 > 15
+	var vp := prop.victory_phase()
+	_eq("Vincitore M26", vp.winner, "m26")
 
 
 func _test_victory_initial() -> void:
