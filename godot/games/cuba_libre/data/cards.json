@@ -192,7 +192,7 @@
         "syndicate"
       ],
       "momentum": false,
-      "capability": false,
+      "capability": true,
       "unshaded": "",
       "shaded": "",
       "text_raw": "Inspired military leader:\nThe first group of Guerrillas\nto move on each 26July March\noperation flips Underground."
@@ -417,7 +417,7 @@
         "m26"
       ],
       "momentum": false,
-      "capability": false,
+      "capability": true,
       "unshaded": "",
       "shaded": "",
       "text_raw": "US Comandante:\n\nDR Guerrillas may\nMarch 2 adjacent spaces.\n\nBacklash against\nYanqui adventurer:\nSet a space with a DR Guerrilla\nto Active Support."
@@ -642,7 +642,7 @@
         "government"
       ],
       "momentum": false,
-      "capability": false,
+      "capability": true,
       "unshaded": "",
       "shaded": "",
       "text_raw": "Mafia Offensive\n\nMob helps rebels:\n26July or DR executes a free LimOp,\ntreating 1 Syndicate piece as that\nFaction’s piece.\n\nHitmen:\nSyndicate may Assassinate as if DR,\nbut regardless of Police."
@@ -717,7 +717,7 @@
         "government"
       ],
       "momentum": false,
-      "capability": false,
+      "capability": true,
       "unshaded": "",
       "shaded": "",
       "text_raw": "Santo Trafficante Jr\n\nFeud with Lansky:\nSyndicate Resources -10.\nAll Syndicate Guerrillas to Active.\n\nOld-time mobster:\nAny Underground\nSyndicate Guerrillas\nblock Skim (6.2.3)."
