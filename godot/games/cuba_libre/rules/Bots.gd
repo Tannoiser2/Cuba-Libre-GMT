@@ -23,6 +23,107 @@ func _init(p_state: GameState, p_module: CubaLibreModule) -> void:
 	specials = CubaLibreSpecials.new(p_state, p_module)
 
 
+## Azioni dei bot nella Fase di Supporto della Propaganda (8.6.2, 8.7.5, 8.8.6).
+## Da chiamare dopo l'Alleanza USA e prima della Sistemazione.
+func propaganda_support() -> Array:
+	_log = []
+	_gov_civic_action()
+	_m26_demonstrations()
+	_dr_expatriate_support()
+	state.recompute_all_control()
+	mod._refresh_victory_tracks(state)
+	return _log
+
+
+## 8.8.6 Azione Civica del Governo: spende 4 Risorse per passo (Terrore o +1 Supporto),
+## senza scendere sotto 9 Risorse, negli spazi Controllati con Truppe e Polizia.
+func _gov_civic_action() -> void:
+	var guard := 0
+	while state.get_resources("government") >= 13 and guard < 50:
+		guard += 1
+		var target := _best_support_space("government", true)
+		if target == "":
+			break
+		state.add_resources("government", -4)
+		var st: SpaceState = state.space_state(target)
+		if st.marker("terror") > 0:
+			st.add_marker("terror", -1)
+		elif st.support < CoinEnums.Support.ACTIVE_SUPPORT:
+			st.support = (st.support + 1) as CoinEnums.Support
+	_log.append("Azione Civica del Governo completata")
+
+
+## 8.7.5 Dimostrazioni del 26 Luglio: 1 Risorsa per passo verso Opposizione Attiva.
+func _m26_demonstrations() -> void:
+	var guard := 0
+	while state.get_resources("m26") >= 1 and guard < 80:
+		guard += 1
+		var target := _best_support_space("m26", false)
+		if target == "":
+			break
+		state.add_resources("m26", -1)
+		var st: SpaceState = state.space_state(target)
+		if st.marker("terror") > 0:
+			st.add_marker("terror", -1)
+		elif st.support > CoinEnums.Support.ACTIVE_OPPOSITION:
+			st.support = (st.support - 1) as CoinEnums.Support
+	_log.append("Dimostrazioni del 26 Luglio completate")
+
+
+## 8.6.2 Sostegno degli Espatriati (DR): Rally gratuito per ottenere Controllo DR
+## della maggiore Popolazione possibile.
+func _dr_expatriate_support() -> void:
+	var best := ""
+	var best_pop := -1
+	for sid in _ids():
+		var sd: SpaceDef = state.game_def.space(sid)
+		if not sd.has_population():
+			continue
+		var st: SpaceState = state.space_state(sid)
+		if abs(st.support) == 2:
+			continue  # niente Supporto/Opposizione Attiva
+		if st.control != "" and st.control != "directorio":
+			continue
+		if st.control == "directorio":
+			continue  # già controllata
+		if sd.pop > best_pop and state.available("directorio", "guerrilla") > 0:
+			best_pop = sd.pop; best = sid
+	if best == "":
+		return
+	# Piazza Guerriglie DR sufficienti a controllare lo spazio
+	var st2: SpaceState = state.space_state(best)
+	var others := 0
+	for f in ["government", "m26", "syndicate"]:
+		others += state.control_count(f, st2)
+	var need: int = others - st2.count("directorio") + 1
+	state.place_from_available("directorio", "guerrilla", best, maxi(need, 1))
+	_log.append("Sostegno Espatriati: Controllo DR a %s" % best)
+
+
+## Spazio migliore per Azione Civica (govt=true) o Dimostrazioni (govt=false).
+func _best_support_space(faction: String, govt: bool) -> String:
+	var best := ""
+	var best_pop := -1
+	for sid in _ids():
+		var sd: SpaceDef = state.game_def.space(sid)
+		if not sd.has_population():
+			continue
+		var st: SpaceState = state.space_state(sid)
+		if st.control != faction:
+			continue
+		if govt:
+			if st.count("government", "troops") == 0 or st.count("government", "police") == 0:
+				continue
+			if st.support >= CoinEnums.Support.ACTIVE_SUPPORT and st.marker("terror") == 0:
+				continue
+		else:
+			if st.support <= CoinEnums.Support.ACTIVE_OPPOSITION and st.marker("terror") == 0:
+				continue
+		if sd.pop > best_pop:
+			best_pop = sd.pop; best = sid
+	return best
+
+
 func take_turn(faction: String) -> Dictionary:
 	_log = []
 	var action := "pass"
@@ -165,7 +266,8 @@ func _directorio_turn() -> String:
 	if state.available("directorio", "guerrilla") >= 6 or _can_place_base("directorio"):
 		var rally_spaces := _insurgent_rally_spaces("directorio")
 		if not rally_spaces.is_empty():
-			_run(ops.rally({"faction": "directorio", "spaces": rally_spaces.slice(0, 3)}))
+			var _sp := rally_spaces.slice(0, 3)
+			_run(ops.rally({"faction": "directorio", "spaces": _sp, "choices": _rally_choices("directorio", _sp)}))
 			_directorio_subvert()
 			return "rally"
 
@@ -214,7 +316,8 @@ func _m26_turn() -> String:
 	if state.available("m26", "guerrilla") >= 6 or _can_place_base("m26"):
 		var rally_spaces := _insurgent_rally_spaces("m26")
 		if not rally_spaces.is_empty():
-			_run(ops.rally({"faction": "m26", "spaces": rally_spaces.slice(0, 3)}))
+			var _sp := rally_spaces.slice(0, 3)
+			_run(ops.rally({"faction": "m26", "spaces": _sp, "choices": _rally_choices("m26", _sp)}))
 			_m26_infiltrate()
 			return "rally"
 
@@ -438,6 +541,21 @@ func _spaces_with_attack(faction: String) -> Array:
 		if enemies > 0:
 			out.append(sid)
 	return out
+
+
+## Scelte di Rally per spazio: costruisci Base se possibile, altrimenti Guerriglie extra,
+## altrimenti piazza 1 Guerriglia. Le Basi contano direttamente per la vittoria insorgente.
+func _rally_choices(faction: String, spaces: Array) -> Dictionary:
+	var ch := {}
+	for sid in spaces:
+		var st: SpaceState = state.space_state(sid)
+		if st.count(faction, "base") > 0:
+			ch[sid] = "extra"
+		elif st.count(faction, "guerrilla") >= 2 and mod.can_place_base(state, sid, false):
+			ch[sid] = "base"
+		else:
+			ch[sid] = "place"
+	return ch
 
 
 func _insurgent_rally_spaces(faction: String) -> Array:
