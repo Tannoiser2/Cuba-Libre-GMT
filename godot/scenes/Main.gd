@@ -96,15 +96,19 @@ func _build_ui() -> void:
 	_map.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_board.add_child(_map)
 
-	# Gli spazi sono figli della mappa: stesse coordinate dell'immagine.
-	for sid in LAYOUT.keys():
+	# Zone poligonali sagomate sui contorni (figlie della mappa).
+	var regions: Dictionary = _load_regions()
+	for sid in regions.keys():
+		if GameController.game_def.space(sid) == null:
+			continue
 		var sd: SpaceDef = GameController.game_def.space(sid)
-		var sv := SpaceView.new()
-		sv.setup(sd)
-		sv.space_clicked.connect(_on_space_clicked)
-		sv.piece_dropped.connect(_on_piece_dropped)
-		_map.add_child(sv)
-		_space_views[sid] = sv
+		var rv := RegionView.new()
+		var r: Dictionary = regions[sid]
+		rv.setup(sd, r.get("polygon", []), Vector2(r["anchor"][0], r["anchor"][1]))
+		rv.space_clicked.connect(_on_space_clicked)
+		rv.piece_dropped.connect(_on_piece_dropped)
+		_map.add_child(rv)
+		_space_views[sid] = rv
 
 	# Pannello laterale (destra)
 	var side := _build_side_panel()
@@ -112,6 +116,12 @@ func _build_ui() -> void:
 
 	resized.connect(_layout_board)
 	_layout_board()
+
+
+func _load_regions() -> Dictionary:
+	var path := "res://games/cuba_libre/data/regions.json"
+	var data = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return data.get("regions", {}) if typeof(data) == TYPE_DICTIONARY else {}
 
 
 func _build_action_bar() -> Control:
@@ -261,11 +271,12 @@ func _layout_board() -> void:
 	if _map != null:
 		_map.position = Vector2.ZERO
 		_map.size = Vector2(mw, mh)
-	# Posiziona gli spazi centrati sulle coordinate normalizzate della mappa
+	# Le zone poligonali coprono l'intera mappa (la forma è definita da _has_point)
 	for sid in _space_views.keys():
-		var p: Vector2 = LAYOUT[sid]
-		var sv: SpaceView = _space_views[sid]
-		sv.position = Vector2(p.x * mw - sv.size.x * 0.5, p.y * mh - sv.size.y * 0.5)
+		var rv: RegionView = _space_views[sid]
+		rv.position = Vector2.ZERO
+		rv.size = Vector2(mw, mh)
+		rv.relayout()
 
 
 # ---------------------------------------------------------------------------
@@ -343,14 +354,11 @@ func _on_start() -> void:
 func _on_space_clicked(sid: String) -> void:
 	if _mode != "select_spaces" and _mode != "space_list":
 		return
-	if not _space_views[sid]._highlight and not _selected.has(sid):
-		return
 	if _selected.has(sid):
 		_selected.erase(sid)
-		_space_views[sid].set_highlight(true)
 	else:
 		_selected.append(sid)
-		_space_views[sid].modulate = Color(1.3, 1.3, 1.0)
+		_space_views[sid].set_highlight(true)
 	_instr.text = "Selezionati: %s" % ", ".join(_selected)
 
 
@@ -433,7 +441,6 @@ func _on_cancel() -> void:
 func _clear_highlights() -> void:
 	for sid in _space_views.keys():
 		_space_views[sid].set_highlight(false)
-		_space_views[sid].modulate = Color.WHITE
 
 
 func _build_params() -> Dictionary:
