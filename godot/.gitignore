@@ -1,0 +1,11 @@
+# Cache di import e file generati da Godot
+.godot/
+.import/
+export.cfg
+export_presets.cfg
+
+# Build esportate
+build/
+*.exe
+*.pck
+*.zip

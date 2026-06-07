@@ -8,7 +8,12 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - `vassal/Cuba_Libre_1.3.2.vmod.zip` — modulo VASSAL: immagini (mappa, carte, schede,
   segnalini) e `buildFile` (definizioni pezzi/spazi). Ottima fonte di asset grafici.
 
-## Modello dati (in `data/`)
+## Stack tecnologico
+- **Godot 4.3** (desktop), GDScript.
+- Architettura a due livelli: **motore COIN generico** (`godot/coin_engine/`) riusabile
+  per altri giochi della serie, e **modulo Cuba Libre** (`godot/games/cuba_libre/`).
+
+## Modello dati (in `godot/games/cuba_libre/data/`)
 - `spaces.json` — spazi mappa (tipo, terreno, Pop/Econ, adiacenze*).
 - `factions.json` — fazioni, forze, operazioni, attività speciali, vittoria.
 - `setup_standard.json` — schieramento standard.
@@ -22,13 +27,15 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [x] Caricare i materiali sorgente nel repo.
 - [x] Leggere e sintetizzare il regolamento (`docs/RULES_DIGEST.md`).
 - [x] Estrarre il modello dati iniziale (spazi, fazioni, setup, lista carte).
+- [x] Scegliere lo stack tecnologico (Godot 4) e impostare il progetto.
+- [x] Architettura motore COIN generico + modulo Cuba Libre.
 - [ ] Verificare le adiacenze della mappa.
-- [ ] Scegliere lo stack tecnologico e impostare il progetto.
 
 ### Fase 1 — Motore di gioco (core engine)
-- [ ] Stato di gioco (game state) e serializzazione (save/load).
-- [ ] Modello degli spazi, forze, marker, tracciati.
-- [ ] Controllo, Supporto/Opposizione, calcolo dei tracciati di vittoria.
+- [x] Modello degli spazi, forze, marker, tracciati (classi generiche).
+- [x] Controllo, Supporto/Opposizione, calcolo dei tracciati di vittoria.
+- [x] Caricamento dati + schieramento standard, validati da test headless (33/33).
+- [ ] Stato di gioco: serializzazione (save/load).
 - [ ] Sequenza di gioco: carta Evento, Disponibilità, Passare, 1ª/2ª Fazione.
 - [ ] Operazioni (Train/Garrison/Sweep/Assault, Rally/March/Attack/Terror/Build).
 - [ ] Attività Speciali (tutte le 12).

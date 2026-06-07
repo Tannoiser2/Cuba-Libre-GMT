@@ -5,9 +5,13 @@ Serie COIN di GMT Games — l'insorgenza di Castro a Cuba, 1957–1958.
 
 ## Stato del progetto
 
-🚧 **Fase 0 — Fondamenta.** Sono stati caricati i materiali sorgente, letto e
-sintetizzato il regolamento, ed estratto il modello dati iniziale.
+🚧 **Fase 1 — Motore di gioco.** Materiali sorgente caricati, regolamento sintetizzato,
+modello dati estratto e **motore COIN generico** avviato in Godot 4 (caricamento dati,
+schieramento, Controllo, Supporto/Opposizione, metriche di vittoria — validati da test).
 Vedi [`docs/ROADMAP.md`](docs/ROADMAP.md) per il piano completo.
+
+L'architettura separa un **motore COIN generico** (riusabile per altri giochi della serie)
+dal **modulo Cuba Libre**, così che lo stesso engine possa ospitare altri titoli COIN.
 
 ## Struttura del repository
 
@@ -15,11 +19,10 @@ Vedi [`docs/ROADMAP.md`](docs/ROADMAP.md) per il piano completo.
 sources/        Materiali sorgente (regolamento, playbook, modulo VASSAL)
   rules/        PDF del regolamento (ITA) e del Playbook (ENG)
   vassal/       Modulo VASSAL 1.3.2 (immagini + definizioni)
-data/           Modello dati del gioco (JSON)
-  spaces.json         spazi della mappa
-  factions.json       fazioni, forze, vittoria
-  setup_standard.json schieramento standard
-  cards.json          le 52 carte (scheletro)
+godot/          Progetto Godot 4 (vedi godot/README.md)
+  coin_engine/  Motore COIN generico (riusabile)
+  games/cuba_libre/  Modulo Cuba Libre (dati + regole)
+  tests/        Test headless
 docs/           Documentazione
   RULES_DIGEST.md   sintesi operativa del regolamento
   ROADMAP.md        piano di sviluppo

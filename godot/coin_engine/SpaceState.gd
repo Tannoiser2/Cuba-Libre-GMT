@@ -1,0 +1,103 @@
+class_name SpaceState
+extends RefCounted
+
+## Stato mutabile di un singolo spazio: pezzi presenti, Supporto/Opposizione,
+## Controllo, marker (Terrore/Sabotaggio, ecc.).
+
+var space_id: String
+
+## Pezzi: pieces[faction_id][piece_type_id][state] = conteggio.
+## Per i pezzi senza stati alternativi si usa lo stato "" .
+var pieces: Dictionary = {}
+
+## Livello di Supporto/Opposizione (solo spazi con Popolazione).
+var support: CoinEnums.Support = CoinEnums.Support.NEUTRAL
+
+## Fazione che Controlla lo spazio ("" = Incontrollato).
+var control: String = ""
+
+## Marker generici: nome -> conteggio (es. "terror", "sabotage").
+var markers: Dictionary = {}
+
+
+func _init(p_space_id: String = "") -> void:
+	space_id = p_space_id
+
+
+# ---------------------------------------------------------------------------
+# Gestione pezzi
+# ---------------------------------------------------------------------------
+
+func add_piece(faction: String, type: String, count: int = 1, state: String = "") -> void:
+	if count == 0:
+		return
+	if not pieces.has(faction):
+		pieces[faction] = {}
+	if not pieces[faction].has(type):
+		pieces[faction][type] = {}
+	var cur: int = pieces[faction][type].get(state, 0)
+	pieces[faction][type][state] = cur + count
+
+
+func remove_piece(faction: String, type: String, count: int = 1, state: String = "") -> int:
+	## Rimuove fino a `count` pezzi; restituisce quanti effettivamente rimossi.
+	if not _has(faction, type, state):
+		return 0
+	var cur: int = pieces[faction][type][state]
+	var removed: int = min(cur, count)
+	pieces[faction][type][state] = cur - removed
+	if pieces[faction][type][state] <= 0:
+		pieces[faction][type].erase(state)
+	return removed
+
+
+func _has(faction: String, type: String, state: String) -> bool:
+	return pieces.has(faction) and pieces[faction].has(type) and pieces[faction][type].has(state)
+
+
+## Conteggio di un tipo di pezzo (qualsiasi stato, o uno stato specifico se dato).
+func count(faction: String, type: String = "", state = null) -> int:
+	if not pieces.has(faction):
+		return 0
+	var total := 0
+	for t in pieces[faction].keys():
+		if type != "" and t != type:
+			continue
+		for st in pieces[faction][t].keys():
+			if state != null and st != state:
+				continue
+			total += int(pieces[faction][t][st])
+	return total
+
+
+## Totale dei pezzi di una Fazione nello spazio.
+func total_for(faction: String) -> int:
+	return count(faction)
+
+
+## Restituisce tutte le Fazioni con almeno un pezzo nello spazio.
+func factions_present() -> PackedStringArray:
+	var out := PackedStringArray()
+	for f in pieces.keys():
+		if count(f) > 0:
+			out.append(f)
+	return out
+
+
+# ---------------------------------------------------------------------------
+# Marker
+# ---------------------------------------------------------------------------
+
+func marker(name: String) -> int:
+	return int(markers.get(name, 0))
+
+
+func set_marker(name: String, value: int) -> void:
+	if value <= 0:
+		markers.erase(name)
+	else:
+		markers[name] = value
+
+
+func add_marker(name: String, delta: int = 1) -> void:
+	set_marker(name, marker(name) + delta)
