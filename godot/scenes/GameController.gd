@@ -5,7 +5,7 @@ extends Node
 ## stato cambia, così che le viste possano aggiornarsi.
 
 signal state_changed
-signal action_logged(text: String)
+signal action_logged(text: String, faction: String)
 
 var module: CubaLibreModule
 var game_def: GameDef
@@ -133,7 +133,7 @@ func seq_pass() -> bool:
 	var fid := seq.pending_faction()
 	if not seq.act_pass():
 		return false
-	emit_signal("action_logged", "%s Passa" % faction_name(fid))
+	emit_signal("action_logged", "%s Passa" % faction_name(fid), fid)
 	_after_decision()
 	return true
 
@@ -156,10 +156,10 @@ func end_turn() -> bool:
 		elif seq.is_legal(A.OPERATION_WITH_SPECIAL):
 			t = A.OPERATION_WITH_SPECIAL
 	if t == -1:
-		emit_signal("action_logged", "⚠ Nessuna azione valida da concludere (esegui un'Operazione/Evento o Passa)")
+		emit_signal("action_logged", "⚠ Nessuna azione valida da concludere (esegui un'Operazione/Evento o Passa)", "")
 		return false
 	if not seq.act(t):
-		emit_signal("action_logged", "⚠ Azione non legale in questo momento")
+		emit_signal("action_logged", "⚠ Azione non legale in questo momento", "")
 		return false
 	_after_decision()
 	return true
@@ -186,12 +186,12 @@ func _bot_take_pending() -> void:
 			var side: String = ec["side"]
 			var eres := events.apply(state.current_card, side, fid)
 			for line in eres.get("log", []):
-				emit_signal("action_logged", "🤖 Evento (%s): %s" % [side, String(line)])
+				emit_signal("action_logged", "🤖 Evento (%s): %s" % [side, String(line)], fid)
 			seq.act(A.EVENT)
 			return
 	var br := bot.take_turn(fid)
 	for line in br.get("log", []):
-		emit_signal("action_logged", "🤖 " + String(line))
+		emit_signal("action_logged", "🤖 " + String(line), fid)
 	if br.get("action", "pass") == "pass":
 		seq.act_pass()
 		return
@@ -216,7 +216,7 @@ func _after_decision() -> void:
 	module._refresh_victory_tracks(state)
 	if seq != null and seq.is_done():
 		seq.finish()
-		emit_signal("action_logged", "— Carta conclusa —")
+		emit_signal("action_logged", "— Carta conclusa —", "")
 		draw_next()
 		return
 	emit_signal("state_changed")
@@ -390,7 +390,7 @@ func run_event(number: int, side: String, faction: String, params: Dictionary = 
 	if res.get("ok", true):
 		_turn_did_event = true
 	for line in res.get("log", []):
-		emit_signal("action_logged", String(line))
+		emit_signal("action_logged", String(line), faction)
 	emit_signal("state_changed")
 	return res
 
@@ -398,7 +398,7 @@ func run_event(number: int, side: String, faction: String, params: Dictionary = 
 func run_bot_turn(faction: String) -> Dictionary:
 	var res := bot.take_turn(faction)
 	for line in res.get("log", []):
-		emit_signal("action_logged", "🤖 " + String(line))
+		emit_signal("action_logged", "🤖 " + String(line), faction)
 	emit_signal("state_changed")
 	return res
 
@@ -407,17 +407,17 @@ func run_bot_turn(faction: String) -> Dictionary:
 ## gestendo conteggio (X/4), vittoria e Propaganda finale. Percorso UNICO e corretto.
 func resolve_propaganda() -> Dictionary:
 	if state.current_card != 0:
-		emit_signal("action_logged", "⚠ La carta corrente non è una Propaganda")
+		emit_signal("action_logged", "⚠ La carta corrente non è una Propaganda", "")
 		return {"ok": false}
 	propaganda_played += 1
 	var is_final := propaganda_played >= 4
-	emit_signal("action_logged", "📣 Round Propaganda %d/4" % propaganda_played)
+	emit_signal("action_logged", "📣 Round Propaganda %d/4" % propaganda_played, "")
 	# Fase Vittoria
 	var vp := propaganda.victory_phase()
 	if vp.get("winner", "") != "":
 		game_over = true
 		winner = vp.winner
-		emit_signal("action_logged", "🏆 Vittoria: %s" % winner)
+		emit_signal("action_logged", "🏆 Vittoria: %s" % winner, winner)
 		emit_signal("state_changed")
 		return vp
 	# Risorse, Supporto (Alleanza) e azioni di Supporto dei bot (Civica/Dimostrazioni/Espatriati)
@@ -426,10 +426,10 @@ func resolve_propaganda() -> Dictionary:
 	plog.append_array(propaganda.support_phase())
 	plog.append_array(bot.propaganda_support())
 	for line in plog:
-		emit_signal("action_logged", "📣 " + String(line))
+		emit_signal("action_logged", "📣 " + String(line), "")
 	if is_final:
 		game_over = true
-		emit_signal("action_logged", "🏁 Partita conclusa (4ª Propaganda)")
+		emit_signal("action_logged", "🏁 Partita conclusa (4ª Propaganda)", "")
 	else:
 		propaganda.reset_phase()
 	emit_signal("state_changed")
@@ -445,12 +445,14 @@ func run_propaganda(_params: Dictionary = {}) -> Dictionary:
 
 
 func _emit_result(res: Dictionary) -> void:
+	# La fazione che agisce (turno umano corrente) per colorare il log.
+	var fac := seq.pending_faction() if seq != null else ""
 	if res.get("ok", false):
 		for line in res.get("log", []):
-			emit_signal("action_logged", String(line))
+			emit_signal("action_logged", String(line), fac)
 		emit_signal("state_changed")
 	else:
-		emit_signal("action_logged", "⚠ " + String(res.get("error", "errore")))
+		emit_signal("action_logged", "⚠ " + String(res.get("error", "errore")), "")
 
 
 # --- Helper di lettura per la UI ---
