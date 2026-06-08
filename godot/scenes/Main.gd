@@ -407,11 +407,14 @@ func _build_side_panel() -> PanelContainer:
 	_log.scroll_following = true
 	_log.scroll_active = true
 	_log.custom_minimum_size = Vector2(340, 260)
-	_log.add_theme_font_size_override("normal_font_size", 13)
+	# Testo del log piccolo (override di tema = affidabile, non dipende dal bbcode).
+	for fs in ["normal_font_size", "bold_font_size", "italics_font_size", "bold_italics_font_size", "mono_font_size"]:
+		_log.add_theme_font_size_override(fs, 11)
 	# La font di default non ha una variante corsiva: ne creo una inclinando i glifi,
 	# così il tag [i] della logica del bot viene reso davvero in corsivo.
-	_log.add_theme_font_override("italics_font", _italic_font())
-	_log.add_theme_font_override("bold_italics_font", _italic_font())
+	var itf := _italic_font()
+	_log.add_theme_font_override("italics_font", itf)
+	_log.add_theme_font_override("bold_italics_font", itf)
 	_log.meta_clicked.connect(_on_log_meta)
 	vb.add_child(_log)
 
@@ -734,7 +737,8 @@ func _on_bot_decision(text: String, faction: String, trace: Array) -> void:
 func _italic_font() -> FontVariation:
 	var ital := FontVariation.new()
 	ital.base_font = ThemeDB.fallback_font
-	ital.variation_transform = Transform2D(Vector2(1, 0), Vector2(0.25, 1), Vector2.ZERO)
+	# Costruttore (rotazione, scala, inclinazione, posizione): inclinazione = corsivo.
+	ital.variation_transform = Transform2D(0.0, Vector2.ONE, deg_to_rad(16.0), Vector2.ZERO)
 	return ital
 
 
@@ -755,10 +759,10 @@ func _render_log() -> void:
 		s += _fmt_log_line(String(e["t"]), String(e["f"]))
 		if e["tr"].size() > 0:
 			var exp: bool = e.get("exp", false)
-			s += "  [url=%d][font_size=11][color=#7fb0ff]%s[/color][/font_size][/url]\n" % [i, ("▼ logica" if exp else "▶ logica")]
+			s += "  [url=%d][font_size=10][color=#7fb0ff]%s[/color][/font_size][/url]\n" % [i, ("▼ logica" if exp else "▶ logica")]
 			if exp:
 				for tl in e["tr"]:
-					s += "      [font_size=10][i][color=#9fb3c8]%s[/color][/i][/font_size]\n" % String(tl)
+					s += "      [font_size=9][i][color=#9fb3c8]%s[/color][/i][/font_size]\n" % String(tl)
 		else:
 			s += "\n"
 	_log.text = s
