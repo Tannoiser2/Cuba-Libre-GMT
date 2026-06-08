@@ -246,7 +246,12 @@ func _crit_value(crit: String, sid: String, faction: String) -> float:
 var _trace: Array = []   # traccia decisionale (debug)
 
 
-func take_turn(faction: String) -> Dictionary:
+## Evento marcato Critical per la Fazione (tabella Calixto Event Instructions).
+func is_event_critical(faction: String, card_number: int) -> bool:
+	return bool(_events.get(str(card_number), {}).get(faction, {}).get("critical", false))
+
+
+func take_turn(faction: String, allow_special: bool = true, limited: bool = false) -> Dictionary:
 	_log = []
 	_trace = []
 	if not _cards.has(faction):
@@ -270,15 +275,17 @@ func take_turn(faction: String) -> Dictionary:
 		# res = op
 		var op_id: String = res["op_id"]
 		var op_def: Dictionary = side.get("ops", {}).get(op_id, {})
-		var an := _activation_number(faction, side)
-		_trace.append("Operazione scelta: %s (AN=%d)" % [String(op_def.get("type", op_id)), an])
+		var an := 1 if limited else _activation_number(faction, side)
+		_trace.append("Operazione scelta: %s (AN=%d%s)" % [String(op_def.get("type", op_id)), an, " · LimOp" if limited else ""])
 		var done := _execute_op(faction, op_def, an, letter)
 		if not done:
 			_trace.append("→ Operazione non eseguibile, pesco una nuova carta")
 			letter = deck.draw_next(faction)
 			continue
-		# Attività Speciale (prima fattibile)
-		var sa := _execute_special(faction, CalixtoEngine.specials_for(side, op_id))
+		# Attività Speciale (prima fattibile), solo se consentita dalla scelta C8.5.2.
+		var sa := ""
+		if allow_special:
+			sa = _execute_special(faction, CalixtoEngine.specials_for(side, op_id))
 		if sa != "":
 			_trace.append("Attività Speciale: %s" % sa)
 		state.recompute_all_control()
