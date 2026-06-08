@@ -70,6 +70,8 @@ var _cur_faction := "government"
 var _cur_action := ""
 var _selected: Array = []
 var _pending_moves: Array = []
+var _pending_sa := ""                  # Att.Speciale in attesa di bersaglio
+var _sa_from := ""                     # origine (per Trasporto/Muscle)
 
 
 func _ready() -> void:
@@ -446,7 +448,9 @@ func _refresh_turn_banner() -> void:
 	var slot := "1ª" if st.get("first_slot", true) else "2ª"
 	# Guida passo-passo in base allo stato del flusso.
 	var step := ""
-	if _mode == "idle":
+	if _mode == "sa_point" or _mode == "sa_move":
+		step = "Att.Speciale %s: clicca lo spazio bersaglio" % SA_NAMES.get(_pending_sa, _pending_sa)
+	elif _mode == "idle":
 		var acts: Array = []
 		for a in legal:
 			acts.append(ACTION_NAMES.get(int(a), str(a)))
@@ -523,6 +527,19 @@ func _start_op(op_id: String) -> void:
 
 
 func _on_space_clicked(sid: String) -> void:
+	# Bersaglio Attività Speciale
+	if _mode == "sa_point":
+		_run_sa(_pending_sa, sid)
+		_end_sa()
+		return
+	if _mode == "sa_move":
+		if _sa_from == "":
+			_sa_from = sid
+			_instr.text = "Origine: %s — ora clicca la DESTINAZIONE" % sid
+		else:
+			_run_sa_move(_pending_sa, _sa_from, sid)
+			_end_sa()
+		return
 	if _mode != "select_spaces" and _mode != "space_list":
 		return
 	if _selected.has(sid):
@@ -559,32 +576,50 @@ func _do_special(sa: String) -> void:
 	if _limited:
 		_instr.text = "Operazione Limitata: niente Attività Speciale"
 		return
+	# Avvia la selezione del BERSAGLIO dell'Attività Speciale (eseguibile prima o dopo l'Op).
+	_pending_sa = sa
+	_sa_from = ""
+	_clear_highlights()
+	for s in _space_views.keys():
+		_space_views[s].set_highlight(true)
+	if sa == "transport" or sa == "muscle":
+		_mode = "sa_move"
+		_instr.text = "%s: clicca ORIGINE poi DESTINAZIONE" % SA_NAMES.get(sa, sa)
+	else:
+		_mode = "sa_point"
+		_instr.text = "%s: clicca lo spazio bersaglio" % SA_NAMES.get(sa, sa)
+	_refresh_turn_banner()
+
+
+## Esegue l'Att.Speciale su uno spazio (specials a bersaglio singolo).
+func _run_sa(sa: String, space: String) -> void:
 	var sa_id := sa
 	if sa == "ambush":
 		sa_id = "ambush_m26" if _cur_faction == "m26" else "ambush_dr"
-	GameController.run_special(sa_id, _build_special_params(sa))
-
-
-func _build_special_params(sa: String) -> Dictionary:
-	var first: String = _selected[0] if _selected.size() > 0 else ""
+	var params: Dictionary
 	match sa:
-		"transport", "muscle":
-			if _pending_moves.size() > 0:
-				var m: Dictionary = _pending_moves[0]
-				var p := {"from": m["from"], "to": m["to"], "count": int(m["count"])}
-				if sa == "muscle":
-					var dest: SpaceDef = GameController.game_def.space(m["to"])
-					p["type"] = "police" if dest.type == CoinEnums.SpaceType.CITY else "troops"
-				return p
-			return {}
-		"profit":
-			return {"mode": "cash", "spaces": _selected}
-		"reprisal":
-			return {"space": first, "move": {}}
-		"kidnap":
-			return {"space": first, "target": "government"}
-		_:
-			return {"space": first, "faction": _cur_faction}
+		"profit": params = {"mode": "cash", "spaces": [space]}
+		"reprisal": params = {"space": space, "move": {}}
+		"kidnap": params = {"space": space, "target": "government"}
+		_: params = {"space": space, "faction": _cur_faction}
+	GameController.run_special(sa_id, params)
+
+
+## Esegue Trasporto/Muscle come spostamento origine→destinazione.
+func _run_sa_move(sa: String, from_id: String, to_id: String) -> void:
+	var p := {"from": from_id, "to": to_id, "count": 2}
+	if sa == "muscle":
+		var dest: SpaceDef = GameController.game_def.space(to_id)
+		p["type"] = "police" if dest.type == CoinEnums.SpaceType.CITY else "troops"
+	GameController.run_special(sa, p)
+
+
+func _end_sa() -> void:
+	_pending_sa = ""
+	_sa_from = ""
+	_mode = "idle"
+	_clear_highlights()
+	_refresh_turn_banner()
 
 
 ## Gioca l'Evento della carta corrente (lato chiaro/ombreggiato) per la Fazione selezionata.
@@ -609,6 +644,8 @@ func _on_cancel() -> void:
 	_mode = "idle"
 	_selected.clear()
 	_pending_moves.clear()
+	_pending_sa = ""
+	_sa_from = ""
 	_clear_highlights()
 	_instr.text = ""
 
