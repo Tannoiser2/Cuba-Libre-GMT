@@ -603,19 +603,25 @@ func _on_log_meta(meta: Variant) -> void:
 
 ## Avvia l'Operazione scelta (tasto): evidenzia gli spazi e imposta il flusso.
 func _start_op(op_id: String) -> void:
+	var kind: String = OP_KIND.get(op_id, "space_list")
+	var valid := _valid_spaces(_cur_faction, op_id)
+	# Operazioni "a spazi": se nessuno spazio è efficace, non avviarla.
+	if kind == "space_list" and valid.is_empty():
+		_instr.text = "%s: nessuno spazio dove sia efficace al momento" % OP_NAMES.get(op_id, op_id)
+		return
 	_cur_action = op_id
 	_selected.clear()
 	_pending_moves.clear()
 	_limited = GameController.seq_is_limited_only()
-	_mode = OP_KIND.get(op_id, "space_list")
+	_mode = kind
 	_clear_highlights()
-	for sid in _valid_spaces(_cur_faction, op_id):
+	for sid in valid:
 		_space_views[sid].set_highlight(true)
 	var lim := " (Op Limitata: 1 spazio, niente Att.Speciale)" if _limited else ""
 	if _mode == "moves":
 		_instr.text = "%s%s: trascina i pezzi, poi '✓ Concludi turno'" % [OP_NAMES.get(op_id, op_id), lim]
 	else:
-		_instr.text = "%s%s: clicca gli spazi, poi '✓ Concludi turno'" % [OP_NAMES.get(op_id, op_id), lim]
+		_instr.text = "%s%s: clicca gli spazi evidenziati, poi '✓ Concludi turno'" % [OP_NAMES.get(op_id, op_id), lim]
 	_refresh_turn_banner()
 
 
@@ -655,6 +661,10 @@ func _on_space_clicked(sid: String) -> void:
 	if _selected.has(sid):
 		_selected.erase(sid)
 	else:
+		# Accetta solo gli spazi dove l'Operazione è efficace.
+		if not _valid_spaces(_cur_faction, _cur_action).has(sid):
+			_instr.text = "%s: qui non è efficace, scegli uno spazio evidenziato" % OP_NAMES.get(_cur_action, _cur_action)
+			return
 		if _limited and _selected.size() >= 1:
 			for prev in _selected:
 				_space_views[prev].set_highlight(false)
@@ -915,19 +925,34 @@ func _valid_spaces(faction: String, op: String) -> Array:
 		var ok := false
 		match op:
 			"train":
-				ok = sd.has_population()
-			"assault", "garrison", "sweep", "march":
-				ok = true
+				# Addestramento: Città oppure spazio con una Base del Governo.
+				ok = sd.type == CoinEnums.SpaceType.CITY or st.count("government", "base") > 0
+			"garrison", "march", "sweep":
+				ok = true   # Operazioni a spostamento: libere (trascina i pezzi)
 			"rally":
 				ok = sd.has_population()
 				if faction == "m26" and st.support > 0: ok = false
 				if faction == "directorio" and abs(st.support) == 2: ok = false
 			"attack":
-				ok = st.count(faction, "guerrilla") > 0
+				ok = st.count(faction, "guerrilla") > 0 and _enemy_present(faction, st)
 			"terror":
 				ok = st.count(faction, "guerrilla", "underground") > 0
 			"build":
-				ok = sd.has_population() and (st.control == "government" or st.control == "syndicate")
+				ok = sd.has_population() and (st.control == "government" or st.control == "syndicate") \
+					and GameController.module.can_place_base(s, sid, true)
+			"assault":
+				# Assalto efficace: Truppe del Governo e bersagli scoperti.
+				var enemy := st.count("m26", "guerrilla", "active") + st.count("directorio", "guerrilla", "active") \
+					+ st.count("m26", "base") + st.count("directorio", "base") + st.count("syndicate", "casino", "open")
+				ok = st.count("government", "troops") > 0 and enemy > 0
 		if ok:
 			out.append(sid)
 	return out
+
+
+## Almeno un pezzo nemico presente nello spazio (per la Fazione data).
+func _enemy_present(faction: String, st: SpaceState) -> bool:
+	for e in ["government", "m26", "directorio", "syndicate"]:
+		if e != faction and st.count(e) > 0:
+			return true
+	return false
