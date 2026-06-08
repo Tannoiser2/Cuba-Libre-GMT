@@ -174,6 +174,31 @@ func finish() -> void:
 	_done = true
 
 
+## Istantanea dello stato interno (per Annulla/undo). Vedi restore_snapshot().
+func snapshot() -> Dictionary:
+	return {
+		"eligible_order": Array(_eligible_order),
+		"idx": _idx,
+		"actors": Array(_actors),
+		"passers": Array(_passers),
+		"first_action": _first_action,
+		"done": _done,
+		"final_event_card": final_event_card,
+		"action_box": action_box.duplicate(true),
+	}
+
+
+func restore_snapshot(d: Dictionary) -> void:
+	_eligible_order = PackedStringArray(d.get("eligible_order", []))
+	_idx = int(d.get("idx", 0))
+	_actors = PackedStringArray(d.get("actors", []))
+	_passers = PackedStringArray(d.get("passers", []))
+	_first_action = int(d.get("first_action", -1))
+	_done = bool(d.get("done", false))
+	final_event_card = bool(d.get("final_event_card", false))
+	action_box = (d.get("action_box", {}) as Dictionary).duplicate(true)
+
+
 func actors() -> PackedStringArray:
 	return _actors
 

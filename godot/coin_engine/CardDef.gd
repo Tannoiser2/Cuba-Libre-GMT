@@ -16,6 +16,7 @@ var is_momentum: bool = false       ## Evento Momentum (effetto fino al round su
 
 var unshaded: String = ""           ## testo non-ombreggiato dell'Evento
 var shaded: String = ""             ## testo ombreggiato dell'Evento
+var translation: String = ""        ## traduzione/sintesi in italiano dell'Evento
 
 
 func _init(p_number: int = 0, p_title: String = "") -> void:
@@ -32,4 +33,5 @@ static func from_dict(d: Dictionary) -> CardDef:
 	c.is_momentum = bool(d.get("momentum", d.get("is_momentum", false)))
 	c.unshaded = String(d.get("unshaded", ""))
 	c.shaded = String(d.get("shaded", ""))
+	c.translation = String(d.get("it", d.get("translation", "")))
 	return c

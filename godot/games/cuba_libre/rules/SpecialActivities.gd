@@ -46,6 +46,8 @@ func transport(params: Dictionary) -> Dictionary:
 	if sd.type != CoinEnums.SpaceType.CITY and st.count("government", "base") == 0:
 		return _err("Il Trasporto parte solo da una Città o da una Base Govt")
 	var moved := state.move_pieces("government", "troops", from_id, to_id, count, "")
+	if moved == 0:
+		return _err("Trasporto: nessuna Truppa da spostare da %s" % from_id)
 	return _ok(0, ["Trasporto: %d Truppe %s -> %s" % [moved, from_id, to_id]])
 
 
@@ -217,6 +219,27 @@ func assassinate(params: Dictionary) -> Dictionary:
 	return _ok(0, ["Assassinio a %s" % sid])
 
 
+## Numero di bersagli che la Corruzione potrebbe colpire nello spazio, per l'azione scelta.
+## Serve a impedire una Corruzione senza effetto (che sprecherebbe 3 Risorse).
+func _bribe_targets(st: SpaceState, action: String) -> int:
+	var n := 0
+	match action:
+		"cubes":
+			for fid in ["government", "m26", "directorio"]:
+				n += st.count(fid, "police") + st.count(fid, "troops")
+		"guerrillas_remove":
+			for fid in ["m26", "directorio"]:
+				n += st.count(fid, "guerrilla", "active") + st.count(fid, "guerrilla", "underground")
+		"guerrillas_flip":
+			for fid in ["m26", "directorio"]:
+				n += st.count(fid, "guerrilla", "underground")
+		"base":
+			# _remove_any_enemy_base (attaccante=syndicate) colpisce solo Basi Govt/26-7.
+			for fid in ["government", "m26"]:
+				n += st.count(fid, "base")
+	return n
+
+
 func _remove_any_enemy_base(sid: String, attacker: String) -> int:
 	var st: SpaceState = state.space_state(sid)
 	for fid in ["government", "m26", "syndicate"]:
@@ -287,6 +310,8 @@ func muscle(params: Dictionary) -> Dictionary:
 	if t == "troops" and dest.type == CoinEnums.SpaceType.CITY:
 		return _err("Le Truppe verso Provincia o EC, non Città")
 	var moved := state.move_pieces("government", t, from_id, to_id, count, "")
+	if moved == 0:
+		return _err("Muscle: nessun %s da spostare da %s" % [t, from_id])
 	return _ok(0, ["Muscle: %d %s -> %s" % [moved, t, to_id]])
 
 
@@ -300,9 +325,12 @@ func bribe(params: Dictionary) -> Dictionary:
 		return _err("Spazio non valido")
 	if state.get_resources("syndicate") < 3:
 		return _err("Servono 3 Risorse per la Corruzione")
-	state.add_resources("syndicate", -3)
 	var action: String = params.get("action", "cubes")
 	var count: int = clampi(int(params.get("count", 1)), 1, 2)
+	# Niente bersagli validi → l'azione non ha effetto: non eseguirla (e non spendere Risorse).
+	if _bribe_targets(st, action) == 0:
+		return _err("Corruzione a %s: nessun bersaglio valido" % sid)
+	state.add_resources("syndicate", -3)
 	var log: Array = []
 	match action:
 		"cubes":

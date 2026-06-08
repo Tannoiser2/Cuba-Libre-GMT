@@ -26,6 +26,32 @@ const OP_NAMES := {
 	"assault": "Assalto", "rally": "Riorganizzazione", "march": "Marcia",
 	"attack": "Attacco", "terror": "Terrorismo", "build": "Costruzione",
 }
+# Cosa permette di fare ogni Operazione (sintesi mostrata nel banner).
+const OP_DESC := {
+	"train": "Piazza fino a 4 Truppe/Polizia in Città o dove hai una Base; poi Azione Civica (verso Supporto) o piazza una Base.",
+	"garrison": "Ridispiega la Polizia tra spazi collegati; poi puoi attivare le Guerriglie in un EC.",
+	"sweep": "Sposta Truppe negli spazi adiacenti e attiva 1 Guerriglia clandestina nemica per ogni Truppa/Polizia.",
+	"assault": "Rimuovi pezzi nemici scoperti (1 per Truppa, o per Polizia in Città): prima le Guerriglie Attive, poi le Basi.",
+	"rally": "Piazza Guerriglie (o una Base dove ne hai 2+), oppure aggiungi Guerriglie dove hai già una Base.",
+	"march": "Sposta Guerriglie/cubi in spazi adiacenti; chi entra dove ci sono nemici o Polizia diventa Attivo.",
+	"attack": "Tira per rimuovere pezzi nemici (1 ogni 2 Guerriglie); con l'Imboscata colpisci senza tiro.",
+	"terror": "Con una Guerriglia clandestina: poni Terrore e sposta il Supporto verso l'Opposizione (o Sabotaggio su LoC/EC).",
+	"build": "Il Sindacato apre un Casinò (spesa di Risorse) in uno spazio che controlla o controllato dal Governo.",
+}
+# Cosa permette di fare ogni Attività Speciale (sintesi mostrata nel banner).
+const SA_DESC := {
+	"transport": "Sposta fino a 3 Truppe da una Città o da una Base verso un qualsiasi spazio.",
+	"air_strike": "Rimuovi 1 Guerriglia Attiva (o, se assente, 1 Base) in una Provincia/EC. Vietato durante l'Embargo.",
+	"reprisal": "In uno spazio a Controllo Govt: poni Terrore, riduci l'Opposizione e sposta 1 Guerriglia in uno spazio adiacente.",
+	"infiltrate": "Rimpiazza 1 cubo del Governo con una Guerriglia 26J in uno spazio senza Supporto (serve una clandestina 26J lì o adiacente).",
+	"ambush": "In uno spazio scelto per l'Attacco: colpisci senza tiro rimuovendo 2 pezzi nemici (anche Basi).",
+	"kidnap": "Trasferisci Risorse/Denaro dal Governo al 26J e chiudi 1 Casinò; servono più Guerriglie 26J che Polizia.",
+	"subvert": "In una Provincia a Controllo DR: aggiungi Risorse pari alla Popolazione e rendi lo spazio Neutrale.",
+	"assassinate": "Rimuovi 1 pezzo nemico (anche una Base) dove le Guerriglie DR superano la Polizia.",
+	"profit": "Accumula 1 Denaro in 1-2 spazi con un Casinò aperto.",
+	"muscle": "Sposta 1-2 Polizia (verso Città) o Truppe (verso Provincia/EC) in uno spazio con Casinò aperto o EC.",
+	"bribe": "Spendi 3 Risorse del Sindacato per rimuovere fino a 2 cubi/Guerriglie nemici (o 1 Base) in uno spazio.",
+}
 # Tipo di flusso per ogni Operazione.
 const OP_KIND := {
 	"train": "space_list", "assault": "space_list", "rally": "space_list",
@@ -77,6 +103,7 @@ var _pending_moves: Array = []
 var _pending_sa := ""                  # Att.Speciale in attesa di bersaglio
 var _sa_from := ""                     # origine (per Trasporto/Muscle)
 var _resume_mode := "idle"             # modalità Operazione da riprendere dopo l'Att.Speciale
+var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Speciale corrente
 
 
 func _ready() -> void:
@@ -154,6 +181,13 @@ func _build_ui() -> void:
 	_track_overlay = TrackOverlay.new()
 	_track_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_map.add_child(_track_overlay)
+
+	# Layer per le animazioni dei pezzi che si spostano (sopra tutto, non interattivo)
+	_anim_layer = Control.new()
+	_anim_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anim_layer.z_index = 50
+	_map.add_child(_anim_layer)
+	_avail_box = _load_avail_boxes()
 
 	# Pannello laterale (destra)
 	_side = _build_side_panel()
@@ -288,7 +322,7 @@ func _build_action_bar() -> VBoxContainer:
 	row2.add_child(VSeparator.new())
 	row2.add_child(_mk_label("Velocità:"))
 	var spd := OptionButton.new()
-	for it in [["Lento", 1.3], ["Medio", 0.7], ["Veloce", 0.3]]:
+	for it in [["Lento", 1.8], ["Medio", 1.1], ["Veloce", 0.7]]:
 		spd.add_item(it[0])
 		spd.set_item_metadata(spd.item_count - 1, it[1])
 	spd.select(1)
@@ -303,6 +337,7 @@ func _build_action_bar() -> VBoxContainer:
 	# Istruzione di passo (sotto le righe)
 	_instr = Label.new()
 	_instr.add_theme_color_override("font_color", Color("f1c40f"))
+	_instr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	bar.add_child(_instr)
 	return bar
 
@@ -357,6 +392,7 @@ func _build_side_panel() -> PanelContainer:
 	_card_label.bbcode_enabled = true
 	_card_label.fit_content = true
 	_card_label.add_theme_font_size_override("normal_font_size", 12)
+	_card_label.add_theme_font_override("italics_font", _italic_font())
 	_card_label.custom_minimum_size = Vector2(330, 48)
 	vb.add_child(_card_label)
 	vb.add_child(HSeparator.new())
@@ -371,6 +407,14 @@ func _build_side_panel() -> PanelContainer:
 	_log.scroll_following = true
 	_log.scroll_active = true
 	_log.custom_minimum_size = Vector2(340, 260)
+	# Testo del log piccolo (override di tema = affidabile, non dipende dal bbcode).
+	for fs in ["normal_font_size", "bold_font_size", "italics_font_size", "bold_italics_font_size", "mono_font_size"]:
+		_log.add_theme_font_size_override(fs, 11)
+	# La font di default non ha una variante corsiva: ne creo una inclinando i glifi,
+	# così il tag [i] della logica del bot viene reso davvero in corsivo.
+	var itf := _italic_font()
+	_log.add_theme_font_override("italics_font", itf)
+	_log.add_theme_font_override("bold_italics_font", itf)
 	_log.meta_clicked.connect(_on_log_meta)
 	vb.add_child(_log)
 
@@ -423,6 +467,9 @@ func _layout_board() -> void:
 		_track_overlay.position = Vector2.ZERO
 		_track_overlay.size = base
 		_track_overlay.queue_redraw()
+	if _anim_layer != null:
+		_anim_layer.position = Vector2.ZERO
+		_anim_layer.size = base
 
 
 # ---------------------------------------------------------------------------
@@ -435,9 +482,15 @@ const ACTION_NAMES := {
 
 
 var _prev_fp: Dictionary = {}
+var _anim_layer: Control                  # layer per le animazioni dei pezzi
+var _prev_pc: Dictionary = {}             # conteggi precedenti "sid|faction|type" -> n
+var _avail_box: Dictionary = {}           # faction -> centro (normalizzato) del box Forze Disponibili
+const ANIM_SZ := 26.0
+const ANIM_DUR := 0.9
 
 
 func _refresh() -> void:
+	_animate_moves()
 	for sid in _space_views.keys():
 		_space_views[sid].refresh(GameController.state)
 	if _track_overlay != null:
@@ -445,6 +498,120 @@ func _refresh() -> void:
 	_flash_changes()
 	_refresh_turn_banner()
 	_refresh_side()
+
+
+## Centri normalizzati dei box "Forze Disponibili" (per animare piazzamenti/rimozioni).
+func _load_avail_boxes() -> Dictionary:
+	var out: Dictionary = {}
+	var data = JSON.parse_string(FileAccess.get_file_as_string("res://games/cuba_libre/data/board_layout.json"))
+	if typeof(data) != TYPE_DICTIONARY:
+		return out
+	var box: Dictionary = data.get("box", {})
+	for fid in ["government", "m26", "directorio", "syndicate"]:
+		var r = box.get("available_%s" % fid, null)
+		if r != null:
+			out[fid] = Vector2((r[0] + r[2]) * 0.5, (r[1] + r[3]) * 0.5)
+	return out
+
+
+## Anima i pezzi che si sono spostati dall'ultimo aggiornamento: da zona a zona, e
+## da/verso i box Forze Disponibili. Confronta i conteggi per (spazio, fazione, tipo).
+func _animate_moves() -> void:
+	if _anim_layer == null:
+		return
+	var s: GameState = GameController.state
+	var base: Vector2 = _map.size
+	# Nuovi conteggi
+	var nc: Dictionary = {}
+	for sid in _space_views.keys():
+		var st: SpaceState = s.space_state(sid)
+		for f in ["government", "m26", "directorio", "syndicate"]:
+			for t in ["troops", "police", "base", "guerrilla", "casino"]:
+				var n := st.count(f, t)
+				if n > 0:
+					nc["%s|%s|%s" % [sid, f, t]] = n
+	# Primo aggiornamento: memorizza soltanto.
+	if _prev_pc.is_empty():
+		_prev_pc = nc
+		return
+	# Raccoglie sorgenti e destinazioni per (fazione, tipo).
+	var ghosts: Array = []   # {f,t,from,to}
+	for f in ["government", "m26", "directorio", "syndicate"]:
+		var bc_norm: Vector2 = _avail_box.get(f, Vector2(0.5, 0.5))
+		var box_c := bc_norm * base
+		for t in ["troops", "police", "base", "guerrilla", "casino"]:
+			var sources: Array = []   # [sid, qty]
+			var dests: Array = []
+			for sid in _space_views.keys():
+				var key := "%s|%s|%s" % [sid, f, t]
+				var d: int = int(nc.get(key, 0)) - int(_prev_pc.get(key, 0))
+				if d < 0:
+					sources.append([sid, -d])
+				elif d > 0:
+					dests.append([sid, d])
+			# Accoppia sorgenti→destinazioni (movimento mappa→mappa); le restanti
+			# destinazioni vengono dal box Disponibili, le restanti sorgenti vi tornano.
+			var si := 0
+			var sleft := 0 if sources.is_empty() else int(sources[0][1])
+			for de in dests:
+				var dv: RegionView = _space_views[de[0]]
+				var dc := dv.center_point()
+				for _k in range(int(de[1])):
+					var from_pos := box_c
+					if si < sources.size():
+						var sv: RegionView = _space_views[sources[si][0]]
+						from_pos = sv.center_point()
+						sleft -= 1
+						if sleft <= 0:
+							si += 1
+							sleft = 0 if si >= sources.size() else int(sources[si][1])
+					ghosts.append({"f": f, "t": t, "from": from_pos, "to": dc})
+			while si < sources.size():
+				var rv: RegionView = _space_views[sources[si][0]]
+				var sc := rv.center_point()
+				for _k2 in range(sleft):
+					ghosts.append({"f": f, "t": t, "from": sc, "to": box_c})
+				si += 1
+				sleft = 0 if si >= sources.size() else int(sources[si][1])
+	_prev_pc = nc
+	# Troppi movimenti insieme (nuova partita / Propaganda): salta per non intasare.
+	if ghosts.size() > 24:
+		return
+	for g in ghosts:
+		_spawn_ghost(String(g["f"]), String(g["t"]), g["from"], g["to"])
+
+
+## Anima un pezzo che vola da `from_pos` a `to_pos` con una scia luminosa (effetto cometa):
+## una "testa" brillante più alcune copie sfalsate che la inseguono attenuandosi.
+func _spawn_ghost(faction: String, type: String, from_pos: Vector2, to_pos: Vector2) -> void:
+	var tex := CLAssets.piece(faction, type, "")
+	if tex == null:
+		return
+	var half := Vector2(ANIM_SZ, ANIM_SZ) * 0.5
+	var echoes := 4
+	for e in range(echoes):
+		var g := TextureRect.new()
+		g.texture = tex
+		g.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		g.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		g.size = Vector2(ANIM_SZ, ANIM_SZ)
+		g.pivot_offset = half
+		g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		g.position = from_pos - half
+		var head := e == 0
+		# Testa brillante e ingrandita; le copie della scia più piccole e attenuate.
+		g.modulate = Color(1.5, 1.5, 1.2, 1.0) if head else Color(1.2, 1.2, 1.1, 0.5 - 0.1 * float(e))
+		g.scale = Vector2(1.45, 1.45) if head else Vector2(1.2, 1.2)
+		_anim_layer.add_child(g)
+		var lead := float(e) * 0.08   # ritardo crescente → la copia resta "indietro" (scia)
+		var tw := create_tween()
+		tw.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+		if lead > 0.0:
+			tw.tween_interval(lead)
+		tw.tween_property(g, "position", to_pos - half, ANIM_DUR)
+		tw.parallel().tween_property(g, "scale", Vector2(1, 1), ANIM_DUR)
+		tw.parallel().tween_property(g, "modulate:a", 0.0, ANIM_DUR * 0.45).set_delay(ANIM_DUR * 0.55)
+		tw.tween_callback(g.queue_free)
 
 
 ## Lampeggia gli spazi il cui stato è cambiato dall'ultimo aggiornamento (feedback visivo).
@@ -525,7 +692,7 @@ func _set_btn(b: Button, on: bool) -> void:
 func _select_faction(fid: String) -> void:
 	_cur_faction = fid
 	_rebuild_action_buttons(fid)
-	_on_cancel()
+	_clear_pending()
 
 
 ## Ricrea i tasti delle Operazioni e Attività Speciali per la Fazione data.
@@ -533,11 +700,15 @@ func _rebuild_action_buttons(fid: String) -> void:
 	for c in _op_btns.get_children():
 		c.queue_free()
 	for op in GameController.game_def.faction(fid).operations:
-		_op_btns.add_child(_mk_btn(OP_NAMES.get(op, op), _start_op.bind(op)))
+		var ob: Button = _mk_btn(OP_NAMES.get(op, op), _start_op.bind(op))
+		ob.tooltip_text = OP_DESC.get(op, "")
+		_op_btns.add_child(ob)
 	for c in _sa_btns.get_children():
 		c.queue_free()
 	for sa in GameController.game_def.faction(fid).special_activities:
-		_sa_btns.add_child(_mk_btn(SA_NAMES.get(sa, sa), _do_special.bind(sa)))
+		var sb: Button = _mk_btn(SA_NAMES.get(sa, sa), _do_special.bind(sa))
+		sb.tooltip_text = SA_DESC.get(sa, "")
+		_sa_btns.add_child(sb)
 
 
 func _refresh_side() -> void:
@@ -562,6 +733,15 @@ func _on_bot_decision(text: String, faction: String, trace: Array) -> void:
 	_render_log()
 
 
+## Font corsiva sintetica (la font di default non ne ha una): inclina i glifi.
+func _italic_font() -> FontVariation:
+	var ital := FontVariation.new()
+	ital.base_font = ThemeDB.fallback_font
+	# Costruttore (rotazione, scala, inclinazione, posizione): inclinazione = corsivo.
+	ital.variation_transform = Transform2D(0.0, Vector2.ONE, deg_to_rad(16.0), Vector2.ZERO)
+	return ital
+
+
 func _fmt_log_line(text: String, faction: String) -> String:
 	if faction != "":
 		var hex := GameController.faction_color(faction).to_html(false)
@@ -579,10 +759,10 @@ func _render_log() -> void:
 		s += _fmt_log_line(String(e["t"]), String(e["f"]))
 		if e["tr"].size() > 0:
 			var exp: bool = e.get("exp", false)
-			s += "  [url=%d][color=#7fb0ff]%s[/color][/url]\n" % [i, ("▼ logica" if exp else "▶ logica")]
+			s += "  [url=%d][font_size=10][color=#7fb0ff]%s[/color][/font_size][/url]\n" % [i, ("▼ logica" if exp else "▶ logica")]
 			if exp:
 				for tl in e["tr"]:
-					s += "      [color=#9fb3c8]%s[/color]\n" % String(tl)
+					s += "      [font_size=9][i][color=#9fb3c8]%s[/color][/i][/font_size]\n" % String(tl)
 		else:
 			s += "\n"
 	_log.text = s
@@ -602,33 +782,55 @@ func _on_log_meta(meta: Variant) -> void:
 
 ## Avvia l'Operazione scelta (tasto): evidenzia gli spazi e imposta il flusso.
 func _start_op(op_id: String) -> void:
+	var kind: String = OP_KIND.get(op_id, "space_list")
+	var valid := _valid_spaces(_cur_faction, op_id)
+	# Operazioni "a spazi": se nessuno spazio è efficace, non avviarla.
+	if kind == "space_list" and valid.is_empty():
+		_instr.text = "%s: nessuno spazio dove sia efficace al momento" % OP_NAMES.get(op_id, op_id)
+		return
 	_cur_action = op_id
 	_selected.clear()
 	_pending_moves.clear()
 	_limited = GameController.seq_is_limited_only()
-	_mode = OP_KIND.get(op_id, "space_list")
+	_mode = kind
 	_clear_highlights()
-	for sid in _valid_spaces(_cur_faction, op_id):
+	for sid in valid:
 		_space_views[sid].set_highlight(true)
 	var lim := " (Op Limitata: 1 spazio, niente Att.Speciale)" if _limited else ""
-	if _mode == "moves":
-		_instr.text = "%s%s: trascina i pezzi, poi '✓ Concludi turno'" % [OP_NAMES.get(op_id, op_id), lim]
-	else:
-		_instr.text = "%s%s: clicca gli spazi, poi '✓ Concludi turno'" % [OP_NAMES.get(op_id, op_id), lim]
+	var desc: String = OP_DESC.get(op_id, "")
+	var hint := "trascina i pezzi nei loro spazi" if _mode == "moves" else "clicca gli spazi evidenziati"
+	_instr.text = "%s%s — %s\n➤ %s, poi 'Esegui' o '✓ Concludi turno'" % [OP_NAMES.get(op_id, op_id), lim, desc, hint]
 	_refresh_turn_banner()
 
 
 func _on_space_clicked(sid: String) -> void:
 	# Bersaglio Attività Speciale
 	if _mode == "sa_point":
+		if not _sa_valid.has(sid):
+			_instr.text = "%s: spazio non valido, scegline uno evidenziato" % SA_NAMES.get(_pending_sa, _pending_sa)
+			return
 		_run_sa(_pending_sa, sid)
 		_end_sa()
 		return
 	if _mode == "sa_move":
 		if _sa_from == "":
+			if not _sa_valid.has(sid):
+				_instr.text = "Origine non valida: scegline una evidenziata"
+				return
 			_sa_from = sid
-			_instr.text = "Origine: %s — ora clicca la DESTINAZIONE" % sid
+			# Mostra solo le destinazioni valide per questa origine.
+			_sa_valid = _sa_valid_dests(_pending_sa, sid)
+			_clear_highlights()
+			for d in _sa_valid:
+				_space_views[d].set_highlight(true)
+			if _sa_valid.is_empty():
+				_instr.text = "Nessuna destinazione valida da %s — Annulla per cambiare" % GameController.game_def.space(sid).name
+			else:
+				_instr.text = "Origine: %s — clicca una DESTINAZIONE evidenziata" % GameController.game_def.space(sid).name
 		else:
+			if not _sa_valid.has(sid):
+				_instr.text = "Destinazione non valida: scegline una evidenziata"
+				return
 			_run_sa_move(_pending_sa, _sa_from, sid)
 			_end_sa()
 		return
@@ -637,6 +839,10 @@ func _on_space_clicked(sid: String) -> void:
 	if _selected.has(sid):
 		_selected.erase(sid)
 	else:
+		# Accetta solo gli spazi dove l'Operazione è efficace.
+		if not _valid_spaces(_cur_faction, _cur_action).has(sid):
+			_instr.text = "%s: qui non è efficace, scegli uno spazio evidenziato" % OP_NAMES.get(_cur_action, _cur_action)
+			return
 		if _limited and _selected.size() >= 1:
 			for prev in _selected:
 				_space_views[prev].set_highlight(false)
@@ -649,12 +855,20 @@ func _on_space_clicked(sid: String) -> void:
 
 func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: String) -> void:
 	if _mode != "moves":
+		_instr.text = "⚠ Per spostare i pezzi scegli prima un'operazione di movimento (Marcia / Perlustrazione / Guarnigione / Trasporto)"
+		return
+	if from_id == to_id:
 		return
 	_pending_moves.append({"from": from_id, "to": to_id, "count": 1, "type": type})
+	# Feedback: lampeggia origine (blu) e destinazione (verde).
+	if _space_views.has(from_id):
+		_space_views[from_id].flash(Color(0.35, 0.6, 1.0))
+	if _space_views.has(to_id):
+		_space_views[to_id].flash(Color(0.4, 1.0, 0.5))
 	var pn: String = PIECE_NAMES.get(type, type)
 	var fn: String = GameController.game_def.space(from_id).name
 	var tn: String = GameController.game_def.space(to_id).name
-	_instr.text = "Spostamento %d: 1 %s da %s → %s" % [_pending_moves.size(), pn, fn, tn]
+	_instr.text = "✓ In coda (%d): 1 %s da %s → %s — poi 'Esegui'" % [_pending_moves.size(), pn, fn, tn]
 	_refresh_turn_banner()
 
 
@@ -663,42 +877,117 @@ func _on_execute() -> void:
 		return
 	var params := _build_params()
 	GameController.run_operation(_cur_action, params)
-	_on_cancel()
+	_clear_pending()
 
 
-## Esegue l'Attività Speciale (tasto), con parametri ricavati dalla selezione/spostamenti.
+## Esegue l'Attività Speciale (tasto): evidenzia SOLO gli spazi dove ha davvero effetto.
 func _do_special(sa: String) -> void:
 	if _limited:
 		_instr.text = "Operazione Limitata: niente Attività Speciale"
 		return
+	var sa_name: String = SA_NAMES.get(sa, sa)
+	var sa_desc: String = SA_DESC.get(sa, "")
 	# Avvia la selezione del BERSAGLIO dell'Attività Speciale (prima/durante/dopo l'Operazione).
-	_resume_mode = _mode if _mode in ["space_list", "select_spaces", "moves"] else "idle"
-	_pending_sa = sa
-	_sa_from = ""
-	_clear_highlights()
-	for s in _space_views.keys():
-		_space_views[s].set_highlight(true)
+	var resume := _mode if _mode in ["space_list", "select_spaces", "moves"] else "idle"
 	if sa == "transport" or sa == "muscle":
+		var origins := _sa_valid_origins(sa)
+		if origins.is_empty():
+			_instr.text = "%s: nessuna origine valida al momento" % sa_name
+			return
+		_resume_mode = resume
+		_pending_sa = sa
+		_sa_from = ""
+		_sa_valid = origins
+		_clear_highlights()
+		for s in origins:
+			_space_views[s].set_highlight(true)
 		_mode = "sa_move"
-		_instr.text = "%s: clicca ORIGINE poi DESTINAZIONE" % SA_NAMES.get(sa, sa)
+		_instr.text = "%s — %s\n➤ clicca un'ORIGINE evidenziata, poi la destinazione" % [sa_name, sa_desc]
 	else:
+		var valid := _sa_valid_spaces(sa)
+		if valid.is_empty():
+			_instr.text = "%s: nessuno spazio valido al momento" % sa_name
+			return
+		_resume_mode = resume
+		_pending_sa = sa
+		_sa_from = ""
+		_sa_valid = valid
+		_clear_highlights()
+		for s in valid:
+			_space_views[s].set_highlight(true)
 		_mode = "sa_point"
-		_instr.text = "%s: clicca lo spazio bersaglio" % SA_NAMES.get(sa, sa)
+		_instr.text = "%s — %s\n➤ clicca uno spazio bersaglio evidenziato" % [sa_name, sa_desc]
 	_refresh_turn_banner()
+
+
+## sa_id effettivo (Imboscata dipende dalla Fazione attiva).
+func _sa_target_id(sa: String) -> String:
+	if sa == "ambush":
+		return "ambush_m26" if _cur_faction == "m26" else "ambush_dr"
+	return sa
+
+
+## Parametri per un'Att.Speciale a bersaglio singolo su `space`.
+func _sa_params(sa: String, space: String) -> Dictionary:
+	match sa:
+		"profit": return {"mode": "cash", "spaces": [space]}
+		"reprisal": return {"space": space, "move": {}}
+		"kidnap": return {"space": space, "target": "government"}
+		_: return {"space": space, "faction": _cur_faction}
+
+
+## Spazi dove l'Att.Speciale a bersaglio singolo ha davvero effetto (simulazione su copia).
+func _sa_valid_spaces(sa: String) -> Array:
+	var out: Array = []
+	var sid_id := _sa_target_id(sa)
+	for s in _space_views.keys():
+		if GameController.can_special(sid_id, _sa_params(sa, s)):
+			out.append(s)
+	return out
+
+
+## Origini valide per Trasporto/Muscle (devono avere i pezzi da spostare).
+func _sa_valid_origins(sa: String) -> Array:
+	var out: Array = []
+	var st_all: GameState = GameController.state
+	for sid in _space_views.keys():
+		var sd: SpaceDef = GameController.game_def.space(sid)
+		var st: SpaceState = st_all.space_state(sid)
+		if sa == "transport":
+			var from_ok := (sd.type == CoinEnums.SpaceType.CITY or st.count("government", "base") > 0)
+			if from_ok and st.count("government", "troops") > 0:
+				out.append(sid)
+		elif sa == "muscle":
+			if st.count("government", "police") > 0 or st.count("government", "troops") > 0:
+				out.append(sid)
+	return out
+
+
+## Destinazioni valide per Trasporto/Muscle data l'origine scelta.
+func _sa_valid_dests(sa: String, from_id: String) -> Array:
+	var out: Array = []
+	var st_all: GameState = GameController.state
+	var from_st: SpaceState = st_all.space_state(from_id)
+	for sid in _space_views.keys():
+		if sid == from_id:
+			continue
+		var sd: SpaceDef = GameController.game_def.space(sid)
+		var st: SpaceState = st_all.space_state(sid)
+		if sa == "transport":
+			out.append(sid)   # qualsiasi spazio
+		elif sa == "muscle":
+			var dest_ok := sd.is_economic() or st.count("syndicate", "casino", "open") > 0
+			if not dest_ok:
+				continue
+			var needed := "police" if sd.type == CoinEnums.SpaceType.CITY else "troops"
+			if from_st.count("government", needed) > 0:
+				out.append(sid)
+	return out
 
 
 ## Esegue l'Att.Speciale su uno spazio (specials a bersaglio singolo).
 func _run_sa(sa: String, space: String) -> void:
-	var sa_id := sa
-	if sa == "ambush":
-		sa_id = "ambush_m26" if _cur_faction == "m26" else "ambush_dr"
-	var params: Dictionary
-	match sa:
-		"profit": params = {"mode": "cash", "spaces": [space]}
-		"reprisal": params = {"space": space, "move": {}}
-		"kidnap": params = {"space": space, "target": "government"}
-		_: params = {"space": space, "faction": _cur_faction}
-	GameController.run_special(sa_id, params)
+	GameController.run_special(_sa_target_id(sa), _sa_params(sa, space))
 
 
 ## Esegue Trasporto/Muscle come spostamento origine→destinazione.
@@ -713,6 +1002,7 @@ func _run_sa_move(sa: String, from_id: String, to_id: String) -> void:
 func _end_sa() -> void:
 	_pending_sa = ""
 	_sa_from = ""
+	_sa_valid = []
 	_clear_highlights()
 	# Se l'Operazione era in corso, riprendila (Att.Speciale fatta DURANTE l'operazione).
 	if _resume_mode != "idle" and _cur_action != "":
@@ -730,15 +1020,16 @@ func _end_sa() -> void:
 
 ## Gioca l'Evento della carta corrente (lato chiaro/ombreggiato) per la Fazione selezionata.
 func _on_event(side: String) -> void:
-	var n: int = GameController.state.current_card
-	if n <= 0:
-		_instr.text = "Nessuna carta Evento corrente"
-		return
-	var params := {"faction": _cur_faction}
+	var params := {}
 	if _selected.size() > 0:
 		params["space"] = _selected[0]
-	GameController.run_event(n, side, _cur_faction, params)
-	_on_cancel()
+	var res := GameController.play_event(side, params)
+	_clear_pending()
+	if not res.get("ok", false):
+		_instr.text = "⚠ " + String(res.get("error", "Evento non eseguibile"))
+	else:
+		_instr.text = "Evento giocato — turno concluso"
+	_refresh_turn_banner()
 
 
 func _on_all_bots() -> void:
@@ -746,14 +1037,29 @@ func _on_all_bots() -> void:
 	GameController.run_card_paced()
 
 
-func _on_cancel() -> void:
+## Pulizia interna della selezione/coda in preparazione (senza undo).
+func _clear_pending() -> void:
 	_mode = "idle"
 	_selected.clear()
 	_pending_moves.clear()
 	_pending_sa = ""
 	_sa_from = ""
+	_sa_valid = []
 	_clear_highlights()
 	_instr.text = ""
+
+
+## Tasto "Annulla": scarta l'azione in preparazione oppure annulla (undo) l'ultima eseguita.
+func _on_cancel() -> void:
+	var had_pending := _mode != "idle" or not _selected.is_empty() or not _pending_moves.is_empty() or _pending_sa != ""
+	_clear_pending()
+	if had_pending:
+		_instr.text = "Azione in preparazione annullata"
+		return
+	if GameController.undo_last():
+		_instr.text = "↩ Ultima azione annullata"
+	else:
+		_instr.text = "Niente da annullare"
 
 
 func _clear_highlights() -> void:
@@ -799,19 +1105,34 @@ func _valid_spaces(faction: String, op: String) -> Array:
 		var ok := false
 		match op:
 			"train":
-				ok = sd.has_population()
-			"assault", "garrison", "sweep", "march":
-				ok = true
+				# Addestramento: Città oppure spazio con una Base del Governo.
+				ok = sd.type == CoinEnums.SpaceType.CITY or st.count("government", "base") > 0
+			"garrison", "march", "sweep":
+				ok = true   # Operazioni a spostamento: libere (trascina i pezzi)
 			"rally":
 				ok = sd.has_population()
 				if faction == "m26" and st.support > 0: ok = false
 				if faction == "directorio" and abs(st.support) == 2: ok = false
 			"attack":
-				ok = st.count(faction, "guerrilla") > 0
+				ok = st.count(faction, "guerrilla") > 0 and _enemy_present(faction, st)
 			"terror":
 				ok = st.count(faction, "guerrilla", "underground") > 0
 			"build":
-				ok = sd.has_population() and (st.control == "government" or st.control == "syndicate")
+				ok = sd.has_population() and (st.control == "government" or st.control == "syndicate") \
+					and GameController.module.can_place_base(s, sid, true)
+			"assault":
+				# Assalto efficace: Truppe del Governo e bersagli scoperti.
+				var enemy := st.count("m26", "guerrilla", "active") + st.count("directorio", "guerrilla", "active") \
+					+ st.count("m26", "base") + st.count("directorio", "base") + st.count("syndicate", "casino", "open")
+				ok = st.count("government", "troops") > 0 and enemy > 0
 		if ok:
 			out.append(sid)
 	return out
+
+
+## Almeno un pezzo nemico presente nello spazio (per la Fazione data).
+func _enemy_present(faction: String, st: SpaceState) -> bool:
+	for e in ["government", "m26", "directorio", "syndicate"]:
+		if e != faction and st.count(e) > 0:
+			return true
+	return false
