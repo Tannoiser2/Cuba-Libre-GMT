@@ -160,6 +160,7 @@ func _draw_eligibility(s: GameState) -> void:
 			continue
 		var idx := int(counts.get(key, 0))
 		counts[key] = idx + 1
-		var pos := Vector2(r.position.x + 6.0 + idx * (ELIG_SZ + 3.0),
-			r.position.y + r.size.y * 0.5 - ELIG_SZ * 0.5)
+		# Impilamento VERTICALE (centrato in orizzontale) nella casella/colonna.
+		var pos := Vector2(r.position.x + r.size.x * 0.5 - ELIG_SZ * 0.5,
+			r.position.y + 8.0 + idx * (ELIG_SZ + 4.0))
 		draw_texture_rect(t, Rect2(pos, Vector2(ELIG_SZ, ELIG_SZ)), false)
