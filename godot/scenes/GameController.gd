@@ -271,11 +271,14 @@ func step_card() -> void:
 
 
 var _busy := false
+var pace_delay := 0.7   ## Pausa (s) tra le mosse dei bot; regolabile dalla UI.
 
 
 ## Risolve la carta corrente con i bot facendo una PAUSA tra le mosse (per vederle una alla
 ## volta, con il flash), poi pesca la carta successiva.
-func run_card_paced(delay: float = 0.7) -> void:
+func run_card_paced(delay: float = -1.0) -> void:
+	if delay < 0.0:
+		delay = pace_delay
 	if _busy or game_over or state.current_card == -1:
 		return
 	_busy = true
@@ -304,7 +307,9 @@ func run_card_paced(delay: float = 0.7) -> void:
 
 
 ## Gioca l'intera partita con i bot, a ritmo (pausa tra le mosse e tra le carte).
-func run_full_game_paced(delay: float = 0.5) -> void:
+func run_full_game_paced(delay: float = -1.0) -> void:
+	if delay < 0.0:
+		delay = pace_delay
 	if _busy:
 		return
 	if state.current_card == -1:

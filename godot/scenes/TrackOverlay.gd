@@ -12,6 +12,8 @@ const AV_PC := 20.0    # dimensione pezzo in riserva
 
 var _track: Dictionary = {}   # "0".."49" -> [x,y] normalizzati
 var _box: Dictionary = {}     # nome -> [x0,y0,x1,y1] normalizzati
+var _disp: Dictionary = {}    # chiave segnalino -> valore mostrato (float, animato)
+var _target: Dictionary = {}  # chiave segnalino -> valore obiettivo (int)
 
 
 func _ready() -> void:
@@ -40,22 +42,32 @@ func _draw() -> void:
 		return
 	var mod: CubaLibreModule = GameController.module
 	var chips := [
-		[s.get_resources("government"), CLAssets.res_token("government")],
-		[s.get_resources("m26"), CLAssets.res_token("m26")],
-		[s.get_resources("directorio"), CLAssets.res_token("directorio")],
-		[s.get_resources("syndicate"), CLAssets.res_token("syndicate")],
-		[int(s.tracks.get("aid", 0)), CLAssets.aid_marker()],
-		[s.total_support(), CLAssets.vic_support()],
-		[mod.opposition_plus_bases(s), CLAssets.vic_opp_bases()],
-		[mod.dr_pop_plus_bases(s), CLAssets.vic_dr()],
-		[mod.open_casinos(s), CLAssets.vic_casinos()],
+		["res_government", s.get_resources("government"), CLAssets.res_token("government")],
+		["res_m26", s.get_resources("m26"), CLAssets.res_token("m26")],
+		["res_directorio", s.get_resources("directorio"), CLAssets.res_token("directorio")],
+		["res_syndicate", s.get_resources("syndicate"), CLAssets.res_token("syndicate")],
+		["aid", int(s.tracks.get("aid", 0)), CLAssets.aid_marker()],
+		["vic_support", s.total_support(), CLAssets.vic_support()],
+		["vic_opp", mod.opposition_plus_bases(s), CLAssets.vic_opp_bases()],
+		["vic_dr", mod.dr_pop_plus_bases(s), CLAssets.vic_dr()],
+		["vic_casinos", mod.open_casinos(s), CLAssets.vic_casinos()],
 	]
 	var counts := {}
 	for ch in chips:
-		var v := clampi(int(ch[0]), 0, 49)
+		var key: String = ch[0]
+		var v := clampi(int(ch[1]), 0, 49)
+		_target[key] = v
+		if not _disp.has(key):
+			_disp[key] = float(v)
 		var idx := int(counts.get(v, 0))
 		counts[v] = idx + 1
-		_marker(v, idx, ch[1])
+		# Posizione animata (scivola lungo le celle); impila se stesso valore.
+		var c := _interp_cell(float(_disp[key]))
+		if v <= 30:
+			c.y += idx * STACK
+		else:
+			c.x -= idx * STACK
+		_blit(ch[2], c)
 
 	# Alleanza USA nella casella attiva
 	var ai := int(s.tracks.get("us_alliance", 0))
@@ -66,14 +78,26 @@ func _draw() -> void:
 	_draw_eligibility(s)
 
 
-func _marker(value: int, stack_idx: int, t: Texture2D) -> void:
-	var c := _cell(value)
-	# Celle 0–30 in alto: impila verso il basso; 31–49 a destra: impila verso sinistra.
-	if value <= 30:
-		c.y += stack_idx * STACK
-	else:
-		c.x -= stack_idx * STACK
-	_blit(t, c)
+## Posizione (schermo) interpolata tra le celle per un valore frazionario lungo il tracciato.
+func _interp_cell(v: float) -> Vector2:
+	var lo := clampi(int(floor(v)), 0, 49)
+	var hi := clampi(lo + 1, 0, 49)
+	return _cell(lo).lerp(_cell(hi), v - float(lo))
+
+
+## Anima i segnalini verso il valore obiettivo (scivolano lungo il tracciato).
+func _process(delta: float) -> void:
+	var moving := false
+	for key in _target:
+		var cur: float = float(_disp.get(key, _target[key]))
+		var tgt := float(_target[key])
+		if abs(cur - tgt) > 0.02:
+			_disp[key] = cur + (tgt - cur) * minf(1.0, delta * 7.0)
+			moving = true
+		else:
+			_disp[key] = tgt
+	if moving:
+		queue_redraw()
 
 
 func _blit(t: Texture2D, center: Vector2) -> void:
