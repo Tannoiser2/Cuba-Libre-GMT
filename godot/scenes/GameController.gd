@@ -358,7 +358,7 @@ func step_card() -> void:
 
 
 var _busy := false
-var pace_delay := 0.7   ## Pausa (s) tra le mosse dei bot; regolabile dalla UI.
+var pace_delay := 1.1   ## Pausa (s) tra le mosse dei bot; regolabile dalla UI (≥ durata animazioni).
 
 
 ## Risolve la carta corrente con i bot facendo una PAUSA tra le mosse (per vederle una alla

@@ -322,7 +322,7 @@ func _build_action_bar() -> VBoxContainer:
 	row2.add_child(VSeparator.new())
 	row2.add_child(_mk_label("Velocità:"))
 	var spd := OptionButton.new()
-	for it in [["Lento", 1.3], ["Medio", 0.7], ["Veloce", 0.3]]:
+	for it in [["Lento", 1.8], ["Medio", 1.1], ["Veloce", 0.7]]:
 		spd.add_item(it[0])
 		spd.set_item_metadata(spd.item_count - 1, it[1])
 	spd.select(1)
@@ -482,8 +482,8 @@ var _prev_fp: Dictionary = {}
 var _anim_layer: Control                  # layer per le animazioni dei pezzi
 var _prev_pc: Dictionary = {}             # conteggi precedenti "sid|faction|type" -> n
 var _avail_box: Dictionary = {}           # faction -> centro (normalizzato) del box Forze Disponibili
-const ANIM_SZ := 25.0
-const ANIM_DUR := 0.55
+const ANIM_SZ := 26.0
+const ANIM_DUR := 0.9
 
 
 func _refresh() -> void:
@@ -572,29 +572,43 @@ func _animate_moves() -> void:
 				sleft = 0 if si >= sources.size() else int(sources[si][1])
 	_prev_pc = nc
 	# Troppi movimenti insieme (nuova partita / Propaganda): salta per non intasare.
-	if ghosts.size() > 30:
+	if ghosts.size() > 24:
 		return
 	for g in ghosts:
 		_spawn_ghost(String(g["f"]), String(g["t"]), g["from"], g["to"])
 
 
+## Anima un pezzo che vola da `from_pos` a `to_pos` con una scia luminosa (effetto cometa):
+## una "testa" brillante più alcune copie sfalsate che la inseguono attenuandosi.
 func _spawn_ghost(faction: String, type: String, from_pos: Vector2, to_pos: Vector2) -> void:
-	var g := TextureRect.new()
-	g.texture = CLAssets.piece(faction, type, "")
-	g.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	g.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	g.size = Vector2(ANIM_SZ, ANIM_SZ)
-	g.pivot_offset = g.size * 0.5
-	g.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	g.position = from_pos - g.size * 0.5
-	g.scale = Vector2(1.3, 1.3)   # leggermente ingrandito per risaltare durante il volo
-	_anim_layer.add_child(g)
-	var tw := create_tween()
-	tw.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
-	tw.tween_property(g, "position", to_pos - g.size * 0.5, ANIM_DUR)
-	tw.parallel().tween_property(g, "scale", Vector2(1, 1), ANIM_DUR)
-	tw.parallel().tween_property(g, "modulate:a", 0.0, ANIM_DUR * 0.35).set_delay(ANIM_DUR * 0.65)
-	tw.tween_callback(g.queue_free)
+	var tex := CLAssets.piece(faction, type, "")
+	if tex == null:
+		return
+	var half := Vector2(ANIM_SZ, ANIM_SZ) * 0.5
+	var echoes := 4
+	for e in range(echoes):
+		var g := TextureRect.new()
+		g.texture = tex
+		g.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		g.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		g.size = Vector2(ANIM_SZ, ANIM_SZ)
+		g.pivot_offset = half
+		g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		g.position = from_pos - half
+		var head := e == 0
+		# Testa brillante e ingrandita; le copie della scia più piccole e attenuate.
+		g.modulate = Color(1.5, 1.5, 1.2, 1.0) if head else Color(1.2, 1.2, 1.1, 0.5 - 0.1 * float(e))
+		g.scale = Vector2(1.45, 1.45) if head else Vector2(1.2, 1.2)
+		_anim_layer.add_child(g)
+		var lead := float(e) * 0.08   # ritardo crescente → la copia resta "indietro" (scia)
+		var tw := create_tween()
+		tw.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+		if lead > 0.0:
+			tw.tween_interval(lead)
+		tw.tween_property(g, "position", to_pos - half, ANIM_DUR)
+		tw.parallel().tween_property(g, "scale", Vector2(1, 1), ANIM_DUR)
+		tw.parallel().tween_property(g, "modulate:a", 0.0, ANIM_DUR * 0.45).set_delay(ANIM_DUR * 0.55)
+		tw.tween_callback(g.queue_free)
 
 
 ## Lampeggia gli spazi il cui stato è cambiato dall'ultimo aggiornamento (feedback visivo).
