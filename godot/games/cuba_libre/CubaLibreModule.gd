@@ -218,6 +218,10 @@ func remove_enemy_pieces(state: GameState, space_id: String, capacity: int,
 	var st: SpaceState = state.space_state(space_id)
 	var order := ["m26", "directorio", "syndicate", "government"]
 	order.erase(attacker)
+	# Capacità "Pact of Caracas": né 26 Luglio né Directorio possono rimuovere i pezzi
+	# dell'altro Insorgente con Operazioni o Attività Speciali (carta #18).
+	if has_capability(state, "Pact of Caracas") and (attacker == "m26" or attacker == "directorio"):
+		order.erase("directorio" if attacker == "m26" else "m26")
 	var removed := 0
 	while removed < capacity:
 		var done := true

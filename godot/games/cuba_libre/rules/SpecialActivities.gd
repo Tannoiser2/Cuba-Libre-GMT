@@ -124,6 +124,17 @@ func _infiltrate_for(faction: String, params: Dictionary) -> Dictionary:
 	return _ok(0, ["Infiltrazione di %s a %s" % [faction, sid]])
 
 
+## Spazio dove il Sequestro è ammesso: una Città, oppure Sierra Maestra se è attiva
+## la Capacità Insorgente "Guantánamo Bay" (la tratta come fosse una Città).
+func kidnap_allowed_space(sid: String) -> bool:
+	var sd: SpaceDef = state.game_def.space(sid)
+	if sd == null:
+		return false
+	if sd.type == CoinEnums.SpaceType.CITY:
+		return true
+	return mod.has_capability(state, "Guantánamo Bay") and sid == "sierra_maestra"
+
+
 func _has_or_adjacent_underground(faction: String, sid: String) -> bool:
 	if state.space_state(sid).count(faction, "guerrilla", "underground") > 0:
 		return true
@@ -157,6 +168,8 @@ func kidnap(params: Dictionary) -> Dictionary:
 	var st: SpaceState = state.space_state(sid)
 	if st == null:
 		return _err("Spazio non valido")
+	if not kidnap_allowed_space(sid):
+		return _err("Sequestro solo in una Città (o a Sierra Maestra con Guantánamo Bay)")
 	if st.count("m26", "guerrilla") <= st.count("government", "police"):
 		return _err("Sequestro: servono più Guerriglie M26 che Polizia a %s" % sid)
 	var log: Array = []
@@ -200,23 +213,32 @@ func ambush_dr(params: Dictionary) -> Dictionary:
 
 
 ## Assassinio (4.4.3): rimuove o chiude 1 pezzo nemico in 1 spazio scelto per il Terror DR,
-## se le Guerriglie DR superano la Polizia. params: { space }
+## se le Guerriglie DR superano la Polizia. params: { space, faction? }
+## Con la Capacità "Mafia Offensive" anche il Sindacato può Assassinare, senza badare
+## alla Polizia (4.5 / carta #43 Ombr.).
 func assassinate(params: Dictionary) -> Dictionary:
+	var faction: String = params.get("faction", "directorio")
 	var sid: String = params.get("space", "")
 	var st: SpaceState = state.space_state(sid)
 	if st == null:
 		return _err("Spazio non valido")
-	if st.count("directorio", "guerrilla") <= st.count("government", "police"):
-		return _err("Assassinio: servono più Guerriglie DR che Polizia a %s" % sid)
+	if faction == "syndicate":
+		if not mod.has_capability(state, "Mafia Offensive"):
+			return _err("Il Sindacato può Assassinare solo con la Capacità «Mafia Offensive»")
+		if st.count("syndicate", "guerrilla") < 1:
+			return _err("Assassinio: serve 1 Guerriglia del Sindacato a %s" % sid)
+		# "senza badare alla Polizia": nessun confronto Guerriglie/Polizia
+	elif st.count(faction, "guerrilla") <= st.count("government", "police"):
+		return _err("Assassinio: servono più Guerriglie di %s che Polizia a %s" % [faction, sid])
 	# Rimuove 1 qualsiasi pezzo nemico (anche una Base protetta) — niente protezione Basi
-	var removed := mod.remove_enemy_pieces(state, sid, 1, "directorio",
+	var removed := mod.remove_enemy_pieces(state, sid, 1, faction,
 		{"active_g": true, "underground_g": true, "cubes": true, "bases": false})
 	if removed == 0:
 		# nessun non-base: rimuovi/chiudi una Base nemica
-		removed = _remove_any_enemy_base(sid, "directorio")
+		removed = _remove_any_enemy_base(sid, faction)
 	if removed == 0:
 		return _err("Nessun bersaglio per l'Assassinio a %s" % sid)
-	return _ok(0, ["Assassinio a %s" % sid])
+	return _ok(0, ["Assassinio di %s a %s" % [faction, sid]])
 
 
 ## Numero di bersagli che la Corruzione potrebbe colpire nello spazio, per l'azione scelta.
