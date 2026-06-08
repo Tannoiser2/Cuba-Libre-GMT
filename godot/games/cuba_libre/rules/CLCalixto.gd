@@ -18,7 +18,7 @@ var _an_dice: Dictionary = {}
 var deck: CalixtoDeck
 var _log: Array = []
 var _rng := RandomNumberGenerator.new()
-var _af := ""   # Fazione attiva (per i predicati)
+var _af := ""  # Fazione attiva (per i predicati)
 
 const LETTERS := {
 	"government": ["U", "Y", "Z", "X", "W", "V"],
@@ -154,12 +154,12 @@ func _explain_selection(applicable: Array, scored: Array) -> void:
 		return
 	# Priorità di selezione applicate, in ordine.
 	if applicable.is_empty():
-		_trace.append("   Priorità spazio: nessun criterio applicabile → scelta casuale")
+		_trace.append("  Priorità spazio: nessun criterio applicabile → scelta casuale")
 	else:
 		var labels: Array = []
 		for c in applicable:
 			labels.append(_crit_label(String(c)))
-		_trace.append("   Priorità spazio (in ordine): " + ", ".join(labels))
+		_trace.append("  Priorità spazio (in ordine): " + ", ".join(labels))
 	var win: Dictionary = scored[0]
 	var win_name := _space_name(String(win["sid"]))
 	# Criterio decisivo: primo in cui il vincitore supera il secondo classificato.
@@ -173,13 +173,13 @@ func _explain_selection(applicable: Array, scored: Array) -> void:
 			if wv[i] != rv[i]:
 				reason = "%s (%s vs %s)" % [_crit_label(String(applicable[i])), str(wv[i]), str(rv[i])]
 				break
-	_trace.append("   → scelto «%s»: %s" % [win_name, reason])
+	_trace.append("  → scelto «%s»: %s" % [win_name, reason])
 	# Mostra la classifica dei primi spazi candidati.
 	if scored.size() > 1:
 		var rank: Array = []
 		for j in range(mini(4, scored.size())):
 			rank.append(_space_name(String(scored[j]["sid"])))
-		_trace.append("   Classifica: " + ", ".join(rank))
+		_trace.append("  Classifica: " + ", ".join(rank))
 
 
 ## Valore di un criterio per uno spazio (più alto = preferito). 0 se non applicabile.
@@ -246,7 +246,12 @@ func _crit_value(crit: String, sid: String, faction: String) -> float:
 var _trace: Array = []   # traccia decisionale (debug)
 
 
-func take_turn(faction: String) -> Dictionary:
+## Evento marcato Critical per la Fazione (tabella Calixto Event Instructions).
+func is_event_critical(faction: String, card_number: int) -> bool:
+	return bool(_events.get(str(card_number), {}).get(faction, {}).get("critical", false))
+
+
+func take_turn(faction: String, allow_special: bool = true, limited: bool = false) -> Dictionary:
 	_log = []
 	_trace = []
 	if not _cards.has(faction):
@@ -270,15 +275,17 @@ func take_turn(faction: String) -> Dictionary:
 		# res = op
 		var op_id: String = res["op_id"]
 		var op_def: Dictionary = side.get("ops", {}).get(op_id, {})
-		var an := _activation_number(faction, side)
-		_trace.append("Operazione scelta: %s (AN=%d)" % [String(op_def.get("type", op_id)), an])
+		var an := 1 if limited else _activation_number(faction, side)
+		_trace.append("Operazione scelta: %s (AN=%d%s)" % [String(op_def.get("type", op_id)), an, " · LimOp" if limited else ""])
 		var done := _execute_op(faction, op_def, an, letter)
 		if not done:
 			_trace.append("→ Operazione non eseguibile, pesco una nuova carta")
 			letter = deck.draw_next(faction)
 			continue
-		# Attività Speciale (prima fattibile)
-		var sa := _execute_special(faction, CalixtoEngine.specials_for(side, op_id))
+		# Attività Speciale (prima fattibile), solo se consentita dalla scelta C8.5.2.
+		var sa := ""
+		if allow_special:
+			sa = _execute_special(faction, CalixtoEngine.specials_for(side, op_id))
 		if sa != "":
 			_trace.append("Attività Speciale: %s" % sa)
 		state.recompute_all_control()
@@ -451,11 +458,11 @@ func _is_ec(sid: String) -> bool:
 func _run(res: Dictionary) -> bool:
 	for line in res.get("log", []):
 		_log.append(String(line))
-		_trace.append("   " + String(line))
+		_trace.append("  " + String(line))
 	if not res.get("ok", false):
 		if res.has("error"):
-			_log.append("⚠ " + String(res["error"]))
-			_trace.append("   ⚠ " + String(res["error"]))
+			_log.append("! " + String(res["error"]))
+			_trace.append("  ! " + String(res["error"]))
 		return false
 	return true
 
@@ -570,7 +577,7 @@ func _do_assault(an: int) -> bool:
 	if spaces.is_empty():
 		return false
 	spaces = _ordered("government", "assault", spaces)
-	_trace.append("   Priorità eliminazione (Assalto): prima Guerriglie Attive, poi Basi nemiche (scoperte). Le Clandestine non sono colpibili.")
+	_trace.append("  Priorità eliminazione (Assalto): prima Guerriglie Attive, poi Basi nemiche (scoperte). Le Clandestine non sono colpibili.")
 	return _run(ops.assault({"spaces": spaces.slice(0, _spaces_allowed(an, spaces.size()))}))
 
 
@@ -625,9 +632,9 @@ func _do_march(faction: String) -> bool:
 			if surplus > 0:
 				moves.append({"from": adj, "to": dest, "count": surplus})
 		if not moves.is_empty():
-			_trace.append("   Movimento verso «%s» (Move Priorities: tieni in origine il minimo per non cedere Controllo e 1 Clandestina se c'è una Base):" % _space_name(dest))
+			_trace.append("  Movimento verso «%s» (Move Priorities: tieni in origine il minimo per non cedere Controllo e 1 Clandestina se c'è una Base):" % _space_name(dest))
 			for m in moves:
-				_trace.append("     • %d Guerriglie da «%s»" % [int(m["count"]), _space_name(String(m["from"]))])
+				_trace.append("    • %d Guerriglie da «%s»" % [int(m["count"]), _space_name(String(m["from"]))])
 			return _run(ops.march({"faction": faction, "moves": moves}))
 	return false
 
@@ -669,7 +676,7 @@ func _do_attack(faction: String, an: int) -> bool:
 	if spaces.is_empty():
 		return false
 	spaces = _ordered(faction, "attack", spaces)
-	_trace.append("   Priorità eliminazione (Attacco): rimuove i pezzi nemici scoperti — prima cubi/Guerriglie Attive, poi Basi se restano scoperte.")
+	_trace.append("  Priorità eliminazione (Attacco): rimuove i pezzi nemici scoperti — prima cubi/Guerriglie Attive, poi Basi se restano scoperte.")
 	return _run(ops.attack({"faction": faction, "spaces": spaces.slice(0, _spaces_allowed(an, spaces.size()))}))
 
 

@@ -66,6 +66,18 @@ func is_first_slot() -> bool:
 	return _actors.is_empty()
 
 
+## ActionType della 1ª Fazione che ha agito (-1 se nessuna). Per la tabella C8.5.2.
+func first_action() -> int:
+	return _first_action
+
+
+## Fazione Disponibile successiva a quella in sospeso ("" se non c'è).
+func next_eligible() -> String:
+	if _idx + 1 < _eligible_order.size():
+		return _eligible_order[_idx + 1]
+	return ""
+
+
 ## Azioni legali per la Fazione in sospeso.
 func legal_actions() -> Array[int]:
 	var out: Array[int] = []

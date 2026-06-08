@@ -99,7 +99,7 @@ var _btn_ev_u: Button
 var _btn_ev_s: Button
 
 # Stato del flusso azione
-var _mode := "idle"                   # idle | select_spaces | moves
+var _mode := "idle"                  # idle | select_spaces | moves
 var _limited := false                 # turno limitato a 1 spazio, niente Att.Speciale
 var _op_btns: HBoxContainer
 var _sa_btns: HBoxContainer
@@ -120,17 +120,17 @@ var _selected: Array = []
 var _rally_choice: Dictionary = {}     # sid -> "place"/"extra"/"base"/"flip" (Riorganizzazione)
 var _train_plan: Dictionary = {}       # sid -> {kind:"cubes"/"base"/"civic", n:int} (Addestramento)
 var _build_choice: Dictionary = {}     # sid -> "new"/"open" (Costruzione Sindacato)
-var _garrison_ec := ""                 # EC scelto per l'Assalto gratuito della Guarnigione
-var _reprisal_from := ""               # spazio Rappresaglia in attesa dello spostamento opzionale
+var _garrison_ec := ""                # EC scelto per l'Assalto gratuito della Guarnigione
+var _reprisal_from := ""              # spazio Rappresaglia in attesa dello spostamento opzionale
 var _attack_target: Dictionary = {}    # sid -> fazione bersaglio preferita (Attacco)
-var _sa_move_to := ""                  # destinazione Trasporto/Muscle in attesa del numero
+var _sa_move_to := ""                 # destinazione Trasporto/Muscle in attesa del numero
 var _sa_move_count := 0                # numero di cubi da spostare (Trasporto/Muscle)
 var _sa_spaces: Array = []             # Casinò scelti per il Profitto (multi-selezione)
-var _profit_mode := "cash"             # "cash" | "convert"
+var _profit_mode := "cash"            # "cash" | "convert"
 var _pending_moves: Array = []
-var _pending_sa := ""                  # Att.Speciale in attesa di bersaglio
-var _sa_from := ""                     # origine (per Trasporto/Muscle)
-var _resume_mode := "idle"             # modalità Operazione da riprendere dopo l'Att.Speciale
+var _pending_sa := ""                 # Att.Speciale in attesa di bersaglio
+var _sa_from := ""                    # origine (per Trasporto/Muscle)
+var _resume_mode := "idle"            # modalità Operazione da riprendere dopo l'Att.Speciale
 var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Speciale corrente
 
 
@@ -250,10 +250,10 @@ func _btn_style(bg: Color, border: Color) -> StyleBoxFlat:
 	s.set_corner_radius_all(7)
 	s.set_border_width_all(1)
 	s.border_color = border
-	s.content_margin_left = 11.0
-	s.content_margin_right = 11.0
-	s.content_margin_top = 6.0
-	s.content_margin_bottom = 6.0
+	s.content_margin_left = 8.0
+	s.content_margin_right = 8.0
+	s.content_margin_top = 3.0
+	s.content_margin_bottom = 3.0
 	return s
 
 
@@ -269,8 +269,16 @@ func _mk_btn(text: String, cb: Callable) -> Button:
 	b.add_theme_color_override("font_color", Color("e6edf3"))
 	b.add_theme_color_override("font_hover_color", Color("ffffff"))
 	b.add_theme_color_override("font_disabled_color", Color("5b6571"))
-	b.add_theme_font_size_override("font_size", 13)
+	b.add_theme_font_size_override("font_size", 12)
 	return b
+
+
+## Evidenzia un tasto con uno sfondo colorato (per il tasto "Esegui").
+func _accent_btn(b: Button, bg: Color, border: Color) -> void:
+	b.add_theme_stylebox_override("normal", _btn_style(bg, border))
+	b.add_theme_stylebox_override("hover", _btn_style(bg.lightened(0.12), border))
+	b.add_theme_stylebox_override("pressed", _btn_style(bg.darkened(0.18), border))
+	b.add_theme_color_override("font_color", Color("ffffff"))
 
 
 ## Gruppo verticale: etichetta centrata sopra, contenuto (tasti) sotto.
@@ -318,7 +326,9 @@ func _build_action_bar() -> VBoxContainer:
 	var op_box := HBoxContainer.new()
 	op_box.add_theme_constant_override("separation", 3)
 	op_box.add_child(_op_btns)
-	op_box.add_child(_mk_btn("Esegui", _on_execute))
+	var btn_exec := _mk_btn("▶ Esegui", _on_execute)
+	_accent_btn(btn_exec, Color("2e7d46"), Color("57c97e"))   # sfondo verde, risalta
+	op_box.add_child(btn_exec)
 	row1.add_child(_labeled_group("Operazione", op_box))
 
 	row1.add_child(VSeparator.new())
@@ -355,7 +365,7 @@ func _build_action_bar() -> VBoxContainer:
 	row2.add_theme_constant_override("v_separation", 3)
 	bar.add_child(row2)
 
-	_btn_bot = _mk_btn("🤖 Gioca la fazione di turno", func(): GameController.bot_act_pending())
+	_btn_bot = _mk_btn(" Gioca la fazione di turno", func(): GameController.bot_act_pending())
 	row2.add_child(_btn_bot)
 	row2.add_child(_mk_btn("Tutti i Bot (questa carta)", _on_all_bots))
 	row2.add_child(_mk_btn("Auto: tutta la partita", func(): GameController.run_full_game_paced()))
@@ -719,10 +729,10 @@ func _refresh_turn_banner() -> void:
 		_turn_banner.add_theme_color_override("font_color", Color("ffffff"))
 		if GameController.game_over:
 			if GameController.winner != "":
-				_turn_banner.text = "🏆 Partita conclusa — vince %s" % GameController.faction_name(GameController.winner)
+				_turn_banner.text = "» Partita conclusa — vince %s" % GameController.faction_name(GameController.winner)
 				_turn_banner.add_theme_color_override("font_color", GameController.faction_color(GameController.winner))
 			else:
-				_turn_banner.text = "🏁 Partita conclusa"
+				_turn_banner.text = "═══ Partita conclusa"
 		elif card == -1:
 			_turn_banner.text = "Mazzo esaurito"
 		else:
@@ -829,15 +839,15 @@ func _render_log() -> void:
 			continue
 		# Banner di fine partita.
 		if String(e["f"]) == "" and txt.find("FINE PARTITA") != -1:
-			s += "\n[center][b][font_size=16][color=#f1c40f]🏁  FINE PARTITA  🏁[/color][/font_size][/b][/center]\n"
+			s += "\n[center][b][font_size=16][color=#f1c40f]═══  FINE PARTITA  ═══[/color][/font_size][/b][/center]\n"
 			continue
 		s += _fmt_log_line(txt, String(e["f"]))
 		if e["tr"].size() > 0:
 			var exp: bool = e.get("exp", false)
-			s += "  [url=%d][font_size=10][color=#7fb0ff]%s[/color][/font_size][/url]\n" % [i, ("▼ logica" if exp else "▶ logica")]
+			s += " [url=%d][font_size=10][color=#7fb0ff]%s[/color][/font_size][/url]\n" % [i, ("▼ logica" if exp else "▶ logica")]
 			if exp:
 				for tl in e["tr"]:
-					s += "      [font_size=9][color=#9fb3c8]%s[/color][/font_size]\n" % String(tl)
+					s += "     [font_size=9][color=#9fb3c8]%s[/color][/font_size]\n" % String(tl)
 		else:
 			s += "\n"
 	_log.text = s
@@ -1213,7 +1223,7 @@ func _profit_instr() -> void:
 
 func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: String) -> void:
 	if _mode != "moves":
-		_instr.text = "⚠ Per spostare i pezzi scegli prima un'operazione di movimento (Marcia / Perlustrazione / Guarnigione / Trasporto)"
+		_instr.text = "! Per spostare i pezzi scegli prima un'operazione di movimento (Marcia / Perlustrazione / Guarnigione / Trasporto)"
 		return
 	if from_id == to_id:
 		return
@@ -1491,7 +1501,7 @@ func _on_event(side: String) -> void:
 	var res := GameController.play_event(side, params)
 	_clear_pending()
 	if not res.get("ok", false):
-		_instr.text = "⚠ " + String(res.get("error", "Evento non eseguibile"))
+		_instr.text = "! " + String(res.get("error", "Evento non eseguibile"))
 	else:
 		_instr.text = "Evento giocato — turno concluso"
 	_refresh_turn_banner()
@@ -1536,6 +1546,8 @@ func _on_new_game() -> void:
 	_clear_pending()
 	_log_entries.clear()
 	_render_log()
+	_zoom = 1.0          # mappa adattata al riquadro
+	_layout_board()
 	GameController.new_game()
 
 
@@ -1569,7 +1581,7 @@ func _on_cancel() -> void:
 		_instr.text = "Azione in preparazione annullata"
 		return
 	if GameController.undo_last():
-		_instr.text = "↩ Ultima azione annullata"
+		_instr.text = " Ultima azione annullata"
 	else:
 		_instr.text = "Niente da annullare"
 

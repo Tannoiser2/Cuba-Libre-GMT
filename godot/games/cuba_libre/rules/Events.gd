@@ -264,7 +264,9 @@ func _ev_11(side, faction, params):
 		_alliance(true)
 		return _ok(["Batista Flees: Govt -10, -%d Truppe, Alleanza +1" % removed])
 	_aid(10)
-	return _ok(["Batista Flees: Aiuti +10 (Redeploy Govt manuale)"])
+	var log := ["Batista Flees: Aiuti +10"]
+	log.append_array(CubaLibrePropaganda.new(state, mod).redeploy_phase())  # Redeploy come in Propaganda
+	return _ok(log)
 
 ## #12 BRAC
 func _ev_12(side, faction, params):
@@ -577,7 +579,16 @@ func _ev_38(side, faction, params):
 		for sid in _ids():
 			state.flip_pieces("syndicate", "casino", sid, "closed", "open")
 		return _ok(["Meyer Lansky: tutti i Casinò aperti (ricollocazione semplificata)"])
-	return _ok(["Meyer Lansky: trasferimento Denaro nello spazio (gestito a mano)"])
+	# Chiaro: trasferisci il Denaro presente in uno spazio alla Fazione che gioca l'Evento.
+	for sid in _ids():
+		for other in ["government", "m26", "directorio", "syndicate"]:
+			if other == faction:
+				continue
+			var c := _st(sid).cash_for(other)
+			if c > 0:
+				state.transfer_cash(sid, other, faction, c)
+				return _ok(["Meyer Lansky: %d Denaro da %s a %s a %s" % [c, other, faction, sid]])
+	return _ok(["Meyer Lansky: nessun Denaro da trasferire"])
 
 ## #39 Turismo
 func _ev_39(side, faction, params):
@@ -633,7 +644,23 @@ func _ev_42(side, faction, params):
 func _ev_43(side, faction, params):
 	if side == "shaded":
 		return _ok(["Mafia Offensive: Capacità registrata (Sindacato può Assassinare)"])
-	return _ok(["Mafia Offensive: LimOp gratis 26July/DR con pezzo Sindacato (gestito a mano)"])
+	# Chiaro: 26J o DR esegue un'Op Limitata gratis (Rally) trattando 1 pezzo del Sindacato come proprio.
+	var f := _ins(faction)
+	var cand := _spaces_with(f).filter(func(s): return _sd(s).has_population())
+	if cand.is_empty():
+		cand = _ids().filter(func(s): return _sd(s).has_population() and _st(s).count("syndicate", "guerrilla") > 0)
+	var t := _pick(cand, params)
+	if t == "":
+		return _ok(["Mafia Offensive: nessuno spazio valido per l'Op Limitata"])
+	var log: Array = []
+	if _replace_piece(t, "syndicate", f):
+		log.append("Mafia Offensive: 1 pezzo del Sindacato trattato come %s a %s" % [f, t])
+	var amt := 1
+	if _st(t).count(f, "base") > 0:
+		amt = (2 * _st(t).count(f, "base") + 2 * _sd(t).pop) if f == "m26" else (_st(t).count(f, "base") + _sd(t).pop)
+	_place_g(f, t, amt)
+	log.append("Mafia Offensive: Op Limitata gratis (Rally) di %s a %s (+%d Guerriglie)" % [f, t, amt])
+	return _ok(log)
 
 ## #44 Rebel Air Force
 func _ev_44(side, faction, params):

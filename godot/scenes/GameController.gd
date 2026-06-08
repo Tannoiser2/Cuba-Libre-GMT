@@ -208,10 +208,10 @@ func end_turn() -> bool:
 		elif seq.is_legal(A.OPERATION_WITH_SPECIAL):
 			t = A.OPERATION_WITH_SPECIAL
 	if t == -1:
-		emit_signal("action_logged", "⚠ Nessuna azione valida da concludere (esegui un'Operazione/Evento o Passa)", "")
+		emit_signal("action_logged", "! Nessuna azione valida da concludere (esegui un'Operazione/Evento o Passa)", "")
 		return false
 	if not seq.act(t):
-		emit_signal("action_logged", "⚠ Azione non legale in questo momento", "")
+		emit_signal("action_logged", "! Azione non legale in questo momento", "")
 		return false
 	_after_decision()
 	return true
@@ -248,39 +248,52 @@ func _bot_take_pending() -> void:
 	if fid == "":
 		return
 	var fname := faction_name(fid)
-	# Scelta Evento (Calixto): se l'Evento è legale e conviene, giocalo.
-	if seq.is_legal(A.EVENT) and state.current_card > 0:
+	var can_full := seq.is_legal(A.OPERATION_WITH_SPECIAL)
+	var can_op := seq.is_legal(A.OPERATION)
+	var can_lim := seq.is_legal(A.LIMITED_OPERATION)
+	var can_event := seq.is_legal(A.EVENT) and state.current_card > 0
+	# Tabella NP Eligibility (C8.5.2): decide il TIPO di azione.
+	var decision := _np_eligibility_decision(fid)
+	if decision == "event" and not can_event:
+		decision = "op_sa"
+	# EVENTO
+	if decision == "event":
 		var ec := bot.event_choice(fid, state.current_card)
 		if ec.get("play", false):
 			var side: String = ec["side"]
 			var eres := events.apply(state.current_card, side, fid)
-			var etrace := ["Evento giocato dal bot (lato %s) perché migliora il margine" % side]
+			var etrace := ["C8.5.2 → EVENTO (Critical/efficace), lato %s" % side]
 			etrace.append_array(eres.get("log", []))
 			emit_signal("bot_decision", "%s → EVENTO (%s)" % [fname, side], fid, etrace)
 			seq.act(A.EVENT)
 			_count("event")
 			return
-	var can_full := seq.is_legal(A.OPERATION_WITH_SPECIAL)
-	var can_op := seq.is_legal(A.OPERATION)
-	var can_lim := seq.is_legal(A.LIMITED_OPERATION)
-	if not (can_full or can_op or can_lim):
-		emit_signal("bot_decision", "%s → PASSA" % fname, fid,
-			["Solo Evento/Pass erano legali in questo slot e l'Evento non conveniva."])
-		seq.act_pass()
-		_count("pass")
+		decision = "op_sa"  # Evento non più conveniente: ripiega su Operazione
+	# PASS deciso dalla tabella
+	if decision == "pass":
+		emit_signal("bot_decision", "%s → PASSA (C8.5.2)" % fname, fid, ["C8.5.2: conviene restare Disponibile."])
+		seq.act_pass(); _count("pass"); _count("pass#" + fid)
 		return
-	var br := bot.take_turn(fid)
+	# Nessuna Operazione legale -> Pass
+	if not (can_full or can_op or can_lim):
+		emit_signal("bot_decision", "%s → PASSA" % fname, fid, ["Solo Evento/Pass legali e l'Evento non conveniva."])
+		seq.act_pass(); _count("pass"); _count("pass#" + fid)
+		return
+	# OPERAZIONE: op_sa / op_only / lim_op (rispettando la legalità dello slot)
+	var want_sa := decision == "op_sa"
+	var limited := decision == "lim_op" or (not can_full and not can_op and can_lim)
+	var br := bot.take_turn(fid, want_sa and not limited, limited)
 	var trace: Array = br.get("trace", [])
 	if br.get("action", "pass") == "pass":
 		emit_signal("bot_decision", "%s → PASSA (nessuna Operazione legale)" % fname, fid, trace)
-		seq.act_pass()
-		_count("pass")
+		seq.act_pass(); _count("pass"); _count("pass#" + fid)
 		return
 	var optype := String(br.get("action", ""))
 	var did_sa: bool = br.get("special", false)
-	# Tipo di azione: Op+SA solo se ha svolto un'Att.Speciale ed è legale; altrimenti Op (only).
 	var t := A.OPERATION
-	if did_sa and can_full:
+	if limited and can_lim:
+		t = A.LIMITED_OPERATION
+	elif did_sa and can_full:
 		t = A.OPERATION_WITH_SPECIAL
 	elif can_op:
 		t = A.OPERATION
@@ -298,9 +311,90 @@ func _bot_take_pending() -> void:
 		label += " + " + String(_SA_IT.get(String(br.get("special_type", "")), br.get("special_type", "")))
 	emit_signal("bot_decision", "%s → %s" % [fname, label], fid, trace)
 	seq.act(t)
+	_count("act#" + fid)
 	_count("op:" + optype)
 	if t == A.OPERATION_WITH_SPECIAL:
 		_count("sa:" + String(br.get("special_type", "")))
+
+
+## Tabella NP Eligibility (C8.5.2): tipo di azione del bot.
+## Ritorna "event" | "op_sa" | "op_only" | "lim_op" | "pass".
+func _np_eligibility_decision(fid: String) -> String:
+	var A := CoinEnums.ActionType
+	var card := state.current_card
+	var crit_eff := _ev_crit_eff(fid, card)
+	if seq.is_first_slot():
+		# 1) GOV: Guerriglia DR/26J Clandestina a Havana -> Op+SA
+		if fid == "government" and _underground_insurgent_in_havana():
+			return "op_sa"
+		# 2) Evento corrente Critical ed efficace -> Evento
+		if crit_eff:
+			return "event"
+		# 3) La prossima idonea potrebbe giocare un Critical efficace -> Op (per negarglielo)
+		var nxt := seq.next_eligible()
+		if nxt != "" and _ev_crit_eff(nxt, card):
+			return "op_only"
+		# 4) Sarò 1ª idonea su un Critical in arrivo -> Passa
+		if _first_on_upcoming_critical(fid):
+			return "pass"
+		# 5) altrimenti -> Op & SA
+		return "op_sa"
+	# 2ª Disponibile
+	var first := seq.first_action()
+	# 1) Sarò 1ª su un Critical in arrivo e ora non posso giocare un Critical efficace -> Passa
+	if _first_on_upcoming_critical(fid) and not crit_eff:
+		return "pass"
+	# 2) la 1ª ha scelto Evento -> Op+SA
+	if first == A.EVENT:
+		return "op_sa"
+	# 3) la 1ª ha scelto Op+SA e l'Evento corrente è Critical/efficace -> Evento
+	if first == A.OPERATION_WITH_SPECIAL and crit_eff:
+		return "event"
+	# 4) sarò 1ª idonea sull'Evento successivo -> Passa
+	if _first_on_upcoming_event(fid):
+		return "pass"
+	# 5) altrimenti -> Op Limitata
+	return "lim_op"
+
+
+## Evento corrente Critical per la Fazione ED efficace (migliora/non peggiora il margine).
+func _ev_crit_eff(fid: String, card: int) -> bool:
+	if card <= 0:
+		return false
+	if not bot.is_event_critical(fid, card):
+		return false
+	return bot.event_choice(fid, card).get("play", false)
+
+
+func _underground_insurgent_in_havana() -> bool:
+	var st: SpaceState = state.space_state("havana")
+	if st == null:
+		return false
+	return st.count("m26", "guerrilla", "underground") > 0 or st.count("directorio", "guerrilla", "underground") > 0
+
+
+## Approssimazione del lookahead: la carta successiva è un Evento Critical per fid e
+## fid guida l'ordine delle Fazioni (presunta 1ª idonea su quella carta).
+func _first_on_upcoming_critical(fid: String) -> bool:
+	var nc := next_card()
+	if nc <= 0:
+		return false
+	return bot.is_event_critical(fid, nc) and _leads_card(fid, nc)
+
+
+func _first_on_upcoming_event(fid: String) -> bool:
+	var nc := next_card()
+	return nc > 0 and _leads_card(fid, nc)
+
+
+func _leads_card(fid: String, card_number: int) -> bool:
+	var c: CardDef = game_def.card(card_number)
+	if c == null:
+		return false
+	for f in c.faction_order:
+		if int(state.eligibility.get(f, CoinEnums.Eligibility.ELIGIBLE)) == CoinEnums.Eligibility.ELIGIBLE:
+			return f == fid
+	return false
 
 
 ## Dopo una decisione (Op/Pass/Evento): aggiorna stato; a carta conclusa, chiude e pesca.
@@ -472,7 +566,7 @@ func undo_last() -> bool:
 	_undo = {}
 	state.recompute_all_control()
 	module._refresh_victory_tracks(state)
-	emit_signal("action_logged", "↩ Annullata l'ultima azione", "")
+	emit_signal("action_logged", " Annullata l'ultima azione", "")
 	emit_signal("state_changed")
 	return true
 
@@ -552,7 +646,7 @@ func run_event(number: int, side: String, faction: String, params: Dictionary = 
 func run_bot_turn(faction: String) -> Dictionary:
 	var res := bot.take_turn(faction)
 	for line in res.get("log", []):
-		emit_signal("action_logged", "🤖 " + String(line), faction)
+		emit_signal("action_logged", " " + String(line), faction)
 	emit_signal("state_changed")
 	return res
 
@@ -561,11 +655,11 @@ func run_bot_turn(faction: String) -> Dictionary:
 ## gestendo conteggio (X/4), vittoria e Propaganda finale. Percorso UNICO e corretto.
 func resolve_propaganda() -> Dictionary:
 	if state.current_card != 0:
-		emit_signal("action_logged", "⚠ La carta corrente non è una Propaganda", "")
+		emit_signal("action_logged", "! La carta corrente non è una Propaganda", "")
 		return {"ok": false}
 	propaganda_played += 1
 	var is_final := propaganda_played >= 4
-	emit_signal("action_logged", "📣 Round Propaganda %d/4" % propaganda_played, "")
+	emit_signal("action_logged", " Round Propaganda %d/4" % propaganda_played, "")
 	# Fase Vittoria (l'umano vince solo all'ultima Propaganda)
 	var vp := propaganda.victory_phase(is_final)
 	if vp.get("winner", "") != "":
@@ -581,7 +675,7 @@ func resolve_propaganda() -> Dictionary:
 	plog.append_array(bot.propaganda_support())
 	plog.append_array(propaganda.redeploy_phase())
 	for line in plog:
-		emit_signal("action_logged", "📣 " + String(line), "")
+		emit_signal("action_logged", " " + String(line), "")
 	if is_final:
 		game_over = true
 		_emit_final_report("")
@@ -607,14 +701,14 @@ func _emit_final_report(forced_winner: String) -> void:
 			if m > bm or (m == bm and tb.find(fid) < tb.find(win)):
 				win = fid
 	winner = win
-	emit_signal("action_logged", "🏁 FINE PARTITA", "")
-	emit_signal("action_logged", "🏆 Vince: %s" % faction_name(win), win)
+	emit_signal("action_logged", "═══ FINE PARTITA", "")
+	emit_signal("action_logged", "» Vince: %s" % faction_name(win), win)
 	# Classifica per margine decrescente.
 	var ranking := order.duplicate()
 	ranking.sort_custom(func(a, b): return int(vs[a]["margin"]) > int(vs[b]["margin"]))
 	for fid in ranking:
 		var d: Dictionary = vs[fid]
-		var mark := "🏆 " if fid == win else "•  "
+		var mark := "» " if fid == win else "•  "
 		var extra := ""
 		if fid == "syndicate":
 			extra = " · Risorse %d/30" % int(d.get("resources", 0))
@@ -639,7 +733,7 @@ func _emit_result(res: Dictionary) -> void:
 			emit_signal("action_logged", String(line), fac)
 		emit_signal("state_changed")
 	else:
-		emit_signal("action_logged", "⚠ " + String(res.get("error", "errore")), "")
+		emit_signal("action_logged", "! " + String(res.get("error", "errore")), "")
 
 
 # --- Helper di lettura per la UI ---
