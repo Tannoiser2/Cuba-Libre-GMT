@@ -250,10 +250,10 @@ func _btn_style(bg: Color, border: Color) -> StyleBoxFlat:
 	s.set_corner_radius_all(7)
 	s.set_border_width_all(1)
 	s.border_color = border
-	s.content_margin_left = 11.0
-	s.content_margin_right = 11.0
-	s.content_margin_top = 6.0
-	s.content_margin_bottom = 6.0
+	s.content_margin_left = 8.0
+	s.content_margin_right = 8.0
+	s.content_margin_top = 3.0
+	s.content_margin_bottom = 3.0
 	return s
 
 
@@ -269,8 +269,16 @@ func _mk_btn(text: String, cb: Callable) -> Button:
 	b.add_theme_color_override("font_color", Color("e6edf3"))
 	b.add_theme_color_override("font_hover_color", Color("ffffff"))
 	b.add_theme_color_override("font_disabled_color", Color("5b6571"))
-	b.add_theme_font_size_override("font_size", 13)
+	b.add_theme_font_size_override("font_size", 12)
 	return b
+
+
+## Evidenzia un tasto con uno sfondo colorato (per il tasto "Esegui").
+func _accent_btn(b: Button, bg: Color, border: Color) -> void:
+	b.add_theme_stylebox_override("normal", _btn_style(bg, border))
+	b.add_theme_stylebox_override("hover", _btn_style(bg.lightened(0.12), border))
+	b.add_theme_stylebox_override("pressed", _btn_style(bg.darkened(0.18), border))
+	b.add_theme_color_override("font_color", Color("ffffff"))
 
 
 ## Gruppo verticale: etichetta centrata sopra, contenuto (tasti) sotto.
@@ -318,7 +326,9 @@ func _build_action_bar() -> VBoxContainer:
 	var op_box := HBoxContainer.new()
 	op_box.add_theme_constant_override("separation", 3)
 	op_box.add_child(_op_btns)
-	op_box.add_child(_mk_btn("Esegui", _on_execute))
+	var btn_exec := _mk_btn("▶ Esegui", _on_execute)
+	_accent_btn(btn_exec, Color("2e7d46"), Color("57c97e"))   # sfondo verde, risalta
+	op_box.add_child(btn_exec)
 	row1.add_child(_labeled_group("Operazione", op_box))
 
 	row1.add_child(VSeparator.new())
@@ -1536,6 +1546,8 @@ func _on_new_game() -> void:
 	_clear_pending()
 	_log_entries.clear()
 	_render_log()
+	_zoom = 1.0          # mappa adattata al riquadro
+	_layout_board()
 	GameController.new_game()
 
 
