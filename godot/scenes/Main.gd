@@ -77,6 +77,7 @@ var _pending_moves: Array = []
 var _pending_sa := ""                  # Att.Speciale in attesa di bersaglio
 var _sa_from := ""                     # origine (per Trasporto/Muscle)
 var _resume_mode := "idle"             # modalità Operazione da riprendere dopo l'Att.Speciale
+var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Speciale corrente
 
 
 func _ready() -> void:
@@ -621,14 +622,31 @@ func _start_op(op_id: String) -> void:
 func _on_space_clicked(sid: String) -> void:
 	# Bersaglio Attività Speciale
 	if _mode == "sa_point":
+		if not _sa_valid.has(sid):
+			_instr.text = "%s: spazio non valido, scegline uno evidenziato" % SA_NAMES.get(_pending_sa, _pending_sa)
+			return
 		_run_sa(_pending_sa, sid)
 		_end_sa()
 		return
 	if _mode == "sa_move":
 		if _sa_from == "":
+			if not _sa_valid.has(sid):
+				_instr.text = "Origine non valida: scegline una evidenziata"
+				return
 			_sa_from = sid
-			_instr.text = "Origine: %s — ora clicca la DESTINAZIONE" % sid
+			# Mostra solo le destinazioni valide per questa origine.
+			_sa_valid = _sa_valid_dests(_pending_sa, sid)
+			_clear_highlights()
+			for d in _sa_valid:
+				_space_views[d].set_highlight(true)
+			if _sa_valid.is_empty():
+				_instr.text = "Nessuna destinazione valida da %s — Annulla per cambiare" % GameController.game_def.space(sid).name
+			else:
+				_instr.text = "Origine: %s — clicca una DESTINAZIONE evidenziata" % GameController.game_def.space(sid).name
 		else:
+			if not _sa_valid.has(sid):
+				_instr.text = "Destinazione non valida: scegline una evidenziata"
+				return
 			_run_sa_move(_pending_sa, _sa_from, sid)
 			_end_sa()
 		return
@@ -674,39 +692,113 @@ func _on_execute() -> void:
 	_clear_pending()
 
 
-## Esegue l'Attività Speciale (tasto), con parametri ricavati dalla selezione/spostamenti.
+## Esegue l'Attività Speciale (tasto): evidenzia SOLO gli spazi dove ha davvero effetto.
 func _do_special(sa: String) -> void:
 	if _limited:
 		_instr.text = "Operazione Limitata: niente Attività Speciale"
 		return
+	var sa_name: String = SA_NAMES.get(sa, sa)
 	# Avvia la selezione del BERSAGLIO dell'Attività Speciale (prima/durante/dopo l'Operazione).
-	_resume_mode = _mode if _mode in ["space_list", "select_spaces", "moves"] else "idle"
-	_pending_sa = sa
-	_sa_from = ""
-	_clear_highlights()
-	for s in _space_views.keys():
-		_space_views[s].set_highlight(true)
+	var resume := _mode if _mode in ["space_list", "select_spaces", "moves"] else "idle"
 	if sa == "transport" or sa == "muscle":
+		var origins := _sa_valid_origins(sa)
+		if origins.is_empty():
+			_instr.text = "%s: nessuna origine valida al momento" % sa_name
+			return
+		_resume_mode = resume
+		_pending_sa = sa
+		_sa_from = ""
+		_sa_valid = origins
+		_clear_highlights()
+		for s in origins:
+			_space_views[s].set_highlight(true)
 		_mode = "sa_move"
-		_instr.text = "%s: clicca ORIGINE poi DESTINAZIONE" % SA_NAMES.get(sa, sa)
+		_instr.text = "%s: clicca un'ORIGINE evidenziata, poi la destinazione" % sa_name
 	else:
+		var valid := _sa_valid_spaces(sa)
+		if valid.is_empty():
+			_instr.text = "%s: nessuno spazio valido al momento" % sa_name
+			return
+		_resume_mode = resume
+		_pending_sa = sa
+		_sa_from = ""
+		_sa_valid = valid
+		_clear_highlights()
+		for s in valid:
+			_space_views[s].set_highlight(true)
 		_mode = "sa_point"
-		_instr.text = "%s: clicca lo spazio bersaglio" % SA_NAMES.get(sa, sa)
+		_instr.text = "%s: clicca uno spazio bersaglio evidenziato" % sa_name
 	_refresh_turn_banner()
+
+
+## sa_id effettivo (Imboscata dipende dalla Fazione attiva).
+func _sa_target_id(sa: String) -> String:
+	if sa == "ambush":
+		return "ambush_m26" if _cur_faction == "m26" else "ambush_dr"
+	return sa
+
+
+## Parametri per un'Att.Speciale a bersaglio singolo su `space`.
+func _sa_params(sa: String, space: String) -> Dictionary:
+	match sa:
+		"profit": return {"mode": "cash", "spaces": [space]}
+		"reprisal": return {"space": space, "move": {}}
+		"kidnap": return {"space": space, "target": "government"}
+		_: return {"space": space, "faction": _cur_faction}
+
+
+## Spazi dove l'Att.Speciale a bersaglio singolo ha davvero effetto (simulazione su copia).
+func _sa_valid_spaces(sa: String) -> Array:
+	var out: Array = []
+	var sid_id := _sa_target_id(sa)
+	for s in _space_views.keys():
+		if GameController.can_special(sid_id, _sa_params(sa, s)):
+			out.append(s)
+	return out
+
+
+## Origini valide per Trasporto/Muscle (devono avere i pezzi da spostare).
+func _sa_valid_origins(sa: String) -> Array:
+	var out: Array = []
+	var st_all: GameState = GameController.state
+	for sid in _space_views.keys():
+		var sd: SpaceDef = GameController.game_def.space(sid)
+		var st: SpaceState = st_all.space_state(sid)
+		if sa == "transport":
+			var from_ok := (sd.type == CoinEnums.SpaceType.CITY or st.count("government", "base") > 0)
+			if from_ok and st.count("government", "troops") > 0:
+				out.append(sid)
+		elif sa == "muscle":
+			if st.count("government", "police") > 0 or st.count("government", "troops") > 0:
+				out.append(sid)
+	return out
+
+
+## Destinazioni valide per Trasporto/Muscle data l'origine scelta.
+func _sa_valid_dests(sa: String, from_id: String) -> Array:
+	var out: Array = []
+	var st_all: GameState = GameController.state
+	var from_st: SpaceState = st_all.space_state(from_id)
+	for sid in _space_views.keys():
+		if sid == from_id:
+			continue
+		var sd: SpaceDef = GameController.game_def.space(sid)
+		var st: SpaceState = st_all.space_state(sid)
+		if sa == "transport":
+			out.append(sid)   # qualsiasi spazio
+		elif sa == "muscle":
+			var dest_ok := sd.is_economic() or st.count("syndicate", "casino", "open") > 0
+			if not dest_ok:
+				continue
+			var needed := "police" if sd.type == CoinEnums.SpaceType.CITY else "troops"
+			if from_st.count("government", needed) > 0:
+				out.append(sid)
+	return out
 
 
 ## Esegue l'Att.Speciale su uno spazio (specials a bersaglio singolo).
 func _run_sa(sa: String, space: String) -> void:
-	var sa_id := sa
-	if sa == "ambush":
-		sa_id = "ambush_m26" if _cur_faction == "m26" else "ambush_dr"
-	var params: Dictionary
-	match sa:
-		"profit": params = {"mode": "cash", "spaces": [space]}
-		"reprisal": params = {"space": space, "move": {}}
-		"kidnap": params = {"space": space, "target": "government"}
-		_: params = {"space": space, "faction": _cur_faction}
-	GameController.run_special(sa_id, params)
+	GameController.run_special(_sa_target_id(sa), _sa_params(sa, space))
 
 
 ## Esegue Trasporto/Muscle come spostamento origine→destinazione.
@@ -721,6 +813,7 @@ func _run_sa_move(sa: String, from_id: String, to_id: String) -> void:
 func _end_sa() -> void:
 	_pending_sa = ""
 	_sa_from = ""
+	_sa_valid = []
 	_clear_highlights()
 	# Se l'Operazione era in corso, riprendila (Att.Speciale fatta DURANTE l'operazione).
 	if _resume_mode != "idle" and _cur_action != "":
@@ -761,6 +854,7 @@ func _clear_pending() -> void:
 	_pending_moves.clear()
 	_pending_sa = ""
 	_sa_from = ""
+	_sa_valid = []
 	_clear_highlights()
 	_instr.text = ""
 

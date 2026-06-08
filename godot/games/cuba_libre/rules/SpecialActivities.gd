@@ -46,6 +46,8 @@ func transport(params: Dictionary) -> Dictionary:
 	if sd.type != CoinEnums.SpaceType.CITY and st.count("government", "base") == 0:
 		return _err("Il Trasporto parte solo da una Città o da una Base Govt")
 	var moved := state.move_pieces("government", "troops", from_id, to_id, count, "")
+	if moved == 0:
+		return _err("Trasporto: nessuna Truppa da spostare da %s" % from_id)
 	return _ok(0, ["Trasporto: %d Truppe %s -> %s" % [moved, from_id, to_id]])
 
 
@@ -308,6 +310,8 @@ func muscle(params: Dictionary) -> Dictionary:
 	if t == "troops" and dest.type == CoinEnums.SpaceType.CITY:
 		return _err("Le Truppe verso Provincia o EC, non Città")
 	var moved := state.move_pieces("government", t, from_id, to_id, count, "")
+	if moved == 0:
+		return _err("Muscle: nessun %s da spostare da %s" % [t, from_id])
 	return _ok(0, ["Muscle: %d %s -> %s" % [moved, t, to_id]])
 
 

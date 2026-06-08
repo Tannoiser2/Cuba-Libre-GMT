@@ -452,23 +452,35 @@ func run_operation(op_id: String, params: Dictionary) -> Dictionary:
 	return res
 
 
+## Smista un'Attività Speciale verso il metodo corretto dell'oggetto specials dato.
+func _dispatch_special(sp: CubaLibreSpecials, sa_id: String, params: Dictionary) -> Dictionary:
+	match sa_id:
+		"transport": return sp.transport(params)
+		"air_strike": return sp.air_strike(params)
+		"reprisal": return sp.reprisal(params)
+		"infiltrate": return sp.infiltrate(params)
+		"ambush_m26": return sp.ambush("m26", params)
+		"kidnap": return sp.kidnap(params)
+		"subvert": return sp.subvert(params)
+		"ambush_dr": return sp.ambush("directorio", params)
+		"assassinate": return sp.assassinate(params)
+		"profit": return sp.profit(params)
+		"muscle": return sp.muscle(params)
+		"bribe": return sp.bribe(params)
+	return {"ok": false, "error": "Attività speciale sconosciuta: %s" % sa_id, "log": []}
+
+
+## Verifica (senza modificare lo stato) se un'Att.Speciale sarebbe legale ed efficace.
+## Simula l'azione su una copia dello stato e ne restituisce l'esito.
+func can_special(sa_id: String, params: Dictionary) -> bool:
+	var copy := GameState.from_dict(game_def, state.to_dict())
+	var sp := CubaLibreSpecials.new(copy, module)
+	return bool(_dispatch_special(sp, sa_id, params).get("ok", false))
+
+
 func run_special(sa_id: String, params: Dictionary) -> Dictionary:
 	_capture_undo()
-	var res: Dictionary
-	match sa_id:
-		"transport": res = specials.transport(params)
-		"air_strike": res = specials.air_strike(params)
-		"reprisal": res = specials.reprisal(params)
-		"infiltrate": res = specials.infiltrate(params)
-		"ambush_m26": res = specials.ambush("m26", params)
-		"kidnap": res = specials.kidnap(params)
-		"subvert": res = specials.subvert(params)
-		"ambush_dr": res = specials.ambush("directorio", params)
-		"assassinate": res = specials.assassinate(params)
-		"profit": res = specials.profit(params)
-		"muscle": res = specials.muscle(params)
-		"bribe": res = specials.bribe(params)
-		_: res = {"ok": false, "error": "Attività speciale sconosciuta: %s" % sa_id, "log": []}
+	var res := _dispatch_special(specials, sa_id, params)
 	if res.get("ok", false):
 		_turn_did_special = true
 	else:
