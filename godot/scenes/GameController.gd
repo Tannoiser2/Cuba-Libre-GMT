@@ -418,16 +418,14 @@ func current_card_text() -> String:
 	if state.current_card == 0:
 		return "[b]Carta Propaganda[/b] (%d/4)" % (propaganda_played + 1)
 	var c: CardDef = game_def.card(state.current_card)
-	var order := ""
-	for fid in c.faction_order:
-		order += "[color=#%s]●[/color] " % faction_color(fid).to_html(false)
 	var tag := ""
 	if c.is_capability: tag = " · Capacità"
 	elif c.is_momentum: tag = " · Momentum"
 	var tr := ""
 	if c.translation != "":
 		tr = "[font_size=11]%s[/font_size]\n" % c.translation
-	return "[b]#%d %s[/b]%s\n%s%s\nCarte rimaste: %d" % [c.number, c.title, tag, tr, order, cards_left()]
+	# L'ordine delle Fazioni è già stampato sulla carta: non lo ripetiamo qui.
+	return "[b]#%d %s[/b]%s\n%sCarte rimaste: %d" % [c.number, c.title, tag, tr, cards_left()]
 
 
 ## Esegue un'Operazione per id e ne propaga il risultato/log.
@@ -558,7 +556,7 @@ func resolve_propaganda() -> Dictionary:
 	if vp.get("winner", "") != "":
 		game_over = true
 		winner = vp.winner
-		emit_signal("action_logged", "🏆 Vittoria: %s" % winner, winner)
+		_emit_final_report(winner)
 		emit_signal("state_changed")
 		return vp
 	# Risorse, Supporto (Alleanza) e azioni di Supporto dei bot (Civica/Dimostrazioni/Espatriati)
@@ -570,11 +568,43 @@ func resolve_propaganda() -> Dictionary:
 		emit_signal("action_logged", "📣 " + String(line), "")
 	if is_final:
 		game_over = true
-		emit_signal("action_logged", "🏁 Partita conclusa (4ª Propaganda)", "")
+		_emit_final_report("")
 	else:
 		propaganda.reset_phase()
 	emit_signal("state_changed")
 	return {"propaganda": true}
+
+
+## Report finale nel log: dichiara la Fazione vincente e i punteggi di tutte
+## (valore/soglia e margine). Se non è già noto, il vincitore è chi ha il margine
+## maggiore rispetto alla propria soglia di vittoria (parità → ordine di spareggio).
+func _emit_final_report(forced_winner: String) -> void:
+	var vs := module.victory_status(state)
+	var order := ["government", "m26", "directorio", "syndicate"]
+	var win := forced_winner
+	if win == "":
+		var tb := Array(module.tiebreak_order())
+		win = order[0]
+		for fid in order:
+			var m := int(vs[fid]["margin"])
+			var bm := int(vs[win]["margin"])
+			if m > bm or (m == bm and tb.find(fid) < tb.find(win)):
+				win = fid
+	winner = win
+	emit_signal("action_logged", "🏁 FINE PARTITA", "")
+	emit_signal("action_logged", "🏆 Vince: %s" % faction_name(win), win)
+	# Classifica per margine decrescente.
+	var ranking := order.duplicate()
+	ranking.sort_custom(func(a, b): return int(vs[a]["margin"]) > int(vs[b]["margin"]))
+	for fid in ranking:
+		var d: Dictionary = vs[fid]
+		var mark := "🏆 " if fid == win else "•  "
+		var extra := ""
+		if fid == "syndicate":
+			extra = " · Risorse %d/30" % int(d.get("resources", 0))
+		emit_signal("action_logged", "%s%s: %d/%d (margine %+d)%s" % [
+			mark, faction_name(fid), int(d["value"]), int(d["threshold"]),
+			int(d["margin"]), extra], fid)
 
 
 ## Pulsante "Risolvi Propaganda": risolve e pesca la carta successiva.

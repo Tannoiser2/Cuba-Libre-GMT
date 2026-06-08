@@ -670,7 +670,11 @@ func _refresh_turn_banner() -> void:
 	if not turn_active:
 		_turn_banner.add_theme_color_override("font_color", Color("ffffff"))
 		if GameController.game_over:
-			_turn_banner.text = "🏁 Partita conclusa"
+			if GameController.winner != "":
+				_turn_banner.text = "🏆 Partita conclusa — vince %s" % GameController.faction_name(GameController.winner)
+				_turn_banner.add_theme_color_override("font_color", GameController.faction_color(GameController.winner))
+			else:
+				_turn_banner.text = "🏁 Partita conclusa"
 		elif card == -1:
 			_turn_banner.text = "Mazzo esaurito"
 		else:
@@ -768,6 +772,10 @@ func _render_log() -> void:
 		if String(e["f"]) == "" and txt.find("Carta conclusa") != -1:
 			turn += 1
 			s += "\n[center][b][color=#f1c40f]═════  Fine turno %d  ═════[/color][/b][/center]\n\n" % turn
+			continue
+		# Banner di fine partita.
+		if String(e["f"]) == "" and txt.find("FINE PARTITA") != -1:
+			s += "\n[center][b][font_size=16][color=#f1c40f]🏁  FINE PARTITA  🏁[/color][/font_size][/b][/center]\n"
 			continue
 		s += _fmt_log_line(txt, String(e["f"]))
 		if e["tr"].size() > 0:
