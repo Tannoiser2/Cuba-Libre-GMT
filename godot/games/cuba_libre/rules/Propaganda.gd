@@ -102,23 +102,36 @@ func resources_phase(cash_policy: Dictionary = {}) -> Array:
 				state.add_resources(ctrl, amt)
 				log.append("Cresta: %d Risorse dal Sindacato a %s (%s)" % [amt, ctrl, sid])
 
-	# 6.2.4 Depositi di Denaro (ordine M26, DR, Govt, Sindacato)
+	# 6.2.4 Depositi di Denaro (C8.5.9): scelta più vantaggiosa = usa il Denaro per
+	# piazzare Basi/Casinò dove consentito (1 per volta, rispettando il Raggruppamento),
+	# il resto diventa Risorse. (GOV piazza Basi solo in Province senza Base GOV.)
 	for fid in ["m26", "directorio", "government", "syndicate"]:
 		for sid in state.game_def.space_ids():
 			var c := state.space_state(sid).cash_for(fid)
 			if c <= 0:
 				continue
-			var policy := String(cash_policy.get(fid, "resources"))
 			state.remove_cash(sid, fid, c)
-			if policy == "base" and fid != "syndicate" and mod.can_place_base(state, sid, false):
-				state.place_from_available(fid, "base", sid, c)
-				log.append("Deposito Denaro: %d Base di %s a %s" % [c, fid, sid])
-			elif policy == "base" and fid == "syndicate":
-				state.flip_pieces("syndicate", "casino", sid, "closed", "open", c)
-				log.append("Deposito Denaro: %d Casinò aperti a %s" % [c, sid])
+			var sd: SpaceDef = state.game_def.space(sid)
+			var st2: SpaceState = state.space_state(sid)
+			var placed := 0
+			if fid == "syndicate":
+				while placed < c and mod.can_place_base(state, sid, true):
+					state.place_from_available("syndicate", "casino", sid, 1, "closed")
+					placed += 1
+				if placed > 0:
+					log.append("Deposito Denaro: %d Casinò a %s" % [placed, sid])
 			else:
-				state.add_resources(fid, 6 * c)
-				log.append("Deposito Denaro: %s +%d Risorse" % [fid, 6 * c])
+				var gov_ok: bool = sd.type == CoinEnums.SpaceType.PROVINCE and st2.count("government", "base") == 0
+				var allow: bool = gov_ok if fid == "government" else true
+				while placed < c and allow and mod.can_place_base(state, sid, false):
+					state.place_from_available(fid, "base", sid, 1)
+					placed += 1
+				if placed > 0:
+					log.append("Deposito Denaro: %d Base di %s a %s" % [placed, fid, sid])
+			var left := c - placed
+			if left > 0:
+				state.add_resources(fid, 6 * left)
+				log.append("Deposito Denaro: %s +%d Risorse" % [fid, 6 * left])
 
 	state.recompute_all_control()
 	mod._refresh_victory_tracks(state)
@@ -140,6 +153,70 @@ func support_phase() -> Array:
 		state.tracks["aid"] = maxi(0, aid - 10)
 		log.append("Aiuti -10 (ora %d)" % state.tracks["aid"])
 	return log
+
+
+# ---------------------------------------------------------------------------
+# Redeploy del Governo (C8.5.9): consolida le forze
+# ---------------------------------------------------------------------------
+
+## Porta le Truppe da EC e Province senza Base GOV verso gli spazi a Controllo GOV
+## (Città e Province con Base) e mette 1 Polizia in ogni spazio a Controllo GOV che ne
+## è privo (prendendola da spazi con Polizia in eccesso). Scelta vantaggiosa per il GOV.
+func redeploy_phase() -> Array:
+	var log: Array = []
+	var dests: Array = []
+	for sid in state.game_def.space_ids():
+		var sd: SpaceDef = state.game_def.space(sid)
+		var st: SpaceState = state.space_state(sid)
+		if st.control == "government" and (sd.type == CoinEnums.SpaceType.CITY or st.count("government", "base") > 0):
+			dests.append(sid)
+	if dests.is_empty():
+		return log
+	var moved_t := 0
+	for sid in state.game_def.space_ids():
+		if dests.has(sid):
+			continue
+		var sd: SpaceDef = state.game_def.space(sid)
+		var st: SpaceState = state.space_state(sid)
+		var t := st.count("government", "troops")
+		if t > 0 and (sd.is_economic() or (sd.type == CoinEnums.SpaceType.PROVINCE and st.count("government", "base") == 0)):
+			state.move_pieces("government", "troops", sid, _nearest_dest(sid, dests), t, "")
+			moved_t += t
+	if moved_t > 0:
+		log.append("Redeploy: %d Truppe consolidate negli spazi a Controllo GOV" % moved_t)
+	var placed_p := 0
+	for sid in dests:
+		if state.space_state(sid).count("government", "police") > 0:
+			continue
+		var src := _most_police_space(sid)
+		if src != "":
+			state.move_pieces("government", "police", src, sid, 1, "")
+			placed_p += 1
+	if placed_p > 0:
+		log.append("Redeploy: %d Polizia ridistribuita per il Controllo" % placed_p)
+	state.recompute_all_control()
+	mod._refresh_victory_tracks(state)
+	return log
+
+
+func _nearest_dest(from_id: String, dests: Array) -> String:
+	for adj in state.game_def.space(from_id).adjacent:
+		if dests.has(adj):
+			return adj
+	return dests[0]
+
+
+func _most_police_space(exclude: String) -> String:
+	var best := ""
+	var bn := 1
+	for sid in state.game_def.space_ids():
+		if sid == exclude:
+			continue
+		var n := state.space_state(sid).count("government", "police")
+		if n > bn:
+			bn = n
+			best = sid
+	return best
 
 
 # ---------------------------------------------------------------------------

@@ -56,6 +56,20 @@ var propaganda_played: int = 0
 var game_over: bool = false
 var winner: String = ""
 
+## Ruolo di ogni Fazione: "player" (umano) o "bot" (Non-giocatore Calixto).
+## Default solitario classico: l'umano gioca il Governo contro 3 NP.
+var roles := {"government": "player", "m26": "bot", "directorio": "bot", "syndicate": "bot"}
+
+func is_player(fid: String) -> bool:
+	return String(roles.get(fid, "bot")) == "player"
+
+func is_bot(fid: String) -> bool:
+	return not is_player(fid)
+
+func set_role(fid: String, role: String) -> void:
+	roles[fid] = role
+	emit_signal("state_changed")
+
 ## Costruisce il mazzo: 48 Eventi divisi in 4 pile, 1 Propaganda mescolata in ciascuna.
 ## La Propaganda è rappresentata dal valore 0.
 func build_deck(short: bool = false) -> void:
@@ -564,6 +578,7 @@ func resolve_propaganda() -> Dictionary:
 	plog.append_array(propaganda.resources_phase())
 	plog.append_array(propaganda.support_phase())
 	plog.append_array(bot.propaganda_support())
+	plog.append_array(propaganda.redeploy_phase())
 	for line in plog:
 		emit_signal("action_logged", "📣 " + String(line), "")
 	if is_final:
