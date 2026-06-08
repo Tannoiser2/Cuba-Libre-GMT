@@ -762,7 +762,7 @@ func _render_log() -> void:
 			s += "  [url=%d][font_size=10][color=#7fb0ff]%s[/color][/font_size][/url]\n" % [i, ("▼ logica" if exp else "▶ logica")]
 			if exp:
 				for tl in e["tr"]:
-					s += "      [font_size=9][i][color=#9fb3c8]%s[/color][/i][/font_size]\n" % String(tl)
+					s += "      [font_size=9][color=#9fb3c8]%s[/color][/font_size]\n" % String(tl)
 		else:
 			s += "\n"
 	_log.text = s
