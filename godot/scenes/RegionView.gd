@@ -208,6 +208,13 @@ func _piece_groups(st: SpaceState, fid: String) -> Array:
 	return groups
 
 
+## Centro dello spazio in coordinate locali della mappa (cerchio per le città, anchor per le province).
+func center_point() -> Vector2:
+	if _circle.z >= 0.0:
+		return Vector2(_circle.x * size.x, _circle.y * size.y)
+	return Vector2(_anchor_norm.x * size.x, _anchor_norm.y * size.y)
+
+
 func set_highlight(on: bool) -> void:
 	_highlight = on
 	queue_redraw()

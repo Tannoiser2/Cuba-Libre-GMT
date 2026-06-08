@@ -182,6 +182,13 @@ func _build_ui() -> void:
 	_track_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_map.add_child(_track_overlay)
 
+	# Layer per le animazioni dei pezzi che si spostano (sopra tutto, non interattivo)
+	_anim_layer = Control.new()
+	_anim_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_anim_layer.z_index = 50
+	_map.add_child(_anim_layer)
+	_avail_box = _load_avail_boxes()
+
 	# Pannello laterale (destra)
 	_side = _build_side_panel()
 	add_child(_side)
@@ -457,6 +464,9 @@ func _layout_board() -> void:
 		_track_overlay.position = Vector2.ZERO
 		_track_overlay.size = base
 		_track_overlay.queue_redraw()
+	if _anim_layer != null:
+		_anim_layer.position = Vector2.ZERO
+		_anim_layer.size = base
 
 
 # ---------------------------------------------------------------------------
@@ -469,9 +479,15 @@ const ACTION_NAMES := {
 
 
 var _prev_fp: Dictionary = {}
+var _anim_layer: Control                  # layer per le animazioni dei pezzi
+var _prev_pc: Dictionary = {}             # conteggi precedenti "sid|faction|type" -> n
+var _avail_box: Dictionary = {}           # faction -> centro (normalizzato) del box Forze Disponibili
+const ANIM_SZ := 25.0
+const ANIM_DUR := 0.55
 
 
 func _refresh() -> void:
+	_animate_moves()
 	for sid in _space_views.keys():
 		_space_views[sid].refresh(GameController.state)
 	if _track_overlay != null:
@@ -479,6 +495,106 @@ func _refresh() -> void:
 	_flash_changes()
 	_refresh_turn_banner()
 	_refresh_side()
+
+
+## Centri normalizzati dei box "Forze Disponibili" (per animare piazzamenti/rimozioni).
+func _load_avail_boxes() -> Dictionary:
+	var out: Dictionary = {}
+	var data = JSON.parse_string(FileAccess.get_file_as_string("res://games/cuba_libre/data/board_layout.json"))
+	if typeof(data) != TYPE_DICTIONARY:
+		return out
+	var box: Dictionary = data.get("box", {})
+	for fid in ["government", "m26", "directorio", "syndicate"]:
+		var r = box.get("available_%s" % fid, null)
+		if r != null:
+			out[fid] = Vector2((r[0] + r[2]) * 0.5, (r[1] + r[3]) * 0.5)
+	return out
+
+
+## Anima i pezzi che si sono spostati dall'ultimo aggiornamento: da zona a zona, e
+## da/verso i box Forze Disponibili. Confronta i conteggi per (spazio, fazione, tipo).
+func _animate_moves() -> void:
+	if _anim_layer == null:
+		return
+	var s: GameState = GameController.state
+	var base: Vector2 = _map.size
+	# Nuovi conteggi
+	var nc: Dictionary = {}
+	for sid in _space_views.keys():
+		var st: SpaceState = s.space_state(sid)
+		for f in ["government", "m26", "directorio", "syndicate"]:
+			for t in ["troops", "police", "base", "guerrilla", "casino"]:
+				var n := st.count(f, t)
+				if n > 0:
+					nc["%s|%s|%s" % [sid, f, t]] = n
+	# Primo aggiornamento: memorizza soltanto.
+	if _prev_pc.is_empty():
+		_prev_pc = nc
+		return
+	# Raccoglie sorgenti e destinazioni per (fazione, tipo).
+	var ghosts: Array = []   # {f,t,from,to}
+	for f in ["government", "m26", "directorio", "syndicate"]:
+		var bc_norm: Vector2 = _avail_box.get(f, Vector2(0.5, 0.5))
+		var box_c := bc_norm * base
+		for t in ["troops", "police", "base", "guerrilla", "casino"]:
+			var sources: Array = []   # [sid, qty]
+			var dests: Array = []
+			for sid in _space_views.keys():
+				var key := "%s|%s|%s" % [sid, f, t]
+				var d: int = int(nc.get(key, 0)) - int(_prev_pc.get(key, 0))
+				if d < 0:
+					sources.append([sid, -d])
+				elif d > 0:
+					dests.append([sid, d])
+			# Accoppia sorgenti→destinazioni (movimento mappa→mappa); le restanti
+			# destinazioni vengono dal box Disponibili, le restanti sorgenti vi tornano.
+			var si := 0
+			var sleft := 0 if sources.is_empty() else int(sources[0][1])
+			for de in dests:
+				var dv: RegionView = _space_views[de[0]]
+				var dc := dv.center_point()
+				for _k in range(int(de[1])):
+					var from_pos := box_c
+					if si < sources.size():
+						var sv: RegionView = _space_views[sources[si][0]]
+						from_pos = sv.center_point()
+						sleft -= 1
+						if sleft <= 0:
+							si += 1
+							sleft = 0 if si >= sources.size() else int(sources[si][1])
+					ghosts.append({"f": f, "t": t, "from": from_pos, "to": dc})
+			while si < sources.size():
+				var rv: RegionView = _space_views[sources[si][0]]
+				var sc := rv.center_point()
+				for _k2 in range(sleft):
+					ghosts.append({"f": f, "t": t, "from": sc, "to": box_c})
+				si += 1
+				sleft = 0 if si >= sources.size() else int(sources[si][1])
+	_prev_pc = nc
+	# Troppi movimenti insieme (nuova partita / Propaganda): salta per non intasare.
+	if ghosts.size() > 30:
+		return
+	for g in ghosts:
+		_spawn_ghost(String(g["f"]), String(g["t"]), g["from"], g["to"])
+
+
+func _spawn_ghost(faction: String, type: String, from_pos: Vector2, to_pos: Vector2) -> void:
+	var g := TextureRect.new()
+	g.texture = CLAssets.piece(faction, type, "")
+	g.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	g.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	g.size = Vector2(ANIM_SZ, ANIM_SZ)
+	g.pivot_offset = g.size * 0.5
+	g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	g.position = from_pos - g.size * 0.5
+	g.scale = Vector2(1.3, 1.3)   # leggermente ingrandito per risaltare durante il volo
+	_anim_layer.add_child(g)
+	var tw := create_tween()
+	tw.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_property(g, "position", to_pos - g.size * 0.5, ANIM_DUR)
+	tw.parallel().tween_property(g, "scale", Vector2(1, 1), ANIM_DUR)
+	tw.parallel().tween_property(g, "modulate:a", 0.0, ANIM_DUR * 0.35).set_delay(ANIM_DUR * 0.65)
+	tw.tween_callback(g.queue_free)
 
 
 ## Lampeggia gli spazi il cui stato è cambiato dall'ultimo aggiornamento (feedback visivo).
