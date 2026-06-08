@@ -5,8 +5,8 @@ extends BotBrain
 ## Speciale) è guidata dalle carte Calixto (dati + interprete generico); l'ESECUZIONE usa le
 ## classi Operazioni/Attività Speciali con una selezione spazi semplificata limitata dall'AN.
 ##
-## NOTA: prima versione funzionante. La selezione spazi non usa ancora l'intera matrice
-## Space Selection Priorities (C8.5.6); usa euristiche legali. Da raffinare.
+## La selezione degli spazi usa la matrice Space Selection Priorities (C8.5.6) dai dati
+## (calixto_tables.json), inclusi i criteri condizionati al ruolo Giocatore ("player_<fac>:...").
 
 var state: GameState
 var mod: CubaLibreModule
@@ -186,6 +186,12 @@ func _explain_selection(applicable: Array, scored: Array) -> void:
 func _crit_value(crit: String, sid: String, faction: String) -> float:
 	var st: SpaceState = state.space_state(sid)
 	var sd: SpaceDef = state.game_def.space(sid)
+	# Criteri condizionati al ruolo Giocatore (C8.5.6): valgono solo se quella Fazione è umana
+	# (il NP dà priorità agli spazi del giocatore). La riga "a caso" è neutra (pareggio casuale).
+	if crit.begins_with("player_"):
+		return _player_crit_value(crit, sid, faction)
+	if crit == "select_at_random_from_remaining":
+		return 0.0
 	match crit:
 		"havana": return 1.0 if sid == "havana" else 0.0
 		"city": return 1.0 if sd.type == CoinEnums.SpaceType.CITY else 0.0
@@ -237,6 +243,22 @@ func _crit_value(crit: String, sid: String, faction: String) -> float:
 			var g2 := st.count("directorio", "guerrilla")
 			return 1.0 if g2 >= 1 and g2 <= 2 and mod.can_place_base(state, sid, false) else 0.0
 	return 0.0
+
+
+## Valore di un criterio "player_<fac>:<sotto>" (C8.5.6): attivo solo se <fac> è Giocatore.
+func _player_crit_value(crit: String, sid: String, faction: String) -> float:
+	var parts := crit.substr(7).split(":")   # es. "gov:gov_control" -> ["gov","gov_control"]
+	if parts.size() < 2:
+		return 0.0
+	var fac: String = {"gov": "government", "dr": "directorio", "26j": "m26", "syn": "syndicate"}.get(parts[0], "")
+	if fac == "" or String(state.roles.get(fac, "bot")) != "player":
+		return 0.0   # la Fazione non è umana: criterio non applicabile
+	var st: SpaceState = state.space_state(sid)
+	match String(parts[1]):
+		"gov_control": return 1.0 if st.control == "government" else 0.0
+		"dr_control": return 1.0 if st.control == "directorio" else 0.0
+		"most_opposition": return float(maxi(0, -st.support) * state.game_def.space(sid).pop)
+		_: return _crit_value(String(parts[1]), sid, faction)
 
 
 # ---------------------------------------------------------------------------
