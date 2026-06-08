@@ -94,6 +94,8 @@ var _turn_banner: Label
 var _btn_end: Button
 var _btn_pass: Button
 var _btn_bot: Button
+var _btn_auto: Button
+var _auto_bot := false                 # se true, i Bot giocano da soli; altrimenti aspettano il consenso
 var _role_btns: Dictionary = {}        # fid -> Button (toggle Giocatore/Bot)
 var _btn_ev_u: Button
 var _btn_ev_s: Button
@@ -367,6 +369,8 @@ func _build_action_bar() -> VBoxContainer:
 
 	_btn_bot = _mk_btn(" Gioca la fazione di turno", func(): GameController.bot_act_pending())
 	row2.add_child(_btn_bot)
+	_btn_auto = _mk_btn("Auto-Bot: OFF", _toggle_auto_bot)
+	row2.add_child(_btn_auto)
 	row2.add_child(_mk_btn("Tutti i Bot (questa carta)", _on_all_bots))
 	row2.add_child(_mk_btn("Auto: tutta la partita", func(): GameController.run_full_game_paced()))
 	row2.add_child(_mk_btn("Nuova Partita", _on_new_game))
@@ -783,14 +787,43 @@ func _rebuild_action_buttons(fid: String) -> void:
 		c.queue_free()
 	for sa in GameController.game_def.faction(fid).special_activities:
 		if SA_VARIANTS.has(sa):
+			# Un solo tasto a tendina che "esplode" le varianti (niente barra che va a capo).
+			var mb := _mk_menu_btn("%s..." % SA_NAMES.get(sa, sa))
+			mb.tooltip_text = SA_DESC.get(sa, "")
+			var pop := mb.get_popup()
+			var ids: Array = []
 			for v in SA_VARIANTS[sa]:
-				var vb: Button = _mk_btn(String(v["label"]), _do_special.bind(String(v["id"])))
-				vb.tooltip_text = SA_DESC.get(sa, "")
-				_sa_btns.add_child(vb)
+				pop.add_item(_variant_short(String(v["label"])))
+				ids.append(String(v["id"]))
+			pop.id_pressed.connect(func(i): _do_special(String(ids[i])))
+			_sa_btns.add_child(mb)
 		else:
 			var sb: Button = _mk_btn(SA_NAMES.get(sa, sa), _do_special.bind(sa))
 			sb.tooltip_text = SA_DESC.get(sa, "")
 			_sa_btns.add_child(sb)
+
+
+## Etichetta breve di una variante: il testo tra parentesi ("Corruzione (cubi)" -> "cubi").
+func _variant_short(label: String) -> String:
+	var a := label.find("(")
+	var b := label.rfind(")")
+	return label.substr(a + 1, b - a - 1) if a >= 0 and b > a else label
+
+
+## Tasto a tendina (MenuButton) con la stessa veste degli altri tasti.
+func _mk_menu_btn(text: String) -> MenuButton:
+	var b := MenuButton.new()
+	b.text = text
+	b.flat = false
+	b.add_theme_stylebox_override("normal", _btn_style(Color("2b3442"), Color("4a5666")))
+	b.add_theme_stylebox_override("hover", _btn_style(Color("3a4759"), Color("6f8197")))
+	b.add_theme_stylebox_override("pressed", _btn_style(Color("1d242e"), Color("4a5666")))
+	b.add_theme_stylebox_override("disabled", _btn_style(Color("222831"), Color("333b46")))
+	b.add_theme_color_override("font_color", Color("e6edf3"))
+	b.add_theme_color_override("font_hover_color", Color("ffffff"))
+	b.add_theme_color_override("font_disabled_color", Color("5b6571"))
+	b.add_theme_font_size_override("font_size", 12)
+	return b
 
 
 func _refresh_side() -> void:
@@ -1529,8 +1562,22 @@ func _update_role_btns() -> void:
 
 
 ## Tick automatico: se tocca a una Fazione Bot (e non sto scegliendo nulla), gioca da sola.
+func _toggle_auto_bot() -> void:
+	_auto_bot = not _auto_bot
+	_btn_auto.text = "Auto-Bot: ON" if _auto_bot else "Auto-Bot: OFF"
+	_accent_btn(_btn_auto, Color("2e7d46"), Color("57c97e")) if _auto_bot else _mk_btn_restyle(_btn_auto)
+
+
+## Riporta un tasto allo stile neutro standard.
+func _mk_btn_restyle(b: Button) -> void:
+	b.add_theme_stylebox_override("normal", _btn_style(Color("2b3442"), Color("4a5666")))
+	b.add_theme_stylebox_override("hover", _btn_style(Color("3a4759"), Color("6f8197")))
+	b.add_theme_stylebox_override("pressed", _btn_style(Color("1d242e"), Color("4a5666")))
+	b.add_theme_color_override("font_color", Color("e6edf3"))
+
+
 func _auto_bot_tick() -> void:
-	if GameController.game_over or _mode != "idle":
+	if not _auto_bot or GameController.game_over or _mode != "idle":
 		return
 	var s: GameState = GameController.state
 	if s == null or s.current_card <= 0:
