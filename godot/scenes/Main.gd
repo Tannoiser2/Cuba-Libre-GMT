@@ -315,23 +315,17 @@ func _build_side_panel() -> PanelContainer:
 	_card_label = RichTextLabel.new()
 	_card_label.bbcode_enabled = true
 	_card_label.fit_content = true
-	_card_label.custom_minimum_size = Vector2(330, 56)
+	_card_label.add_theme_font_size_override("normal_font_size", 12)
+	_card_label.custom_minimum_size = Vector2(330, 48)
 	vb.add_child(_card_label)
 	vb.add_child(HSeparator.new())
 
 	_faction_label = RichTextLabel.new()
 	_faction_label.bbcode_enabled = true
 	_faction_label.fit_content = true
-	_faction_label.custom_minimum_size = Vector2(330, 92)
+	_faction_label.add_theme_font_size_override("normal_font_size", 13)
+	_faction_label.custom_minimum_size = Vector2(330, 84)
 	vb.add_child(_faction_label)
-
-	vb.add_child(HSeparator.new())
-
-	_track_label = RichTextLabel.new()
-	_track_label.bbcode_enabled = true
-	_track_label.fit_content = true
-	_track_label.custom_minimum_size = Vector2(330, 92)
-	vb.add_child(_track_label)
 
 	vb.add_child(HSeparator.new())
 
@@ -508,26 +502,15 @@ func _refresh_side() -> void:
 	var nc: int = GameController.next_card()
 	_next_card_img.texture = CLAssets.card(nc) if nc >= 0 else null
 	_card_label.text = GameController.current_card_text()
+	# Progresso verso la vittoria (info NON ripetuta sulla plancia): valore/soglia per fazione.
 	var vic := GameController.victory()
-	var txt := "[b]Fazioni[/b]\n"
+	var txt := "[b]Progresso vittoria[/b]\n"
 	for f in GameController.game_def.factions:
 		var col := GameController.faction_color(f.id).to_html(false)
-		var elig := "Disp." if s.eligibility[f.id] == CoinEnums.Eligibility.ELIGIBLE else "Non disp."
-		var margin: int = vic[f.id].margin
-		txt += "[color=#%s]●[/color] %s — Ris %d · %s · margine %+d\n" % \
-			[col, f.short_name, s.get_resources(f.id), elig, margin]
+		var v: Dictionary = vic[f.id]
+		var won := " ✓" if v.get("won", false) else ""
+		txt += "[color=#%s]●[/color] %s: %+d%s\n" % [col, f.short_name, int(v.margin), won]
 	_faction_label.text = txt
-
-	var alliance: String = ["Solida", "Vacillante", "Embargo"][int(s.tracks.get("us_alliance", 0))]
-	_track_label.text = "[b]Tracciati[/b]\n" + \
-		"Totale Supporto: %d\nOpp + Basi (M26): %d\nDR Pop + Basi: %d\nCasinò aperti: %d\nAiuti: %d\nAlleanza USA: %s" % [
-			s.total_support(),
-			GameController.module.opposition_plus_bases(s),
-			GameController.module.dr_pop_plus_bases(s),
-			GameController.module.open_casinos(s),
-			int(s.tracks.get("aid", 0)),
-			alliance,
-		]
 
 
 func _on_log(text: String, faction: String = "") -> void:

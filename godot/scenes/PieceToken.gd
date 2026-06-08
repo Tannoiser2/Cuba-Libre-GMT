@@ -22,7 +22,7 @@ func setup(p_from: String, p_faction: String, p_type: String, p_state: String, l
 	if _tex != null:
 		icon = _tex
 		expand_icon = true
-		custom_minimum_size = Vector2(32, 32)
+		custom_minimum_size = Vector2(27, 27)
 		flat = true
 		# Niente padding/bordo del Button: i pezzi restano compatti e adiacenti.
 		var empty := StyleBoxEmpty.new()
