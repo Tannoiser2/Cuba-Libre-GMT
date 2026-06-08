@@ -182,6 +182,12 @@ func _build_ui() -> void:
 	_track_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_map.add_child(_track_overlay)
 
+	# Overlay frecce degli spostamenti in coda (anteprima del trascinamento)
+	_moves_overlay = MovesOverlay.new()
+	_moves_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_moves_overlay.z_index = 40
+	_map.add_child(_moves_overlay)
+
 	# Layer per le animazioni dei pezzi che si spostano (sopra tutto, non interattivo)
 	_anim_layer = Control.new()
 	_anim_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -392,7 +398,6 @@ func _build_side_panel() -> PanelContainer:
 	_card_label.bbcode_enabled = true
 	_card_label.fit_content = true
 	_card_label.add_theme_font_size_override("normal_font_size", 12)
-	_card_label.add_theme_font_override("italics_font", _italic_font())
 	_card_label.custom_minimum_size = Vector2(330, 48)
 	vb.add_child(_card_label)
 	vb.add_child(HSeparator.new())
@@ -410,11 +415,6 @@ func _build_side_panel() -> PanelContainer:
 	# Testo del log piccolo (override di tema = affidabile, non dipende dal bbcode).
 	for fs in ["normal_font_size", "bold_font_size", "italics_font_size", "bold_italics_font_size", "mono_font_size"]:
 		_log.add_theme_font_size_override(fs, 11)
-	# La font di default non ha una variante corsiva: ne creo una inclinando i glifi,
-	# così il tag [i] della logica del bot viene reso davvero in corsivo.
-	var itf := _italic_font()
-	_log.add_theme_font_override("italics_font", itf)
-	_log.add_theme_font_override("bold_italics_font", itf)
 	_log.meta_clicked.connect(_on_log_meta)
 	vb.add_child(_log)
 
@@ -470,6 +470,10 @@ func _layout_board() -> void:
 	if _anim_layer != null:
 		_anim_layer.position = Vector2.ZERO
 		_anim_layer.size = base
+	if _moves_overlay != null:
+		_moves_overlay.position = Vector2.ZERO
+		_moves_overlay.size = base
+		_update_moves_overlay()
 
 
 # ---------------------------------------------------------------------------
@@ -483,6 +487,7 @@ const ACTION_NAMES := {
 
 var _prev_fp: Dictionary = {}
 var _anim_layer: Control                  # layer per le animazioni dei pezzi
+var _moves_overlay: MovesOverlay          # frecce degli spostamenti in coda
 var _prev_pc: Dictionary = {}             # conteggi precedenti "sid|faction|type" -> n
 var _avail_box: Dictionary = {}           # faction -> centro (normalizzato) del box Forze Disponibili
 const ANIM_SZ := 26.0
@@ -734,14 +739,6 @@ func _on_bot_decision(text: String, faction: String, trace: Array) -> void:
 
 
 ## Font corsiva sintetica (la font di default non ne ha una): inclina i glifi.
-func _italic_font() -> FontVariation:
-	var ital := FontVariation.new()
-	ital.base_font = ThemeDB.fallback_font
-	# Costruttore (rotazione, scala, inclinazione, posizione): inclinazione = corsivo.
-	ital.variation_transform = Transform2D(0.0, Vector2.ONE, deg_to_rad(16.0), Vector2.ZERO)
-	return ital
-
-
 func _fmt_log_line(text: String, faction: String) -> String:
 	if faction != "":
 		var hex := GameController.faction_color(faction).to_html(false)
@@ -762,7 +759,7 @@ func _render_log() -> void:
 			s += "  [url=%d][font_size=10][color=#7fb0ff]%s[/color][/font_size][/url]\n" % [i, ("▼ logica" if exp else "▶ logica")]
 			if exp:
 				for tl in e["tr"]:
-					s += "      [font_size=9][i][color=#9fb3c8]%s[/color][/i][/font_size]\n" % String(tl)
+					s += "      [font_size=9][color=#9fb3c8]%s[/color][/font_size]\n" % String(tl)
 		else:
 			s += "\n"
 	_log.text = s
@@ -869,7 +866,23 @@ func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: St
 	var fn: String = GameController.game_def.space(from_id).name
 	var tn: String = GameController.game_def.space(to_id).name
 	_instr.text = "✓ In coda (%d): 1 %s da %s → %s — poi 'Esegui'" % [_pending_moves.size(), pn, fn, tn]
+	_update_moves_overlay()
 	_refresh_turn_banner()
+
+
+## Aggiorna le frecce di anteprima degli spostamenti in coda.
+func _update_moves_overlay() -> void:
+	if _moves_overlay == null:
+		return
+	var segs: Array = []
+	for m in _pending_moves:
+		var fi: String = m["from"]
+		var ti: String = m["to"]
+		if _space_views.has(fi) and _space_views.has(ti):
+			var fv: RegionView = _space_views[fi]
+			var tv: RegionView = _space_views[ti]
+			segs.append({"from": fv.center_point(), "to": tv.center_point()})
+	_moves_overlay.set_segments(segs)
 
 
 func _on_execute() -> void:
@@ -1046,6 +1059,7 @@ func _clear_pending() -> void:
 	_sa_from = ""
 	_sa_valid = []
 	_clear_highlights()
+	_update_moves_overlay()
 	_instr.text = ""
 
 

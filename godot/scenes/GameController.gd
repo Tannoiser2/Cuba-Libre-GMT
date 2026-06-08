@@ -426,7 +426,7 @@ func current_card_text() -> String:
 	elif c.is_momentum: tag = " · Momentum"
 	var tr := ""
 	if c.translation != "":
-		tr = "[i][font_size=11]%s[/font_size][/i]\n" % c.translation
+		tr = "[font_size=11]%s[/font_size]\n" % c.translation
 	return "[b]#%d %s[/b]%s\n%s%s\nCarte rimaste: %d" % [c.number, c.title, tag, tr, order, cards_left()]
 
 
