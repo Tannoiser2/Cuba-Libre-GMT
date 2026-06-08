@@ -291,7 +291,6 @@ func take_turn(faction: String, allow_special: bool = true, limited: bool = fals
 			_trace.append("-> giro: carta %s-%s%s (retro)" % [faction, letter, letter])
 			res = CalixtoEngine.walk(side, func(n): return _pred(n, faction), _trace)
 		if res["result"] == "draw":
-			_trace.append("-> pesco una nuova carta")
 			letter = deck.draw_next(faction)
 			continue
 		# res = op

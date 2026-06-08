@@ -879,10 +879,30 @@ func _render_log() -> void:
 			var exp: bool = e.get("exp", false)
 			s += " [url=%d][font_size=10][color=#7fb0ff]%s[/color][/font_size][/url]\n" % [i, ("[-] logica" if exp else "[+] logica")]
 			if exp:
+				var depth := 1   # livello base delle sotto-righe sotto una carta
 				for tl in e["tr"]:
-					s += "     [font_size=9][color=#9fb3c8]%s[/color][/font_size]\n" % String(tl)
-		else:
-			s += "\n"
+					var raw := String(tl)
+					# Indentazione "originale" (le sotto-priorità hanno spazi iniziali).
+					var lead := 0
+					while lead < raw.length() and raw[lead] == " ":
+						lead += 1
+					var line := raw.strip_edges()
+					if line == "":
+						continue
+					var extra := lead / 2
+					var lvl := depth
+					if line.begins_with("Carta Calixto"):
+						depth = 1
+						lvl = 0
+					elif line.begins_with("-> giro") or line.find("(retro)") != -1:
+						lvl = depth
+						depth += 1            # le condizioni del retro rientrano di più
+					elif line.begins_with("Operazione scelta") or line.begins_with("Attività Speciale") or line.begins_with("Nessuna Operazione"):
+						lvl = 0
+					var pad := "  ".repeat(lvl + extra)
+					s += "  [font_size=9][color=#9fb3c8]%s%s[/color][/font_size]\n" % [pad, line]
+			else:
+				s += "\n"
 	_log.text = s
 	_log.scroll_to_line(maxi(0, _log.get_line_count() - 1))
 
