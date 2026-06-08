@@ -530,8 +530,13 @@ func _refresh_side() -> void:
 		]
 
 
-func _on_log(text: String) -> void:
-	_log.append_text(text + "\n")
+func _on_log(text: String, faction: String = "") -> void:
+	if faction != "":
+		var hex := GameController.faction_color(faction).to_html(false)
+		var txt := "000000" if faction == "directorio" else "ffffff"
+		_log.append_text("[bgcolor=#%s] [color=#%s] %s [/color] [/bgcolor]\n" % [hex, txt, text])
+	else:
+		_log.append_text(text + "\n")
 
 
 # ---------------------------------------------------------------------------
