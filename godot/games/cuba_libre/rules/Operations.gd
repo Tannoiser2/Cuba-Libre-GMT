@@ -367,7 +367,7 @@ func march(params: Dictionary) -> Dictionary:
 	return _ok(cost, log)
 
 
-## Attack / Attacco (3.3.3) — solo M26/DR. params: { faction, spaces:[id], die_rolls?:{id:int} }
+## Attack / Attacco (3.3.3) - solo M26/DR. params: { faction, spaces:[id], die_rolls?:{id:int} }
 func attack(params: Dictionary) -> Dictionary:
 	var f: String = params.get("faction", "")
 	if f != "m26" and f != "directorio":
@@ -397,7 +397,7 @@ func attack(params: Dictionary) -> Dictionary:
 			var removed := mod.remove_enemy_pieces(state, sid, 2, f,
 				{"active_g": true, "underground_g": true, "cubes": true, "bases": true},
 				String(targets.get(sid, "")))
-			log.append("Attacco a %s (tiro %d ≤ %d): rimossi %d pezzi" % [sid, roll, num_g, removed])
+			log.append("Attacco a %s (tiro %d <= %d): rimossi %d pezzi" % [sid, roll, num_g, removed])
 			if roll == 1:
 				state.place_from_available(f, "guerrilla", sid, 1)
 				log.append("Beni catturati: +1 Guerriglia di %s a %s" % [f, sid])
@@ -452,7 +452,7 @@ func terror(params: Dictionary) -> Dictionary:
 	return _ok(cost, log)
 
 
-## Build / Costruzione (3.3.5) — solo Sindacato. params: { spaces:[id], choices:{id:"new"|"open"} }
+## Build / Costruzione (3.3.5) - solo Sindacato. params: { spaces:[id], choices:{id:"new"|"open"} }
 func build(params: Dictionary) -> Dictionary:
 	var spaces: Array = params.get("spaces", [])
 	if spaces.is_empty():

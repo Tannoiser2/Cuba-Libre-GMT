@@ -29,7 +29,7 @@ func setup(p_from: String, p_faction: String, p_type: String, p_state: String, l
 		for st in ["normal", "hover", "pressed", "focus", "disabled"]:
 			add_theme_stylebox_override(st, empty)
 		add_theme_constant_override("h_separation", 0)
-		tooltip_text = "%s — trascina per spostare 1 pezzo" % label
+		tooltip_text = "%s - trascina per spostare 1 pezzo" % label
 	else:
 		text = label
 		add_theme_font_size_override("font_size", 10)

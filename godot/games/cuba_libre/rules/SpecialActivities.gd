@@ -230,7 +230,7 @@ func assassinate(params: Dictionary) -> Dictionary:
 		# "senza badare alla Polizia": nessun confronto Guerriglie/Polizia
 	elif st.count(faction, "guerrilla") <= st.count("government", "police"):
 		return _err("Assassinio: servono più Guerriglie di %s che Polizia a %s" % [faction, sid])
-	# Rimuove 1 qualsiasi pezzo nemico (anche una Base protetta) — niente protezione Basi
+	# Rimuove 1 qualsiasi pezzo nemico (anche una Base protetta) - niente protezione Basi
 	var removed := mod.remove_enemy_pieces(state, sid, 1, faction,
 		{"active_g": true, "underground_g": true, "cubes": true, "bases": false})
 	if removed == 0:
@@ -349,7 +349,7 @@ func bribe(params: Dictionary) -> Dictionary:
 		return _err("Servono 3 Risorse per la Corruzione")
 	var action: String = params.get("action", "cubes")
 	var count: int = clampi(int(params.get("count", 1)), 1, 2)
-	# Niente bersagli validi → l'azione non ha effetto: non eseguirla (e non spendere Risorse).
+	# Niente bersagli validi -> l'azione non ha effetto: non eseguirla (e non spendere Risorse).
 	if _bribe_targets(st, action) == 0:
 		return _err("Corruzione a %s: nessun bersaglio valido" % sid)
 	state.add_resources("syndicate", -3)

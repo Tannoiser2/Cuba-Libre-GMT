@@ -2,7 +2,7 @@ class_name TrackOverlay
 extends Control
 
 ## Disegna i segnalini sui tracciati e nelle caselle, usando le coordinate ESATTE estratte dal
-## modulo Vassal (board_layout.json): celle del tracciato perimetrale 0–49, caselle Available
+## modulo Vassal (board_layout.json): celle del tracciato perimetrale 0-49, caselle Available
 ## Forces, US Alliance, Eligible/Ineligible. Cilindri Risorse, Aiuti, marcatori di vittoria,
 ## Alleanza USA, pezzi disponibili e idoneità delle Fazioni.
 

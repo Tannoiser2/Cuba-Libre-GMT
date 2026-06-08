@@ -120,10 +120,10 @@ func _ok(log: Array) -> Dictionary: return {"ok": true, "log": log}
 
 
 # ===========================================================================
-# GESTORI EVENTI 1–48
+# GESTORI EVENTI 1-48
 # ===========================================================================
 
-## #1 Armored Cars — Momentum (shaded). Unshaded: 26July/DR Imboscata gratuita.
+## #1 Armored Cars - Momentum (shaded). Unshaded: 26July/DR Imboscata gratuita.
 func _ev_1(side, faction, params):
 	if side == "shaded":
 		return _ok(["Armored Cars: Momentum (Truppe verso spazi di Assalto fino a Propaganda)"])
@@ -135,7 +135,7 @@ func _ev_1(side, faction, params):
 			return _ok(["Armored Cars: Imboscata gratuita di %s a %s" % [f, sid]])
 	return _ok(["Armored Cars: nessuna Imboscata possibile"])
 
-## #2 Guantánamo Bay — Chiaro: Capacità (26J Sequestra a Sierra Maestra come Città).
+## #2 Guantánamo Bay - Chiaro: Capacità (26J Sequestra a Sierra Maestra come Città).
 ## Ombr.: Momentum del Governo (Attacco Aereo rimuove 2 pezzi fino a Propaganda).
 func _ev_2(side, faction, params):
 	if side == "unshaded":
@@ -163,7 +163,7 @@ func _ev_3(side, faction, params):
 			return _ok(["Eulogio Cantillo: Sweep+Assalto gratis a %s (rimossi %d)" % [sp[0], r]])
 		return _ok(["Eulogio Cantillo: nessuno spazio con Truppe"])
 
-## #4 S.I.M. — Momentum (shaded). Unshaded: rimuovi Supporto da spazio senza Polizia.
+## #4 S.I.M. - Momentum (shaded). Unshaded: rimuovi Supporto da spazio senza Polizia.
 func _ev_4(side, faction, params):
 	if side == "shaded":
 		return _ok(["S.I.M.: Momentum (Polizia agisce come Truppe fino a Propaganda)"])
@@ -173,7 +173,7 @@ func _ev_4(side, faction, params):
 			return _ok(["S.I.M.: rimosso Supporto da %s" % sid])
 	return _ok(["S.I.M.: nessun bersaglio"])
 
-## #5 Rolando Masferrer — Momentum (shaded). Unshaded: 1 Provincia con Truppe + 1 adiacente a Opp Passiva.
+## #5 Rolando Masferrer - Momentum (shaded). Unshaded: 1 Provincia con Truppe + 1 adiacente a Opp Passiva.
 func _ev_5(side, faction, params):
 	if side == "shaded":
 		return _ok(["Rolando Masferrer: Momentum (Sweep può Assaltare gratis)"])
@@ -186,7 +186,7 @@ func _ev_5(side, faction, params):
 			return _ok(["Rolando Masferrer: %s e 1 adiacente a Opp Passiva" % sid])
 	return _ok(["Rolando Masferrer: nessuna Provincia con Truppe"])
 
-## #6 Sánchez Mosquera — Momentum (shaded). Unshaded: rimuovi tutte le Truppe da una Montagna.
+## #6 Sánchez Mosquera - Momentum (shaded). Unshaded: rimuovi tutte le Truppe da una Montagna.
 func _ev_6(side, faction, params):
 	if side == "shaded":
 		return _ok(["Sánchez Mosquera: Momentum (Assalto tratta Montagna come Città)"])
@@ -213,7 +213,7 @@ func _ev_8(side, faction, params):
 	if side == "unshaded":
 		var log := []
 		for c in _cities():
-			_shift(c, -1)  # verso Neutrale (se Supporto) — semplificato verso Opp
+			_shift(c, -1)  # verso Neutrale (se Supporto) - semplificato verso Opp
 			_place_g(faction, c, 1)
 		return _ok(["General Strike: Città spostate verso Neutrale + 1 Guerriglia ciascuna"])
 	var t := _pick(_cities(), params)
@@ -238,7 +238,7 @@ func _ev_9(side, faction, params):
 	_alliance(false)
 	return _ok(["Coup: DR attivati/assaltati nelle Città, Alleanza -1"])
 
-## #10 MAP — Momentum (shaded). Unshaded: sostituisci 1 cubo con 2 Guerriglie.
+## #10 MAP - Momentum (shaded). Unshaded: sostituisci 1 cubo con 2 Guerriglie.
 func _ev_10(side, faction, params):
 	if side == "shaded":
 		return _ok(["MAP: Momentum (Govt accompagna LimOp con Att. Speciale gratis)"])
@@ -282,7 +282,7 @@ func _ev_12(side, faction, params):
 	state.add_resources("government", mini(6, int(state.tracks.get("aid", 0))))
 	return _ok(["BRAC: +1 Polizia a %s, Govt +min(6,Aiuti)" % t])
 
-## #13 El Che — Capacità (registrata).
+## #13 El Che - Capacità (registrata).
 func _ev_13(side, faction, params):
 	return _ok(["El Che: Capacità registrata (1º gruppo che Marcia resta Clandestino)"])
 
@@ -330,7 +330,7 @@ func _ev_17(side, faction, params):
 	state.eligibility["m26"] = CoinEnums.Eligibility.INELIGIBLE
 	return _ok(["Alberto Bayo: tutte le Guerriglie 26July Attive, 26July Non Disponibile"])
 
-## #18 Pact of Caracas — Capacità (registrata). Esecutore resta Disponibile.
+## #18 Pact of Caracas - Capacità (registrata). Esecutore resta Disponibile.
 func _ev_18(side, faction, params):
 	state.eligibility[faction] = CoinEnums.Eligibility.ELIGIBLE
 	return _ok(["Pact of Caracas: Capacità registrata; esecutore resta Disponibile"])
@@ -390,7 +390,7 @@ func _ev_21(side, faction, params):
 			done += 1
 	return _ok(["Fangio: %d Casinò aperti/Denaro" % done])
 
-## #22 Raúl — Momentum (shaded) / unshaded capacità reroll (registrata via testo).
+## #22 Raúl - Momentum (shaded) / unshaded capacità reroll (registrata via testo).
 func _ev_22(side, faction, params):
 	return _ok(["Raúl: effetto duraturo registrato"])
 
@@ -420,7 +420,7 @@ func _ev_24(side, faction, params):
 		if _st(c).count("m26") > 0:
 			_st(c).pieces.erase("m26")
 			return _ok(["Vilma Espín: rimossi i pezzi 26July da %s" % c])
-	return _ok(["Vilma Espín: nessun pezzo 26July in Città (≠Havana)"])
+	return _ok(["Vilma Espín: nessun pezzo 26July in Città (!=Havana)"])
 
 ## #25 Escapade
 func _ev_25(side, faction, params):
@@ -460,7 +460,7 @@ func _ev_27(side, faction, params):
 	state.add_resources("directorio", -3)
 	return _ok(["Echeverría: rimossi %d pezzi DR, DR -3" % removed])
 
-## #28 Morgan — Capacità (registrata). Shaded: spazio con Guerriglia DR a Supporto Attivo.
+## #28 Morgan - Capacità (registrata). Shaded: spazio con Guerriglia DR a Supporto Attivo.
 func _ev_28(side, faction, params):
 	if side == "unshaded":
 		return _ok(["Morgan: Capacità registrata (DR Marcia 2 spazi)"])
@@ -480,7 +480,7 @@ func _ev_29(side, faction, params):
 			return _ok(["Fauré Chomón: 1 pezzo DR -> 26July a %s" % sid])
 	return _ok(["Fauré Chomón: nessun pezzo DR"])
 
-## #30 The Guerrilla Life — Capacità (registrata). Shaded: gira DR Clandestine + 1 in Città.
+## #30 The Guerrilla Life - Capacità (registrata). Shaded: gira DR Clandestine + 1 in Città.
 func _ev_30(side, faction, params):
 	if side == "unshaded":
 		return _ok(["The Guerrilla Life: Capacità registrata (Rally 26July gira Clandestine)"])
@@ -533,7 +533,7 @@ func _ev_34(side, faction, params):
 	state.add_resources("government", mini(8, int(state.tracks.get("aid", 0)))); _aid(8)
 	return _ok(["US Speaking Tour: Govt +min(8,Aiuti), Aiuti +8"])
 
-## #35 Defections — sostituisci 2 pezzi nemici con i propri (faction esecutore).
+## #35 Defections - sostituisci 2 pezzi nemici con i propri (faction esecutore).
 func _ev_35(side, faction, params):
 	var enemies := ["government", "m26", "directorio", "syndicate"]; enemies.erase(faction)
 	for sid in _ids():
@@ -640,7 +640,7 @@ func _ev_42(side, faction, params):
 	if mod.can_place_base(state, t, true): state.place_from_available("syndicate", "casino", t, 1, "open")
 	return _ok(["Llano: %s senza Opposizione + Casinò aperto" % t])
 
-## #43 Mafia Offensive — Capacità (shaded registrata). Unshaded: LimOp gratis usando 1 pezzo Sindacato.
+## #43 Mafia Offensive - Capacità (shaded registrata). Unshaded: LimOp gratis usando 1 pezzo Sindacato.
 func _ev_43(side, faction, params):
 	if side == "shaded":
 		return _ok(["Mafia Offensive: Capacità registrata (Sindacato può Assassinare)"])
@@ -709,7 +709,7 @@ func _ev_47(side, faction, params):
 	state.eligibility["directorio"] = CoinEnums.Eligibility.INELIGIBLE
 	return _ok(["Pact of Miami: 26July e DR -3 e Non Disponibili"])
 
-## #48 Santo Trafficante Jr — Capacità (shaded registrata). Unshaded: Sindacato -10, Guerriglie Attive.
+## #48 Santo Trafficante Jr - Capacità (shaded registrata). Unshaded: Sindacato -10, Guerriglie Attive.
 func _ev_48(side, faction, params):
 	if side == "unshaded":
 		state.add_resources("syndicate", -10)

@@ -9,8 +9,8 @@ enum SpaceType {
 	PROVINCE,   ## Provincia/area rurale (con Popolazione)
 	CITY,       ## Città (con Popolazione)
 	ECONOMIC,   ## Centro Economico / risorsa (con valore Econ, senza Popolazione)
-	LOC,        ## Line of Communication (strade/ferrovie/fiumi) — altri giochi COIN
-	COUNTRY,    ## Spazio "estero"/extra-mappa — altri giochi COIN
+	LOC,        ## Line of Communication (strade/ferrovie/fiumi) - altri giochi COIN
+	COUNTRY,    ## Spazio "estero"/extra-mappa - altri giochi COIN
 }
 
 ## Categoria generica di pezzo.
