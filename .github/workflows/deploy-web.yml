@@ -62,6 +62,9 @@ jobs:
 
   deploy:
     needs: build
+    # GitHub Pages pubblica solo dal branch di default: sugli altri branch
+    # si esegue solo la build (CI), evitando un falso "deploy fallito".
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
