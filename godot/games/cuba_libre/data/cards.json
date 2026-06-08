@@ -15,7 +15,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Armored Cars\n\nIn rebel service:\n26July or DR free Marches\ninto a space and free Ambushes there\n(even if Active).\n\nDelivered:\nUntil Propaganda, before Assault,\nmove Troops to Assault spaces\nfrom other spaces.\n\nGOVERNMENT MOMENTUM"
+      "text_raw": "Armored Cars\n\nIn rebel service:\n26July or DR free Marches\ninto a space and free Ambushes there\n(even if Active).\n\nDelivered:\nUntil Propaganda, before Assault,\nmove Troops to Assault spaces\nfrom other spaces.\n\nGOVERNMENT MOMENTUM",
+      "it": "Chiaro: 26J o DR Marcia gratis in uno spazio e vi fa Imboscata gratis (anche se Attiva).\nOmbr.: Fino a Propaganda, prima dell'Assalto sposta Truppe negli spazi d'Assalto da altri spazi. [Momentum Governo]"
     },
     {
       "number": 2,
@@ -30,7 +31,8 @@
       "capability": true,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Guantanamo Bay\n\nINSURGENT CAPABILITY\n\nBase personnel targeted:\n26July may Kidnap in\nSierra Maestra as if City.\n\nUS airfield:\n\nUntil Propaganda,\n\nAir Strike removes 2 pieces and\nGOVERNMENT MOMENTUM"
+      "text_raw": "Guantanamo Bay\n\nINSURGENT CAPABILITY\n\nBase personnel targeted:\n26July may Kidnap in\nSierra Maestra as if City.\n\nUS airfield:\n\nUntil Propaganda,\n\nAir Strike removes 2 pieces and\nGOVERNMENT MOMENTUM",
+      "it": "Chiaro: [Capacità Insorgente] 26J può fare Sequestro a Sierra Maestra come fosse Città.\nOmbr.: Fino a Propaganda l'Attacco Aereo rimuove 2 pezzi. [Momentum Governo]"
     },
     {
       "number": 3,
@@ -45,7 +47,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Eulogio Cantillo\n\nGeneral seals truce:\n\nSelect a space with Troops. A Faction\nfree Marches all its Guerrillas out,\nthen flips them Underground.\n\nDictator backs general's offensive:\nSelect a Province or City with\n\nTroops. They free Sweep in place,\nthen free Assault."
+      "text_raw": "Eulogio Cantillo\n\nGeneral seals truce:\n\nSelect a space with Troops. A Faction\nfree Marches all its Guerrillas out,\nthen flips them Underground.\n\nDictator backs general's offensive:\nSelect a Province or City with\n\nTroops. They free Sweep in place,\nthen free Assault.",
+      "it": "Chiaro: Scegli uno spazio con Truppe: una Fazione Marcia gratis fuori tutte le sue Guerriglie e poi le rende Clandestine.\nOmbr.: Scegli Provincia/Città con Truppe: Perlustrazione gratis sul posto e poi Assalto gratis."
     },
     {
       "number": 4,
@@ -60,7 +63,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Word of torture:\nRemove Support from\na space with no Police.\n\nMilitary intelligence gleans leads:\nUntil next Propaganda,\nPolice Sweep and Assault as if Troops.\nGOVERNMENT MOMENTUM"
+      "text_raw": "Word of torture:\nRemove Support from\na space with no Police.\n\nMilitary intelligence gleans leads:\nUntil next Propaganda,\nPolice Sweep and Assault as if Troops.\nGOVERNMENT MOMENTUM",
+      "it": "Chiaro: Rimuovi Supporto da uno spazio senza Polizia.\nOmbr.: Fino a Propaganda la Polizia fa Perlustrazione e Assalto come Truppe. [Momentum Governo]"
     },
     {
       "number": 5,
@@ -75,7 +79,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Rolando Masferrer\n\nBrutal commander:\n\nSet a Province with Troops\nand 1 adjacent Province to\n\nPassive Opposition.\n\nParamulitaries:\nSweep may free Assault 1 space as its\nSpecial Activity (until Propaganda).\nGOVERNMENT MOMENTUM"
+      "text_raw": "Rolando Masferrer\n\nBrutal commander:\n\nSet a Province with Troops\nand 1 adjacent Province to\n\nPassive Opposition.\n\nParamulitaries:\nSweep may free Assault 1 space as its\nSpecial Activity (until Propaganda).\nGOVERNMENT MOMENTUM",
+      "it": "Chiaro: Porta a Opposizione Passiva una Provincia con Truppe e 1 Provincia adiacente.\nOmbr.: La Perlustrazione può fare Assalto gratis in 1 spazio come Att.Speciale (fino a Propaganda). [Momentum Governo]"
     },
     {
       "number": 6,
@@ -90,7 +95,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Sanchez Mosquera\n\nPopular colonel wounded:\n\nRemove all Troops from\n\na Mountain space (to available).\n\nEffective army commander:\nUntil next Propaganda,\nAssault treats Mountain as City.\nGOVERNMENT MOMENTUM"
+      "text_raw": "Sanchez Mosquera\n\nPopular colonel wounded:\n\nRemove all Troops from\n\na Mountain space (to available).\n\nEffective army commander:\nUntil next Propaganda,\nAssault treats Mountain as City.\nGOVERNMENT MOMENTUM",
+      "it": "Chiaro: Rimuovi tutte le Truppe da uno spazio Montagna (al disponibile).\nOmbr.: Fino a Propaganda l'Assalto tratta la Montagna come Città. [Momentum Governo]"
     },
     {
       "number": 7,
@@ -105,7 +111,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Election\nPostponed! Rebel ranks grow:\nPlace 1 Guerrilla\nin each City.\n\nScheduled!\nBatista bows to US pressure:\nSet a City to Neutral.\nAid +10."
+      "text_raw": "Election\nPostponed! Rebel ranks grow:\nPlace 1 Guerrilla\nin each City.\n\nScheduled!\nBatista bows to US pressure:\nSet a City to Neutral.\nAid +10.",
+      "it": "Chiaro: Piazza 1 Guerriglia in ogni Città.\nOmbr.: Porta una Città a Neutrale. Aiuti +10."
     },
     {
       "number": 8,
@@ -120,7 +127,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "General Strike\n\nWidespread disruption:\nIn each City,\nshift 1 level toward Neutral\nand place any 1 Guerrilla.\n\nStrike fails, shops open:\nSet a City to Active Support and\nActivate all Guerrillas there.\nOpen any 1 closed Casino."
+      "text_raw": "General Strike\n\nWidespread disruption:\nIn each City,\nshift 1 level toward Neutral\nand place any 1 Guerrilla.\n\nStrike fails, shops open:\nSet a City to Active Support and\nActivate all Guerrillas there.\nOpen any 1 closed Casino.",
+      "it": "Chiaro: In ogni Città sposta 1 livello verso Neutrale e piazza 1 Guerriglia qualsiasi.\nOmbr.: Porta una Città a Supporto Attivo e attiva tutte le Guerriglie lì. Apri 1 Casinò chiuso."
     },
     {
       "number": 9,
@@ -135,7 +143,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Batista ousted!:\nShift all Govt Control\n\nspaces 1 level toward Neutral.\nUS Alliance up 1 box.\n\nUS-backed plot discovered:\nActivate and free Assault all\n\nDR pieces in Cities with cubes.\nUS Alliance down 1 box."
+      "text_raw": "Batista ousted!:\nShift all Govt Control\n\nspaces 1 level toward Neutral.\nUS Alliance up 1 box.\n\nUS-backed plot discovered:\nActivate and free Assault all\n\nDR pieces in Cities with cubes.\nUS Alliance down 1 box.",
+      "it": "Chiaro: Sposta tutti gli spazi a Controllo Govt 1 livello verso Neutrale. Alleanza USA +1.\nOmbr.: Attiva e fai Assalto gratis a tutti i pezzi DR nelle Città con cubi. Alleanza USA -1."
     },
     {
       "number": 10,
@@ -150,7 +159,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Arms shipment stolen:\nReplace a cube with\nany 2 Guerrillas.\n\nUS training:\n\nUntil Propaganda, Govt may\naccompany LimOps with a free\nSpecial Activity.\nGOVERNMENT MOMENTUM"
+      "text_raw": "Arms shipment stolen:\nReplace a cube with\nany 2 Guerrillas.\n\nUS training:\n\nUntil Propaganda, Govt may\naccompany LimOps with a free\nSpecial Activity.\nGOVERNMENT MOMENTUM",
+      "it": "Chiaro: Sostituisci un cubo con 2 Guerriglie qualsiasi.\nOmbr.: Fino a Propaganda il Govt può accompagnare le Op Limitate con un'Att.Speciale gratis. [Momentum Governo]"
     },
     {
       "number": 11,
@@ -165,7 +175,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Batista Flees\n\nUS forces dictator out:\nGovernment Resources -10.\nSelect and remove a die roll of Troops.\nUS Alliance 1 box up.\n\nAid +10. Government Redeploys\nas in Propaganda round."
+      "text_raw": "Batista Flees\n\nUS forces dictator out:\nGovernment Resources -10.\nSelect and remove a die roll of Troops.\nUS Alliance 1 box up.\n\nAid +10. Government Redeploys\nas in Propaganda round.",
+      "it": "Chiaro: Risorse Govt -10. Rimuovi (tiro di dado) Truppe. Alleanza USA +1.\nOmbr.: Aiuti +10. Il Governo Ridispiega come nel round Propaganda."
     },
     {
       "number": 12,
@@ -180,7 +191,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "BRAC\n\nAnti-subversion agency:\nRemove any 2 Guerrillas.\n\nCIA trains political police:\nPlace 1 Police anywhere.\nAdd lesser of +6 or Aid to\n\nGovernment Resources."
+      "text_raw": "BRAC\n\nAnti-subversion agency:\nRemove any 2 Guerrillas.\n\nCIA trains political police:\nPlace 1 Police anywhere.\nAdd lesser of +6 or Aid to\n\nGovernment Resources.",
+      "it": "Chiaro: Rimuovi 2 Guerriglie qualsiasi.\nOmbr.: Piazza 1 Polizia ovunque. Risorse Govt += minore tra +6 e Aiuti."
     },
     {
       "number": 13,
@@ -195,7 +207,8 @@
       "capability": true,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Inspired military leader:\nThe first group of Guerrillas\nto move on each 26July March\noperation flips Underground."
+      "text_raw": "Inspired military leader:\nThe first group of Guerrillas\nto move on each 26July March\noperation flips Underground.",
+      "it": "[Capacità Insorgente] Il primo gruppo di Guerriglie che si muove in ogni Marcia del 26J diventa Clandestino."
     },
     {
       "number": 14,
@@ -210,7 +223,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Operation Fisherman\n\n2\"4 Invasion:\n\nPlace a 26July Base and Guerrilla in\nPinar del Rio.\n\nLocals resent being drawn in:\nShift Pinar del Rio 2 levels toward\nActive Support."
+      "text_raw": "Operation Fisherman\n\n2\"4 Invasion:\n\nPlace a 26July Base and Guerrilla in\nPinar del Rio.\n\nLocals resent being drawn in:\nShift Pinar del Rio 2 levels toward\nActive Support.",
+      "it": "Chiaro: Piazza una Base e una Guerriglia 26J a Pinar del Río.\nOmbr.: Sposta Pinar del Río di 2 livelli verso Supporto Attivo."
     },
     {
       "number": 15,
@@ -225,7 +239,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Communist recruits:\nPlace 3 26July Guerrillas anywhere.\n\nSoviet influence suspected:\nAdd lesser of Aid or +10 to\n\nGovernment Resources.\n\nThen Aid +5."
+      "text_raw": "Communist recruits:\nPlace 3 26July Guerrillas anywhere.\n\nSoviet influence suspected:\nAdd lesser of Aid or +10 to\n\nGovernment Resources.\n\nThen Aid +5.",
+      "it": "Chiaro: Piazza 3 Guerriglie 26J ovunque.\nOmbr.: Risorse Govt += minore tra Aiuti e +10. Poi Aiuti +5."
     },
     {
       "number": 16,
@@ -240,7 +255,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Larrazabal\n\nVenezuelan junta supplies arms:\n\nPlace a 26July Base where there is a\n26July piece.\n\nCaracas cuts off shipments:\nRemove one 26July Base.\n26July Resources -3."
+      "text_raw": "Larrazabal\n\nVenezuelan junta supplies arms:\n\nPlace a 26July Base where there is a\n26July piece.\n\nCaracas cuts off shipments:\nRemove one 26July Base.\n26July Resources -3.",
+      "it": "Chiaro: Piazza una Base 26J dove c'è un pezzo 26J.\nOmbr.: Rimuovi una Base 26J. Risorse 26J -3."
     },
     {
       "number": 17,
@@ -255,7 +271,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Alberto Bayo\nVet trains guerrillas:\n26July or DR free Rallies in each space\nit has a Base (as if spaces Neutral).\n\nMexico blocks training\nby Cuban expat:\nAll 26July Guerrillas Active. 26July\nIneligible through next card."
+      "text_raw": "Alberto Bayo\nVet trains guerrillas:\n26July or DR free Rallies in each space\nit has a Base (as if spaces Neutral).\n\nMexico blocks training\nby Cuban expat:\nAll 26July Guerrillas Active. 26July\nIneligible through next card.",
+      "it": "Chiaro: 26J o DR fa Rally gratis in ogni spazio dove ha una Base (come fossero Neutrali).\nOmbr.: Tutte le Guerriglie 26J Attive. 26J Non Disponibile fino alla prossima carta."
     },
     {
       "number": 18,
@@ -270,7 +287,8 @@
       "capability": true,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Pact of Caracas\nINSURGENT CAPABILITY\n\nNo 26July or DR Ops or Special\nActivities that remove the other’s\npieces or affect placed Opposition.\n\nIf same player, mutual transfers\nallowed. If either removes 2? of its Bases\nat once, cancel Capability.\nExecuting Faction stays Eligible."
+      "text_raw": "Pact of Caracas\nINSURGENT CAPABILITY\n\nNo 26July or DR Ops or Special\nActivities that remove the other’s\npieces or affect placed Opposition.\n\nIf same player, mutual transfers\nallowed. If either removes 2? of its Bases\nat once, cancel Capability.\nExecuting Faction stays Eligible.",
+      "it": "[Capacità Insorgente] Niente Op/Att.Speciali di 26J o DR che rimuovono i pezzi dell'altro o toccano l'Opposizione piazzata. Stesso giocatore: trasferimenti reciproci. Se uno rimuove 2 sue Basi insieme, annulla la Capacità."
     },
     {
       "number": 19,
@@ -285,7 +303,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Sierra Maestra Manifesto\n\nFidel disdains elections or compromise:\n\nIn card Faction order,\neach Faction may place\n2 non-Casino pieces in a space\nwhere they already have a piece.\nExecuting Faction stays Eligible."
+      "text_raw": "Sierra Maestra Manifesto\n\nFidel disdains elections or compromise:\n\nIn card Faction order,\neach Faction may place\n2 non-Casino pieces in a space\nwhere they already have a piece.\nExecuting Faction stays Eligible.",
+      "it": "In ordine di carta, ogni Fazione può piazzare 2 pezzi non-Casinò in uno spazio dove ha già un pezzo. La Fazione che esegue resta Disponibile."
     },
     {
       "number": 20,
@@ -300,7 +319,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "The Twelve\n\nTale of survivors inspires movement:\nA Faction free Marches then free Rallies\nat a March destination.\n\nGranma travail presages\nsupply challenge:\nRemove 42 rounded up of any Guerrillas\nfrom the space with the most Guerrillas."
+      "text_raw": "The Twelve\n\nTale of survivors inspires movement:\nA Faction free Marches then free Rallies\nat a March destination.\n\nGranma travail presages\nsupply challenge:\nRemove 42 rounded up of any Guerrillas\nfrom the space with the most Guerrillas.",
+      "it": "Chiaro: Una Fazione Marcia gratis poi Rally gratis in una destinazione della Marcia.\nOmbr.: Rimuovi metà (arrot. per ecc.) delle Guerriglie dallo spazio con più Guerriglie."
     },
     {
       "number": 21,
@@ -315,7 +335,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Fangio\n26July seizes racer:\nShift a City\n1 level toward Active Opposition,\n2 levels if a 26July piece is there.\n\nFamous driver popularizes Cuba:\nIn 2 spaces with any Casinos, open a\nclosed Casino or place 1 Cash with a\n\nGuerrilla or cube."
+      "text_raw": "Fangio\n26July seizes racer:\nShift a City\n1 level toward Active Opposition,\n2 levels if a 26July piece is there.\n\nFamous driver popularizes Cuba:\nIn 2 spaces with any Casinos, open a\nclosed Casino or place 1 Cash with a\n\nGuerrilla or cube.",
+      "it": "Chiaro: Sposta una Città 1 livello verso Opposizione Attiva (2 se c'è un pezzo 26J).\nOmbr.: In 2 spazi con Casinò, apri un Casinò chiuso o piazza 1 Denaro con una Guerriglia/cubo."
     },
     {
       "number": 22,
@@ -330,7 +351,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "5 Se A= OS —_\nSe es\n7, 4 ee\n4\nay\n\nYounger Castro an ace:\n\n26July may reroll each\nAttack or Kidnap.\n\nUS hostage-taking backfires:\nUntil Propaganda, add to Aid twice\nany Resources from Kidnap.\nGOVERNMENT MOMENTUM"
+      "text_raw": "5 Se A= OS —_\nSe es\n7, 4 ee\n4\nay\n\nYounger Castro an ace:\n\n26July may reroll each\nAttack or Kidnap.\n\nUS hostage-taking backfires:\nUntil Propaganda, add to Aid twice\nany Resources from Kidnap.\nGOVERNMENT MOMENTUM",
+      "it": "Chiaro: 26J può ritirare ogni Attacco o Sequestro.\nOmbr.: Fino a Propaganda, le Risorse da Sequestro si aggiungono agli Aiuti raddoppiate. [Momentum Governo]"
     },
     {
       "number": 23,
@@ -345,7 +367,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Clandestine radio reaches masses:\nShift ? Provinces each 1 level toward\nActive Opposition.\n\nTransmitter pinpointed:\nRemove a 26July Base from a Province."
+      "text_raw": "Clandestine radio reaches masses:\nShift ? Provinces each 1 level toward\nActive Opposition.\n\nTransmitter pinpointed:\nRemove a 26July Base from a Province.",
+      "it": "Chiaro: Sposta alcune Province di 1 livello verso Opposizione Attiva.\nOmbr.: Rimuovi una Base 26J da una Provincia."
     },
     {
       "number": 24,
@@ -360,7 +383,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Vilma Espin\nRevolutionary interlocutor:\n\nSet Sierra Maestra or an adjacent space\nto Active Opposition.\n\nRail's fiancé betrays urban guerrilla:\nRemove all 26July pieces from\na City other than Havana."
+      "text_raw": "Vilma Espin\nRevolutionary interlocutor:\n\nSet Sierra Maestra or an adjacent space\nto Active Opposition.\n\nRail's fiancé betrays urban guerrilla:\nRemove all 26July pieces from\na City other than Havana.",
+      "it": "Chiaro: Porta Sierra Maestra o uno spazio adiacente a Opposizione Attiva.\nOmbr.: Rimuovi tutti i pezzi 26J da una Città diversa da L'Avana."
     },
     {
       "number": 25,
@@ -375,7 +399,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Escapade\n\nYacht brings fighters:\nPlace a DR Guerrilla and Base in either\nCamagtiey Province or Oriente.\n\nResupply yacht intercepted:\nRemove a Directorio Base."
+      "text_raw": "Escapade\n\nYacht brings fighters:\nPlace a DR Guerrilla and Base in either\nCamagtiey Province or Oriente.\n\nResupply yacht intercepted:\nRemove a Directorio Base.",
+      "it": "Chiaro: Piazza una Guerriglia e una Base DR nella Provincia di Camagüey o a Oriente.\nOmbr.: Rimuovi una Base del Directorio."
     },
     {
       "number": 26,
@@ -390,7 +415,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Rodriguez Loeches\n\nDR Leader:\n\nDR places 1 Guerrilla anywhere\nand free Marches to, Rallies,\nor Ambushes there.\n\nInefficient administrator:\nRemove 1 DR Guerrilla.\nDR Resources -5."
+      "text_raw": "Rodriguez Loeches\n\nDR Leader:\n\nDR places 1 Guerrilla anywhere\nand free Marches to, Rallies,\nor Ambushes there.\n\nInefficient administrator:\nRemove 1 DR Guerrilla.\nDR Resources -5.",
+      "it": "Chiaro: Il DR piazza 1 Guerriglia ovunque e lì fa Marcia/Rally/Imboscata gratis.\nOmbr.: Rimuovi 1 Guerriglia DR. Risorse DR -5."
     },
     {
       "number": 27,
@@ -405,7 +431,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Echeverria\n\nNear-miss attempt on dictator's life:\nPlace 2 DR Guerrillas anywhere.\nHavana to Neutral. DR to Eligible.\n\nPopular revolutionary dies\nin his “hit at the top”:\n\nRemove the 2 DR pieces closest to\nHavana. DR Resources -3."
+      "text_raw": "Echeverria\n\nNear-miss attempt on dictator's life:\nPlace 2 DR Guerrillas anywhere.\nHavana to Neutral. DR to Eligible.\n\nPopular revolutionary dies\nin his “hit at the top”:\n\nRemove the 2 DR pieces closest to\nHavana. DR Resources -3.",
+      "it": "Chiaro: Piazza 2 Guerriglie DR ovunque. L'Avana a Neutrale. DR torna Disponibile.\nOmbr.: Rimuovi i 2 pezzi DR più vicini a L'Avana. Risorse DR -3."
     },
     {
       "number": 28,
@@ -420,7 +447,8 @@
       "capability": true,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "US Comandante:\n\nDR Guerrillas may\nMarch 2 adjacent spaces.\n\nBacklash against\nYanqui adventurer:\nSet a space with a DR Guerrilla\nto Active Support."
+      "text_raw": "US Comandante:\n\nDR Guerrillas may\nMarch 2 adjacent spaces.\n\nBacklash against\nYanqui adventurer:\nSet a space with a DR Guerrilla\nto Active Support.",
+      "it": "Chiaro: Le Guerriglie DR possono Marciare per 2 spazi adiacenti.\nOmbr.: Porta a Supporto Attivo uno spazio con una Guerriglia DR."
     },
     {
       "number": 29,
@@ -435,7 +463,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Fauré Chomon\nStudents take to the field:\n\nDR or 26July places a Base\nand 2? Guerrillas in Las Villas.\n\nStudent loyalties shift:\nRemove a DR piece or replace it\nwith its 26July counterpart."
+      "text_raw": "Fauré Chomon\nStudents take to the field:\n\nDR or 26July places a Base\nand 2? Guerrillas in Las Villas.\n\nStudent loyalties shift:\nRemove a DR piece or replace it\nwith its 26July counterpart.",
+      "it": "Chiaro: DR o 26J piazza una Base e 2 Guerriglie a Las Villas.\nOmbr.: Rimuovi un pezzo DR o sostituiscilo con l'omologo 26J."
     },
     {
       "number": 30,
@@ -450,7 +479,8 @@
       "capability": true,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "=\n\nThe Guerrilla Life\n\nINSURGENT CAPABILITY\nHardships harden 26July fighters:\nAll 26July Rallies flip Guerrillas\nUnderground, even if placing.\n\nHardships harden\nstudent revolutionaries:\nFlip all DR Guerrillas Underground.\nPlace 1 DR Guerrilla in a City."
+      "text_raw": "=\n\nThe Guerrilla Life\n\nINSURGENT CAPABILITY\nHardships harden 26July fighters:\nAll 26July Rallies flip Guerrillas\nUnderground, even if placing.\n\nHardships harden\nstudent revolutionaries:\nFlip all DR Guerrillas Underground.\nPlace 1 DR Guerrilla in a City.",
+      "it": "[Capacità Insorgente] Chiaro: Tutti i Rally 26J rendono Clandestine le Guerriglie, anche se piazzate.\nOmbr.: Rendi Clandestine tutte le Guerriglie DR. Piazza 1 Guerriglia DR in una Città."
     },
     {
       "number": 31,
@@ -465,7 +495,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Escopeteros\n\nLocals start their own revolution:\n\nPlace any non-Casino Base and\nany 1 Guerrilla into a Mountain.\n\nTraditionalist countryside\nrejects rebellion:\nShift a Mountain space 1 level\ntoward Active Support."
+      "text_raw": "Escopeteros\n\nLocals start their own revolution:\n\nPlace any non-Casino Base and\nany 1 Guerrilla into a Mountain.\n\nTraditionalist countryside\nrejects rebellion:\nShift a Mountain space 1 level\ntoward Active Support.",
+      "it": "Chiaro: Piazza una Base non-Casinò e 1 Guerriglia in una Montagna.\nOmbr.: Sposta uno spazio Montagna 1 livello verso Supporto Attivo."
     },
     {
       "number": 32,
@@ -480,7 +511,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Resistencia Civica\n\nUrban movement backs Castro:\nIn a City, replace all Directorio pieces\nwith 26July counterparts.\n\nMovement splits with Castro:\nIn a City, replace all 26July pieces\nwith Directorio counterparts."
+      "text_raw": "Resistencia Civica\n\nUrban movement backs Castro:\nIn a City, replace all Directorio pieces\nwith 26July counterparts.\n\nMovement splits with Castro:\nIn a City, replace all 26July pieces\nwith Directorio counterparts.",
+      "it": "Chiaro: In una Città sostituisci tutti i pezzi Directorio con omologhi 26J.\nOmbr.: In una Città sostituisci tutti i pezzi 26J con omologhi Directorio."
     },
     {
       "number": 33,
@@ -495,7 +527,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Carlos Prio\n\nEx-president funnels funds:\n+5 DR or +5 26July Resources.\n\nReturn from exile:\nSelect a space without Govt Control.\nPlace a DR Base there\nand set it to Neutral."
+      "text_raw": "Carlos Prio\n\nEx-president funnels funds:\n+5 DR or +5 26July Resources.\n\nReturn from exile:\nSelect a space without Govt Control.\nPlace a DR Base there\nand set it to Neutral.",
+      "it": "Chiaro: +5 Risorse DR oppure +5 Risorse 26J.\nOmbr.: Scegli uno spazio senza Controllo Govt: piazza lì una Base DR e portalo a Neutrale."
     },
     {
       "number": 34,
@@ -510,7 +543,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "US Speaking Tour\n\nExpatriates invest:\nAn Insurgent Faction adds a die roll in\nResources. Each other adds +2.\n\nAn embarrassment:\nAdd the lesser of +8 or Aid to\n\nGovernment Resources.\n\nThen Aid +8."
+      "text_raw": "US Speaking Tour\n\nExpatriates invest:\nAn Insurgent Faction adds a die roll in\nResources. Each other adds +2.\n\nAn embarrassment:\nAdd the lesser of +8 or Aid to\n\nGovernment Resources.\n\nThen Aid +8.",
+      "it": "Chiaro: Una Fazione Insorgente aggiunge un tiro di dado in Risorse; le altre +2.\nOmbr.: Risorse Govt += minore tra +8 e Aiuti. Poi Aiuti +8."
     },
     {
       "number": 35,
@@ -525,7 +559,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Defections\nDisillusioned fighters:\n\nIn a space already occupied by your\npieces and those of an enemy,\nreplace 2 of the enemy’s Guerrillas\nor cubes with your Guerrillas or cubes."
+      "text_raw": "Defections\nDisillusioned fighters:\n\nIn a space already occupied by your\npieces and those of an enemy,\nreplace 2 of the enemy’s Guerrillas\nor cubes with your Guerrillas or cubes.",
+      "it": "In uno spazio con tuoi pezzi e pezzi nemici, sostituisci 2 Guerriglie/cubi del nemico con tue Guerriglie/cubi."
     },
     {
       "number": 36,
@@ -540,7 +575,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Eloy Gutiérrez Menoyo\nInspiring DR leader:\nReplace a non-DR non-Casino piece\nwithin 1 space of Las Villas\nwith 2 DR Guerrillas.\n\nConunander fractious:\nReplace a Directorio Guerrilla\nwith a non-Directorio Guerrilla."
+      "text_raw": "Eloy Gutiérrez Menoyo\nInspiring DR leader:\nReplace a non-DR non-Casino piece\nwithin 1 space of Las Villas\nwith 2 DR Guerrillas.\n\nConunander fractious:\nReplace a Directorio Guerrilla\nwith a non-Directorio Guerrilla.",
+      "it": "Chiaro: Sostituisci un pezzo non-DR non-Casinò entro 1 spazio da Las Villas con 2 Guerriglie DR.\nOmbr.: Sostituisci una Guerriglia Directorio con una non-Directorio."
     },
     {
       "number": 37,
@@ -555,7 +591,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Herbert Matthews\n\nNYTimes refutes Fidel’s death:\n26July Resources +5. Aid -6.\n\nFidel’s survival spurs support\nto counterweights:\nAid +10.\nDirectorio Resources +3.\nSyndicate Resources +5."
+      "text_raw": "Herbert Matthews\n\nNYTimes refutes Fidel’s death:\n26July Resources +5. Aid -6.\n\nFidel’s survival spurs support\nto counterweights:\nAid +10.\nDirectorio Resources +3.\nSyndicate Resources +5.",
+      "it": "Chiaro: Risorse 26J +5. Aiuti -6.\nOmbr.: Aiuti +10. Risorse DR +3. Risorse Sindacato +5."
     },
     {
       "number": 38,
@@ -570,7 +607,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "nsky\n\nWheeler dealer:\n\nWithin a space, transfer any Cash\namong any Guerrillas or cubes.\n\nMaster mobster:\nSyndicate relocates any Casinos\nanywhere (within stacking).\nAll Casinos open."
+      "text_raw": "nsky\n\nWheeler dealer:\n\nWithin a space, transfer any Cash\namong any Guerrillas or cubes.\n\nMaster mobster:\nSyndicate relocates any Casinos\nanywhere (within stacking).\nAll Casinos open.",
+      "it": "Chiaro: Dentro uno spazio, trasferisci Denaro tra Guerriglie/cubi.\nOmbr.: Il Sindacato ricolloca i Casinò ovunque (entro l'impilamento). Tutti i Casinò aperti."
     },
     {
       "number": 39,
@@ -585,7 +623,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Turismo\n\n“Ugly American”:\nSupport 1 level toward Neutral\n\neach Casino space.\n\nPolice “protection” for tourists:\nGovt and Syndicate each add +3\nResources per space with open Casino\nand Police."
+      "text_raw": "Turismo\n\n“Ugly American”:\nSupport 1 level toward Neutral\n\neach Casino space.\n\nPolice “protection” for tourists:\nGovt and Syndicate each add +3\nResources per space with open Casino\nand Police.",
+      "it": "Chiaro: Sposta il Supporto di 1 livello verso Neutrale in ogni spazio con Casinò.\nOmbr.: Govt e Sindacato +3 Risorse ciascuno per ogni spazio con Casinò aperto e Polizia."
     },
     {
       "number": 40,
@@ -600,7 +639,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Ambassador Smith\nHavana advocate ignored in US:\n\nShift US Alliance 1 box down\n(leave Aid the same).\n\nBlindly backing dictator:\nShift US Alliance 1 box up. Aid +9.\nThen add lesser of +9 or half Aid\n(round down) to Syndicate Resources."
+      "text_raw": "Ambassador Smith\nHavana advocate ignored in US:\n\nShift US Alliance 1 box down\n(leave Aid the same).\n\nBlindly backing dictator:\nShift US Alliance 1 box up. Aid +9.\nThen add lesser of +9 or half Aid\n(round down) to Syndicate Resources.",
+      "it": "Chiaro: Alleanza USA -1 (lascia invariati gli Aiuti).\nOmbr.: Alleanza USA +1. Aiuti +9. Poi al Sindacato il minore tra +9 e metà Aiuti."
     },
     {
       "number": 41,
@@ -615,7 +655,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Casino-man Nicholas di Costanzo\ndraws US heat:\nClose 1 Casino or reduce Aid -8.\n\nMob enforcer:\nSyndicate free Ambushes with 1 of\nits Underground Guerrillas\nand opens 1 closed Casino."
+      "text_raw": "Casino-man Nicholas di Costanzo\ndraws US heat:\nClose 1 Casino or reduce Aid -8.\n\nMob enforcer:\nSyndicate free Ambushes with 1 of\nits Underground Guerrillas\nand opens 1 closed Casino.",
+      "it": "Chiaro: Chiudi 1 Casinò oppure Aiuti -8.\nOmbr.: Il Sindacato fa Imboscata gratis con 1 sua Guerriglia Clandestina e apre 1 Casinò chiuso."
     },
     {
       "number": 42,
@@ -630,7 +671,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Slums to armis:\nPlace a 26July Base and\nany Guerrilla in a City.\n\nUrban poor indifferent, eager for work:\nSelect a City. Remove any Opposition\nthere and place an open Casino."
+      "text_raw": "Slums to armis:\nPlace a 26July Base and\nany Guerrilla in a City.\n\nUrban poor indifferent, eager for work:\nSelect a City. Remove any Opposition\nthere and place an open Casino.",
+      "it": "Chiaro: Piazza una Base 26J e una Guerriglia qualsiasi in una Città.\nOmbr.: Scegli una Città: rimuovi l'Opposizione e piazza un Casinò aperto."
     },
     {
       "number": 43,
@@ -645,7 +687,8 @@
       "capability": true,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Mafia Offensive\n\nMob helps rebels:\n26July or DR executes a free LimOp,\ntreating 1 Syndicate piece as that\nFaction’s piece.\n\nHitmen:\nSyndicate may Assassinate as if DR,\nbut regardless of Police."
+      "text_raw": "Mafia Offensive\n\nMob helps rebels:\n26July or DR executes a free LimOp,\ntreating 1 Syndicate piece as that\nFaction’s piece.\n\nHitmen:\nSyndicate may Assassinate as if DR,\nbut regardless of Police.",
+      "it": "Chiaro: 26J o DR esegue un'Op Limitata gratis, trattando 1 pezzo del Sindacato come proprio.\nOmbr.: Il Sindacato può fare Assassinio come il DR, ma senza badare alla Polizia."
     },
     {
       "number": 44,
@@ -660,7 +703,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Rebel Air Force\n\nCaptured aircraft shocks troops:\nA 26July or DR Guerrilla (Active or not)\nfree Ambushes Government forces.\nRemove Bases first.\n\nRebels purchase but cannot\noperate aircraft:\nSelect 26July or DR and transfer 1 die\nroll of their Resources to Syndicate."
+      "text_raw": "Rebel Air Force\n\nCaptured aircraft shocks troops:\nA 26July or DR Guerrilla (Active or not)\nfree Ambushes Government forces.\nRemove Bases first.\n\nRebels purchase but cannot\noperate aircraft:\nSelect 26July or DR and transfer 1 die\nroll of their Resources to Syndicate.",
+      "it": "Chiaro: Una Guerriglia 26J o DR fa Imboscata gratis contro le Forze del Governo (rimuovi prima le Basi).\nOmbr.: Scegli 26J o DR e trasferisci al Sindacato un tiro di dado delle sue Risorse."
     },
     {
       "number": 45,
@@ -675,7 +719,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "a aati\nRival muscles into Cuba:\nClose all Casinos in Havana.\nSyndicate Resources -5.\n\nLansky rival whacked in New York:\nSyndicate Resources +10."
+      "text_raw": "a aati\nRival muscles into Cuba:\nClose all Casinos in Havana.\nSyndicate Resources -5.\n\nLansky rival whacked in New York:\nSyndicate Resources +10.",
+      "it": "Chiaro: Chiudi tutti i Casinò a L'Avana. Risorse Sindacato -5.\nOmbr.: Risorse Sindacato +10."
     },
     {
       "number": 46,
@@ -690,7 +735,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Sinatra\n\nOver-priced star:\n\nSyndicate Resources -6.\n\nFrankie's show:\nPlace an open Casino in Havana\nregardless of stacking.\nPlace 1 Cash with Police there."
+      "text_raw": "Sinatra\n\nOver-priced star:\n\nSyndicate Resources -6.\n\nFrankie's show:\nPlace an open Casino in Havana\nregardless of stacking.\nPlace 1 Cash with Police there.",
+      "it": "Chiaro: Risorse Sindacato -6.\nOmbr.: Piazza un Casinò aperto a L'Avana ignorando l'impilamento. Piazza 1 Denaro con la Polizia lì."
     },
     {
       "number": 47,
@@ -705,7 +751,8 @@
       "capability": false,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Pact of Miami\n\nSurprise for dictator and rebels:\nRemove 2 Guerrillas. Govt Ineligible\nthrough next card.\n\nAgreement causes confusion:\n26July and Directorio each lose -3\nResources and are Ineligible through\nnext card."
+      "text_raw": "Pact of Miami\n\nSurprise for dictator and rebels:\nRemove 2 Guerrillas. Govt Ineligible\nthrough next card.\n\nAgreement causes confusion:\n26July and Directorio each lose -3\nResources and are Ineligible through\nnext card.",
+      "it": "Chiaro: Rimuovi 2 Guerriglie. Govt Non Disponibile fino alla prossima carta.\nOmbr.: 26J e Directorio -3 Risorse ciascuno e Non Disponibili fino alla prossima carta."
     },
     {
       "number": 48,
@@ -720,7 +767,8 @@
       "capability": true,
       "unshaded": "",
       "shaded": "",
-      "text_raw": "Santo Trafficante Jr\n\nFeud with Lansky:\nSyndicate Resources -10.\nAll Syndicate Guerrillas to Active.\n\nOld-time mobster:\nAny Underground\nSyndicate Guerrillas\nblock Skim (6.2.3)."
+      "text_raw": "Santo Trafficante Jr\n\nFeud with Lansky:\nSyndicate Resources -10.\nAll Syndicate Guerrillas to Active.\n\nOld-time mobster:\nAny Underground\nSyndicate Guerrillas\nblock Skim (6.2.3).",
+      "it": "Chiaro: Risorse Sindacato -10. Tutte le Guerriglie Sindacato Attive.\nOmbr.: Le Guerriglie Clandestine del Sindacato bloccano lo Skim (6.2.3)."
     }
   ]
 }

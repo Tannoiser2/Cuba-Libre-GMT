@@ -393,7 +393,10 @@ func current_card_text() -> String:
 	var tag := ""
 	if c.is_capability: tag = " · Capacità"
 	elif c.is_momentum: tag = " · Momentum"
-	return "[b]#%d %s[/b]%s\n%s\nCarte rimaste: %d" % [c.number, c.title, tag, order, cards_left()]
+	var tr := ""
+	if c.translation != "":
+		tr = "[i][font_size=11]%s[/font_size][/i]\n" % c.translation
+	return "[b]#%d %s[/b]%s\n%s%s\nCarte rimaste: %d" % [c.number, c.title, tag, tr, order, cards_left()]
 
 
 ## Esegue un'Operazione per id e ne propaga il risultato/log.
