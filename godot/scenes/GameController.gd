@@ -74,6 +74,14 @@ func build_deck(short: bool = false) -> void:
 		p.shuffle()
 		for c in p:
 			state.draw_deck.append(int(c))
+	# La partita non deve aprirsi con una Propaganda (primo turno vuoto + doppia pesca
+	# con l'auto-avanzamento): se capita in cima, scambiala col primo Evento successivo.
+	if not state.draw_deck.is_empty() and state.draw_deck[0] == 0:
+		for i in range(1, state.draw_deck.size()):
+			if state.draw_deck[i] != 0:
+				state.draw_deck[0] = state.draw_deck[i]
+				state.draw_deck[i] = 0
+				break
 	propaganda_played = 0
 	game_over = false
 	winner = ""
