@@ -192,11 +192,12 @@ func take_turn(faction: String) -> Dictionary:
 			letter = deck.draw_next(faction)
 			continue
 		# Attività Speciale (prima fattibile)
-		_execute_special(faction, CalixtoEngine.specials_for(side, op_id))
+		var sa := _execute_special(faction, CalixtoEngine.specials_for(side, op_id))
 		state.recompute_all_control()
 		mod._refresh_victory_tracks(state)
 		_log.append("Calixto %s: carta %s → %s" % [faction, letter, op_def.get("type", op_id)])
-		return {"ok": true, "action": String(op_def.get("type", op_id)), "log": _log}
+		return {"ok": true, "action": String(op_def.get("type", op_id)),
+			"special": sa != "", "special_type": sa, "log": _log}
 	return _pass(faction)
 
 
@@ -638,10 +639,11 @@ func _most(faction: String, type: String) -> String:
 # Attività Speciali (prima fattibile della lista)
 # ---------------------------------------------------------------------------
 
-func _execute_special(faction: String, list: Array) -> void:
+func _execute_special(faction: String, list: Array) -> String:
 	for entry in list:
 		if _try_special(faction, entry):
-			return
+			return String(entry.get("sa", ""))
+	return ""
 
 
 func _try_special(faction: String, entry: Dictionary) -> bool:

@@ -38,6 +38,7 @@ func new_game(scenario: String = "standard") -> void:
 	propaganda = CubaLibrePropaganda.new(state, module)
 	events = CubaLibreEvents.new(state, module)
 	bot = CLCalixto.new(state, module)
+	stats = {}
 	build_deck()
 	draw_next()
 	emit_signal("state_changed")
@@ -174,40 +175,81 @@ func bot_act_pending() -> bool:
 	return true
 
 
+const _OP_IT := {"train": "Addestramento", "garrison": "Guarnigione", "sweep": "Perlustrazione",
+	"assault": "Assalto", "rally": "Riorganizzazione", "march": "Marcia", "attack": "Attacco",
+	"terror": "Terrorismo", "construct": "Costruzione", "build": "Costruzione"}
+const _SA_IT := {"transport": "Trasporto", "air_strike": "Attacco Aereo", "reprisal": "Rappresaglia",
+	"infiltrate": "Infiltrazione", "ambush": "Imboscata", "kidnap": "Sequestro",
+	"subvert": "Sovversione", "assassinate": "Assassinio", "profit": "Profitto",
+	"muscle": "Muscle", "bribe": "Corruzione"}
+
+## Conteggio azioni (per statistiche/simulazioni).
+var stats: Dictionary = {}
+
+
+func _count(key: String) -> void:
+	stats[key] = int(stats.get(key, 0)) + 1
+
+
 func _bot_take_pending() -> void:
 	var A := CoinEnums.ActionType
 	var fid := seq.pending_faction()
 	if fid == "":
 		return
+	var fname := faction_name(fid)
 	# Scelta Evento (Calixto): se l'Evento è legale e conviene, giocalo.
 	if seq.is_legal(A.EVENT) and state.current_card > 0:
 		var ec := bot.event_choice(fid, state.current_card)
 		if ec.get("play", false):
 			var side: String = ec["side"]
 			var eres := events.apply(state.current_card, side, fid)
+			emit_signal("action_logged", "%s → EVENTO (%s)" % [fname, side], fid)
 			for line in eres.get("log", []):
-				emit_signal("action_logged", "🤖 Evento (%s): %s" % [side, String(line)], fid)
+				emit_signal("action_logged", "    " + String(line), fid)
 			seq.act(A.EVENT)
+			_count("event")
 			return
-	# Tipo di Operazione legale per questo slot (se nessuno è legale, NON eseguire l'Operazione).
-	var t := -1
-	if seq.is_legal(A.OPERATION_WITH_SPECIAL):
-		t = A.OPERATION_WITH_SPECIAL
-	elif seq.is_legal(A.OPERATION):
-		t = A.OPERATION
-	elif seq.is_legal(A.LIMITED_OPERATION):
-		t = A.LIMITED_OPERATION
-	if t == -1:
-		# Solo Evento/Pass erano possibili: l'Evento non conveniva → Passa.
+	var can_full := seq.is_legal(A.OPERATION_WITH_SPECIAL)
+	var can_op := seq.is_legal(A.OPERATION)
+	var can_lim := seq.is_legal(A.LIMITED_OPERATION)
+	if not (can_full or can_op or can_lim):
+		emit_signal("action_logged", "%s → PASSA" % fname, fid)
 		seq.act_pass()
+		_count("pass")
 		return
 	var br := bot.take_turn(fid)
-	for line in br.get("log", []):
-		emit_signal("action_logged", "🤖 " + String(line), fid)
 	if br.get("action", "pass") == "pass":
+		emit_signal("action_logged", "%s → PASSA (nessuna Operazione legale)" % fname, fid)
 		seq.act_pass()
+		_count("pass")
 		return
+	var optype := String(br.get("action", ""))
+	var did_sa: bool = br.get("special", false)
+	# Tipo di azione: Op+SA solo se ha svolto un'Att.Speciale ed è legale; altrimenti Op (only).
+	var t := A.OPERATION
+	if did_sa and can_full:
+		t = A.OPERATION_WITH_SPECIAL
+	elif can_op:
+		t = A.OPERATION
+	elif can_lim:
+		t = A.LIMITED_OPERATION
+	elif can_full:
+		t = A.OPERATION_WITH_SPECIAL
+	var atype := "Operazione"
+	if t == A.OPERATION_WITH_SPECIAL:
+		atype = "Op+Att.Speciale"
+	elif t == A.LIMITED_OPERATION:
+		atype = "Op Limitata"
+	var label := "%s: %s" % [atype, _OP_IT.get(optype, optype)]
+	if t == A.OPERATION_WITH_SPECIAL:
+		label += " + " + String(_SA_IT.get(String(br.get("special_type", "")), br.get("special_type", "")))
+	emit_signal("action_logged", "%s → %s" % [fname, label], fid)
+	for line in br.get("log", []):
+		emit_signal("action_logged", "    " + String(line), fid)
 	seq.act(t)
+	_count("op:" + optype)
+	if t == A.OPERATION_WITH_SPECIAL:
+		_count("sa:" + String(br.get("special_type", "")))
 
 
 ## Dopo una decisione (Op/Pass/Evento): aggiorna stato; a carta conclusa, chiude e pesca.
