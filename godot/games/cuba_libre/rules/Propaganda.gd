@@ -21,11 +21,14 @@ func _init(p_state: GameState, p_module: CubaLibreModule) -> void:
 # ---------------------------------------------------------------------------
 
 ## Restituisce { "winner": faction_id|"" , "status": {...} }.
-func victory_phase() -> Dictionary:
+func victory_phase(is_final: bool = true) -> Dictionary:
 	var status := mod.victory_status(state)
 	var winners: Array = []
 	for fid in status.keys():
 		if status[fid].get("won", false):
+			# Calixto C8.5.9 (Victory): un umano (giocatore) vince solo all'ultima Propaganda.
+			if not is_final and String(state.roles.get(fid, "player")) == "player":
+				continue
 			winners.append(fid)
 	var winner := ""
 	if winners.size() == 1:
@@ -62,17 +65,21 @@ func resources_phase(cash_policy: Dictionary = {}) -> Array:
 		if sd.is_economic() and state.space_state(sid).marker("sabotage") == 0:
 			econ += sd.econ
 	var aid := int(state.tracks.get("aid", 0))
-	state.add_resources("government", econ + aid)
-	log.append("Entrate Governo: +%d (Econ %d + Aiuti %d)" % [econ + aid, econ, aid])
+	# Calixto C8.5.9: niente Entrate per le Fazioni NP (bot) GOV/DR/26J.
+	if state.tracks_resources("government"):
+		state.add_resources("government", econ + aid)
+		log.append("Entrate Governo: +%d (Econ %d + Aiuti %d)" % [econ + aid, econ, aid])
 
 	# 6.2.2 Entrate Insorgenti
 	var m26_inc := state.base_count("m26")
-	state.add_resources("m26", m26_inc)
+	if state.tracks_resources("m26"):
+		state.add_resources("m26", m26_inc)
 	var dr_spaces := 0
 	for sid in state.game_def.space_ids():
 		if state.space_state(sid).count("directorio") > 0:
 			dr_spaces += 1
-	state.add_resources("directorio", dr_spaces)
+	if state.tracks_resources("directorio"):
+		state.add_resources("directorio", dr_spaces)
 	var syn_inc := 0
 	for sid in state.game_def.space_ids():
 		var sd: SpaceDef = state.game_def.space(sid)
@@ -159,64 +166,111 @@ func support_phase() -> Array:
 # Redeploy del Governo (C8.5.9): consolida le forze
 # ---------------------------------------------------------------------------
 
-## Porta le Truppe da EC e Province senza Base GOV verso gli spazi a Controllo GOV
-## (Città e Province con Base) e mette 1 Polizia in ogni spazio a Controllo GOV che ne
-## è privo (prendendola da spazi con Polizia in eccesso). Scelta vantaggiosa per il GOV.
+## Esegue i 4 passi del Redeploy NP GOV (C8.5.9), nell'ordine:
+##  1) 1 Polizia in ogni spazio a Controllo GOV;
+##  2) Polizia per superare gli Insorgenti nelle Province a Controllo GOV senza Base;
+##  3) Polizia = Guerriglie negli EC (Econ più alto prima);
+##  4) Truppe da Province senza Base GOV e dagli EC verso spazi a Controllo GOV
+##     (solo Città e Province con Base), distribuite il più equamente possibile.
+## La Polizia si muove dagli spazi che ne hanno di più (un pezzo alla volta).
 func redeploy_phase() -> Array:
 	var log: Array = []
-	var dests: Array = []
-	for sid in state.game_def.space_ids():
-		var sd: SpaceDef = state.game_def.space(sid)
-		var st: SpaceState = state.space_state(sid)
-		if st.control == "government" and (sd.type == CoinEnums.SpaceType.CITY or st.count("government", "base") > 0):
-			dests.append(sid)
-	if dests.is_empty():
+	var ctrl := _gov_control_spaces()
+	if ctrl.is_empty():
 		return log
-	var moved_t := 0
-	for sid in state.game_def.space_ids():
-		if dests.has(sid):
-			continue
+	# Passo 1
+	for sid in ctrl:
+		if state.space_state(sid).count("government", "police") == 0:
+			_pull_police_to(sid)
+	# Passo 2
+	for sid in ctrl:
 		var sd: SpaceDef = state.game_def.space(sid)
-		var st: SpaceState = state.space_state(sid)
-		var t := st.count("government", "troops")
-		if t > 0 and (sd.is_economic() or (sd.type == CoinEnums.SpaceType.PROVINCE and st.count("government", "base") == 0)):
-			state.move_pieces("government", "troops", sid, _nearest_dest(sid, dests), t, "")
-			moved_t += t
-	if moved_t > 0:
-		log.append("Redeploy: %d Truppe consolidate negli spazi a Controllo GOV" % moved_t)
-	var placed_p := 0
-	for sid in dests:
-		if state.space_state(sid).count("government", "police") > 0:
-			continue
-		var src := _most_police_space(sid)
-		if src != "":
-			state.move_pieces("government", "police", src, sid, 1, "")
-			placed_p += 1
-	if placed_p > 0:
-		log.append("Redeploy: %d Polizia ridistribuita per il Controllo" % placed_p)
+		if sd.type == CoinEnums.SpaceType.PROVINCE and state.space_state(sid).count("government", "base") == 0:
+			var g := 0
+			while _gov_cubes(sid) <= _insurgent_forces(sid) and g < 12:
+				if not _pull_police_to(sid):
+					break
+				g += 1
+	# Passo 3
+	var ecs := Array(state.game_def.space_ids()).filter(func(s): return state.game_def.space(s).is_economic())
+	ecs.sort_custom(func(a, b): return state.game_def.space(a).econ > state.game_def.space(b).econ)
+	for ec in ecs:
+		var g := 0
+		while state.space_state(ec).count("government", "police") < _ec_guerrillas(ec) and g < 12:
+			if not _pull_police_to(ec):
+				break
+			g += 1
+	# Passo 4
+	var dests: Array = []
+	for s in ctrl:
+		if state.game_def.space(s).type == CoinEnums.SpaceType.CITY or state.space_state(s).count("government", "base") > 0:
+			dests.append(s)
+	var moved := 0
+	if not dests.is_empty():
+		# Sorgenti: prima le Province senza Base GOV, poi gli EC.
+		var sources: Array = []
+		for sid in state.game_def.space_ids():
+			if dests.has(sid):
+				continue
+			var sd: SpaceDef = state.game_def.space(sid)
+			var st: SpaceState = state.space_state(sid)
+			if st.count("government", "troops") == 0:
+				continue
+			if sd.type == CoinEnums.SpaceType.PROVINCE and st.count("government", "base") == 0:
+				sources.append(sid)
+		for sid in state.game_def.space_ids():
+			if not dests.has(sid) and state.game_def.space(sid).is_economic() and state.space_state(sid).count("government", "troops") > 0:
+				sources.append(sid)
+		var di := 0
+		for src in sources:
+			var t := state.space_state(src).count("government", "troops")
+			for _k in range(t):
+				state.move_pieces("government", "troops", src, dests[di % dests.size()], 1, "")
+				di += 1
+				moved += 1
+	if moved > 0:
+		log.append("Redeploy: %d Truppe ridistribuite negli spazi a Controllo GOV" % moved)
 	state.recompute_all_control()
 	mod._refresh_victory_tracks(state)
 	return log
 
 
-func _nearest_dest(from_id: String, dests: Array) -> String:
-	for adj in state.game_def.space(from_id).adjacent:
-		if dests.has(adj):
-			return adj
-	return dests[0]
+func _gov_control_spaces() -> Array:
+	return Array(state.game_def.space_ids()).filter(func(s): return state.space_state(s).control == "government")
 
+func _gov_cubes(sid: String) -> int:
+	var st: SpaceState = state.space_state(sid)
+	return st.count("government", "troops") + st.count("government", "police")
 
-func _most_police_space(exclude: String) -> String:
-	var best := ""
-	var bn := 1
+func _insurgent_forces(sid: String) -> int:
+	var st: SpaceState = state.space_state(sid)
+	var n := st.count("syndicate", "casino", "open")
+	for f in ["m26", "directorio", "syndicate"]:
+		n += st.count(f, "guerrilla") + st.count(f, "base")
+	return n
+
+func _ec_guerrillas(sid: String) -> int:
+	var st: SpaceState = state.space_state(sid)
+	var n := 0
+	for f in ["m26", "directorio", "syndicate"]:
+		n += st.count(f, "guerrilla")
+	return n
+
+## Muove 1 Polizia verso `dest` dallo spazio (≠dest) che ne ha di più.
+func _pull_police_to(dest: String) -> bool:
+	var donor := ""
+	var bn := 0
 	for sid in state.game_def.space_ids():
-		if sid == exclude:
+		if sid == dest:
 			continue
 		var n := state.space_state(sid).count("government", "police")
 		if n > bn:
 			bn = n
-			best = sid
-	return best
+			donor = sid
+	if donor == "" or bn <= 0:
+		return false
+	state.move_pieces("government", "police", donor, dest, 1, "")
+	return true
 
 
 # ---------------------------------------------------------------------------

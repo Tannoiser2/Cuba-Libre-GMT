@@ -44,6 +44,17 @@ func get_resources(faction: String) -> int:
 	return int(resources.get(faction, 0))
 
 
+## Ruolo delle Fazioni ("player"/"bot"), impostato da GameController.
+var roles: Dictionary = {}
+
+## Le Fazioni NP (bot) GOV/DR/26J non tracciano Risorse (Calixto C8.5.9): niente
+## entrate e pagamenti sempre possibili. Il Sindacato traccia sempre le Risorse.
+func tracks_resources(faction: String) -> bool:
+	if faction == "syndicate":
+		return true
+	return String(roles.get(faction, "player")) != "bot"
+
+
 func add_resources(faction: String, delta: int, cap: int = 49) -> void:
 	resources[faction] = clampi(get_resources(faction) + delta, 0, cap)
 

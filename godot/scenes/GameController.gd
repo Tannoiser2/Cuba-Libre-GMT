@@ -36,6 +36,7 @@ func new_game(scenario: String = "standard") -> void:
 	module = CubaLibreModule.new()
 	game_def = module.build_game_def()
 	state = GameState.new(game_def)
+	state.roles = roles   # stessa referenza: i cambi di ruolo restano sincronizzati
 	module.apply_setup(state, scenario)
 	ops = CubaLibreOperations.new(state, module)
 	specials = CubaLibreSpecials.new(state, module)
@@ -565,8 +566,8 @@ func resolve_propaganda() -> Dictionary:
 	propaganda_played += 1
 	var is_final := propaganda_played >= 4
 	emit_signal("action_logged", "📣 Round Propaganda %d/4" % propaganda_played, "")
-	# Fase Vittoria
-	var vp := propaganda.victory_phase()
+	# Fase Vittoria (l'umano vince solo all'ultima Propaganda)
+	var vp := propaganda.victory_phase(is_final)
 	if vp.get("winner", "") != "":
 		game_over = true
 		winner = vp.winner
