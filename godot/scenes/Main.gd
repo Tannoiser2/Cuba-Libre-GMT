@@ -579,10 +579,10 @@ func _render_log() -> void:
 		s += _fmt_log_line(String(e["t"]), String(e["f"]))
 		if e["tr"].size() > 0:
 			var exp: bool = e.get("exp", false)
-			s += "  [url=%d][color=#7fb0ff]%s[/color][/url]\n" % [i, ("▼ logica" if exp else "▶ logica")]
+			s += "  [url=%d][font_size=11][color=#7fb0ff]%s[/color][/font_size][/url]\n" % [i, ("▼ logica" if exp else "▶ logica")]
 			if exp:
 				for tl in e["tr"]:
-					s += "      [color=#9fb3c8]%s[/color]\n" % String(tl)
+					s += "      [font_size=11][i][color=#9fb3c8]%s[/color][/i][/font_size]\n" % String(tl)
 		else:
 			s += "\n"
 	_log.text = s

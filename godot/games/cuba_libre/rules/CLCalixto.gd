@@ -70,13 +70,54 @@ const OP_COLUMN := {
 }
 
 
+## Etichette leggibili (italiano) dei criteri di Space/Move Selection, per la traccia di debug.
+const CRIT_LABELS := {
+	"havana": "è L'Avana", "city": "è una Città", "province": "è una Provincia",
+	"not_at_active_support": "non è a Supporto Attivo",
+	"not_at_active_opposition": "non è a Opposizione Attiva",
+	"gov_base_without_police": "Base Govt senza Polizia",
+	"underground_guerrillas": "Guerriglie clandestine nemiche",
+	"most_support": "più Supporto×Pop", "most_population": "più Popolazione",
+	"highest_econ": "valore Economico più alto", "fewest_enemy_forces": "meno Forze nemiche",
+	"fewest_enemy_forces_ignore_closed_casinos": "meno Forze nemiche (ignora Casinò chiusi)",
+	"enemy_base_open_casino": "Base nemica / Casinò aperto",
+	"enemy_piece_with_cash": "pezzo nemico con Denaro",
+	"open_casino": "Casinò aperto", "open_casino_or_cash": "Casinò aperto o Denaro",
+	"syn_control": "Controllo Sindacato", "underground_syn_guerrilla": "Guerriglie clandestine Sind.",
+	"underground_26j_dr_at_open_casino": "clandestine 26-7/DR su Casinò aperto",
+	"vulnerable_26j_base": "Base 26-7 vulnerabile", "vulnerable_dr_base": "Base DR vulnerabile",
+	"vulnerable_open_casino": "Casinò aperto vulnerabile",
+	"most_26j_guerrillas": "più Guerriglie 26-7", "most_dr_guerrillas": "più Guerriglie DR",
+	"most_underground_26j_guerrillas": "più clandestine 26-7",
+	"most_underground_dr_guerrillas": "più clandestine DR",
+	"province_or_city_without_gov_control": "spazio senza Controllo Govt",
+	"province_or_city_without_26j_control": "spazio senza Controllo 26-7",
+	"province_or_city_without_dr_control": "spazio senza Controllo DR",
+	"adjacent_to_province_or_city_without_dr_control": "adiacente a spazio senza Controllo DR",
+	"province_room_for_available_gov_base": "Provincia con spazio per Base Govt",
+	"guerrillas_1_2_and_room_for_26j_base": "1-2 Guerriglie e spazio per Base 26-7",
+	"guerrillas_1_2_and_room_for_dr_base": "1-2 Guerriglie e spazio per Base DR",
+}
+
+
+func _crit_label(crit: String) -> String:
+	return String(CRIT_LABELS.get(crit, crit))
+
+
+func _space_name(sid: String) -> String:
+	var sd: SpaceDef = state.game_def.space(sid)
+	return sd.name if sd != null else sid
+
+
 ## Ordina i candidati secondo la matrice Space Selection (C8.5.6) per l'Operazione.
+## Spiega la scelta nella traccia di debug (perché proprio quello spazio).
 func _ordered(faction: String, op_type: String, candidates: Array) -> Array:
-	return _ordered_col(faction, String(OP_COLUMN.get(faction, {}).get(op_type, "")), candidates)
+	return _ordered_col(faction, String(OP_COLUMN.get(faction, {}).get(op_type, "")), candidates, true)
 
 
 ## Ordina i candidati per una specifica colonna della matrice Space Selection.
-func _ordered_col(faction: String, col: String, candidates: Array) -> Array:
+## Se explain=true, aggiunge alla traccia la motivazione della priorità.
+func _ordered_col(faction: String, col: String, candidates: Array, explain: bool = false) -> Array:
 	var tbl: Dictionary = _ss.get(faction, {})
 	if col == "" or tbl.is_empty():
 		return candidates
@@ -102,7 +143,43 @@ func _ordered_col(faction: String, col: String, candidates: Array) -> Array:
 	var out: Array = []
 	for e in scored:
 		out.append(e["sid"])
+	if explain:
+		_explain_selection(applicable, scored)
 	return out
+
+
+## Aggiunge alla traccia perché è stato scelto il primo spazio (criterio decisivo + classifica).
+func _explain_selection(applicable: Array, scored: Array) -> void:
+	if scored.is_empty():
+		return
+	# Priorità di selezione applicate, in ordine.
+	if applicable.is_empty():
+		_trace.append("   Priorità spazio: nessun criterio applicabile → scelta casuale")
+	else:
+		var labels: Array = []
+		for c in applicable:
+			labels.append(_crit_label(String(c)))
+		_trace.append("   Priorità spazio (in ordine): " + ", ".join(labels))
+	var win: Dictionary = scored[0]
+	var win_name := _space_name(String(win["sid"]))
+	# Criterio decisivo: primo in cui il vincitore supera il secondo classificato.
+	var reason := "unico candidato"
+	if scored.size() > 1:
+		var rival: Dictionary = scored[1]
+		var wv: Array = win["vec"]
+		var rv: Array = rival["vec"]
+		reason = "pari merito (sorteggio)"
+		for i in range(mini(wv.size(), rv.size())):
+			if wv[i] != rv[i]:
+				reason = "%s (%s vs %s)" % [_crit_label(String(applicable[i])), str(wv[i]), str(rv[i])]
+				break
+	_trace.append("   → scelto «%s»: %s" % [win_name, reason])
+	# Mostra la classifica dei primi spazi candidati.
+	if scored.size() > 1:
+		var rank: Array = []
+		for j in range(mini(4, scored.size())):
+			rank.append(_space_name(String(scored[j]["sid"])))
+		_trace.append("   Classifica: " + ", ".join(rank))
 
 
 ## Valore di un criterio per uno spazio (più alto = preferito). 0 se non applicabile.
@@ -493,6 +570,7 @@ func _do_assault(an: int) -> bool:
 	if spaces.is_empty():
 		return false
 	spaces = _ordered("government", "assault", spaces)
+	_trace.append("   Priorità eliminazione (Assalto): prima Guerriglie Attive, poi Basi nemiche (scoperte). Le Clandestine non sono colpibili.")
 	return _run(ops.assault({"spaces": spaces.slice(0, _spaces_allowed(an, spaces.size()))}))
 
 
@@ -547,6 +625,9 @@ func _do_march(faction: String) -> bool:
 			if surplus > 0:
 				moves.append({"from": adj, "to": dest, "count": surplus})
 		if not moves.is_empty():
+			_trace.append("   Movimento verso «%s» (Move Priorities: tieni in origine il minimo per non cedere Controllo e 1 Clandestina se c'è una Base):" % _space_name(dest))
+			for m in moves:
+				_trace.append("     • %d Guerriglie da «%s»" % [int(m["count"]), _space_name(String(m["from"]))])
 			return _run(ops.march({"faction": faction, "moves": moves}))
 	return false
 
@@ -588,6 +669,7 @@ func _do_attack(faction: String, an: int) -> bool:
 	if spaces.is_empty():
 		return false
 	spaces = _ordered(faction, "attack", spaces)
+	_trace.append("   Priorità eliminazione (Attacco): rimuove i pezzi nemici scoperti — prima cubi/Guerriglie Attive, poi Basi se restano scoperte.")
 	return _run(ops.attack({"faction": faction, "spaces": spaces.slice(0, _spaces_allowed(an, spaces.size()))}))
 
 
