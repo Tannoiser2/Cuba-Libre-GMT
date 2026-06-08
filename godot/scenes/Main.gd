@@ -60,6 +60,10 @@ var _limited := false                 # turno limitato a 1 spazio, niente Att.Sp
 var _op_btns: HBoxContainer
 var _sa_btns: HBoxContainer
 
+const PIECE_NAMES := {
+	"troops": "Truppa", "police": "Polizia", "guerrilla": "Guerriglia",
+	"base": "Base", "casino": "Casinò",
+}
 const SA_NAMES := {
 	"transport": "Trasporto", "air_strike": "Attacco Aereo", "reprisal": "Rappresaglia",
 	"infiltrate": "Infiltrazione", "ambush": "Imboscata", "kidnap": "Sequestro",
@@ -80,6 +84,7 @@ func _ready() -> void:
 	_build_ui()
 	GameController.state_changed.connect(_refresh)
 	GameController.action_logged.connect(_on_log)
+	GameController.bot_decision.connect(_on_bot_decision)
 	get_viewport().size_changed.connect(_layout_board)
 	_rebuild_action_buttons(_cur_faction)
 	_refresh()
@@ -189,7 +194,22 @@ func _mk_btn(text: String, cb: Callable) -> Button:
 	b.add_theme_color_override("font_color", Color("e6edf3"))
 	b.add_theme_color_override("font_hover_color", Color("ffffff"))
 	b.add_theme_color_override("font_disabled_color", Color("5b6571"))
+	b.add_theme_font_size_override("font_size", 13)
 	return b
+
+
+## Gruppo verticale: etichetta centrata sopra, contenuto (tasti) sotto.
+func _labeled_group(title: String, content: Control) -> VBoxContainer:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 1)
+	var l := Label.new()
+	l.text = title
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.add_theme_color_override("font_color", Color("9fb3c8"))
+	l.add_theme_font_size_override("font_size", 11)
+	v.add_child(l)
+	v.add_child(content)
+	return v
 
 
 func _mk_label(text: String) -> Label:
@@ -217,31 +237,42 @@ func _build_action_bar() -> VBoxContainer:
 	row1.add_theme_constant_override("v_separation", 3)
 	bar.add_child(row1)
 
-	row1.add_child(_mk_label("Operazione:"))
+	# Gruppo Operazione (tasti operazioni + Esegui)
 	_op_btns = HBoxContainer.new()
 	_op_btns.add_theme_constant_override("separation", 3)
-	row1.add_child(_op_btns)
-	row1.add_child(_mk_btn("Esegui", _on_execute))
+	var op_box := HBoxContainer.new()
+	op_box.add_theme_constant_override("separation", 3)
+	op_box.add_child(_op_btns)
+	op_box.add_child(_mk_btn("Esegui", _on_execute))
+	row1.add_child(_labeled_group("Operazione", op_box))
 
 	row1.add_child(VSeparator.new())
-	row1.add_child(_mk_label("Att.Speciale:"))
+	# Gruppo Attività Speciale
 	_sa_btns = HBoxContainer.new()
 	_sa_btns.add_theme_constant_override("separation", 3)
-	row1.add_child(_sa_btns)
+	row1.add_child(_labeled_group("Attività Speciale", _sa_btns))
 
 	row1.add_child(VSeparator.new())
-	_btn_ev_u = _mk_btn("Evento ▸ chiaro", func(): _on_event("unshaded"))
-	row1.add_child(_btn_ev_u)
-	_btn_ev_s = _mk_btn("Evento ▸ ombr.", func(): _on_event("shaded"))
-	row1.add_child(_btn_ev_s)
+	# Gruppo Evento
+	var ev_box := HBoxContainer.new()
+	ev_box.add_theme_constant_override("separation", 3)
+	_btn_ev_u = _mk_btn("▸ chiaro", func(): _on_event("unshaded"))
+	ev_box.add_child(_btn_ev_u)
+	_btn_ev_s = _mk_btn("▸ ombr.", func(): _on_event("shaded"))
+	ev_box.add_child(_btn_ev_s)
+	row1.add_child(_labeled_group("Evento", ev_box))
 
 	row1.add_child(VSeparator.new())
-	_btn_end = _mk_btn("✓ Concludi turno", func(): _on_execute_and_end())
+	# Gruppo Turno
+	var turn_box := HBoxContainer.new()
+	turn_box.add_theme_constant_override("separation", 3)
+	_btn_end = _mk_btn("✓ Concludi", func(): _on_execute_and_end())
 	_btn_end.add_theme_color_override("font_color", Color("a3e635"))
-	row1.add_child(_btn_end)
+	turn_box.add_child(_btn_end)
 	_btn_pass = _mk_btn("Passa", func(): GameController.seq_pass())
-	row1.add_child(_btn_pass)
-	row1.add_child(_mk_btn("Annulla", _on_cancel))
+	turn_box.add_child(_btn_pass)
+	turn_box.add_child(_mk_btn("Annulla", _on_cancel))
+	row1.add_child(_labeled_group("Turno", turn_box))
 
 	# --- Riga 2: PARTITA / VISTA ---
 	var row2 := HFlowContainer.new()
@@ -334,12 +365,13 @@ func _build_side_panel() -> PanelContainer:
 	log_title.text = "Log"
 	vb.add_child(log_title)
 
-	# Log con altezza fissa, sempre visibile e scrollabile.
+	# Log con altezza fissa, sempre visibile e scrollabile; righe "▶ logica" espandibili.
 	_log = RichTextLabel.new()
 	_log.bbcode_enabled = true
 	_log.scroll_following = true
 	_log.scroll_active = true
 	_log.custom_minimum_size = Vector2(340, 260)
+	_log.meta_clicked.connect(_on_log_meta)
 	vb.add_child(_log)
 
 	pc.custom_minimum_size = Vector2(380, 0)
@@ -517,13 +549,51 @@ func _refresh_side() -> void:
 	_card_label.text = GameController.current_card_text()
 
 
+var _log_entries: Array = []
+
+
 func _on_log(text: String, faction: String = "") -> void:
+	_log_entries.append({"t": text, "f": faction, "tr": []})
+	_render_log()
+
+
+func _on_bot_decision(text: String, faction: String, trace: Array) -> void:
+	_log_entries.append({"t": text, "f": faction, "tr": trace})
+	_render_log()
+
+
+func _fmt_log_line(text: String, faction: String) -> String:
 	if faction != "":
 		var hex := GameController.faction_color(faction).to_html(false)
 		var txt := "000000" if faction == "directorio" else "ffffff"
-		_log.append_text("[bgcolor=#%s] [color=#%s] %s [/color] [/bgcolor]\n" % [hex, txt, text])
-	else:
-		_log.append_text(text + "\n")
+		return "[bgcolor=#%s] [color=#%s] %s [/color] [/bgcolor]" % [hex, txt, text]
+	return text
+
+
+func _render_log() -> void:
+	if _log_entries.size() > 300:
+		_log_entries = _log_entries.slice(_log_entries.size() - 300)
+	var s := ""
+	for i in range(_log_entries.size()):
+		var e: Dictionary = _log_entries[i]
+		s += _fmt_log_line(String(e["t"]), String(e["f"]))
+		if e["tr"].size() > 0:
+			var exp: bool = e.get("exp", false)
+			s += "  [url=%d][color=#7fb0ff]%s[/color][/url]\n" % [i, ("▼ logica" if exp else "▶ logica")]
+			if exp:
+				for tl in e["tr"]:
+					s += "      [color=#9fb3c8]%s[/color]\n" % String(tl)
+		else:
+			s += "\n"
+	_log.text = s
+	_log.scroll_to_line(maxi(0, _log.get_line_count() - 1))
+
+
+func _on_log_meta(meta: Variant) -> void:
+	var i := int(meta)
+	if i >= 0 and i < _log_entries.size():
+		_log_entries[i]["exp"] = not bool(_log_entries[i].get("exp", false))
+		_render_log()
 
 
 # ---------------------------------------------------------------------------
@@ -581,7 +651,10 @@ func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: St
 	if _mode != "moves":
 		return
 	_pending_moves.append({"from": from_id, "to": to_id, "count": 1, "type": type})
-	_instr.text = "%d spostamenti in coda" % _pending_moves.size()
+	var pn: String = PIECE_NAMES.get(type, type)
+	var fn: String = GameController.game_def.space(from_id).name
+	var tn: String = GameController.game_def.space(to_id).name
+	_instr.text = "Spostamento %d: 1 %s da %s → %s" % [_pending_moves.size(), pn, fn, tn]
 	_refresh_turn_banner()
 
 
