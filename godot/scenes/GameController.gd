@@ -268,6 +268,7 @@ func _bot_take_pending() -> void:
 			["Solo Evento/Pass erano legali in questo slot e l'Evento non conveniva."])
 		seq.act_pass()
 		_count("pass")
+		_count("pass#" + fid)
 		return
 	var br := bot.take_turn(fid)
 	var trace: Array = br.get("trace", [])
@@ -275,6 +276,7 @@ func _bot_take_pending() -> void:
 		emit_signal("bot_decision", "%s → PASSA (nessuna Operazione legale)" % fname, fid, trace)
 		seq.act_pass()
 		_count("pass")
+		_count("pass#" + fid)
 		return
 	var optype := String(br.get("action", ""))
 	var did_sa: bool = br.get("special", false)
@@ -298,6 +300,7 @@ func _bot_take_pending() -> void:
 		label += " + " + String(_SA_IT.get(String(br.get("special_type", "")), br.get("special_type", "")))
 	emit_signal("bot_decision", "%s → %s" % [fname, label], fid, trace)
 	seq.act(t)
+	_count("act#" + fid)
 	_count("op:" + optype)
 	if t == A.OPERATION_WITH_SPECIAL:
 		_count("sa:" + String(br.get("special_type", "")))
