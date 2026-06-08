@@ -1,0 +1,80 @@
+name: Build Desktop (Godot)
+
+# Compila gli eseguibili desktop (Windows / Linux / macOS) e li pubblica in una
+# Release "desktop-latest" sempre aggiornata, da cui scaricarli con un click.
+# Parte a ogni aggiornamento di main e si può lanciare a mano da Actions -> Run workflow.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "desktop"
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.3-stable"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scarica Godot headless
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+
+      - name: Installa i template di export
+        run: |
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.3.stable"
+          unzip -q templates.tpz
+          mv templates/* "$HOME/.local/share/godot/export_templates/4.3.stable/"
+
+      - name: Import del progetto
+        run: godot --headless --path godot --import || true
+
+      - name: Test (headless)
+        run: godot --headless --path godot -s res://tests/test_runner.gd
+
+      - name: Export desktop (Windows, Linux, macOS)
+        run: |
+          mkdir -p dist/windows dist/linux dist/macos
+          godot --headless --path godot --export-release "Windows Desktop"
+          godot --headless --path godot --export-release "Linux"
+          godot --headless --path godot --export-release "macOS"
+
+      - name: Impacchetta i file
+        run: |
+          cd dist
+          chmod +x linux/CubaLibre.x86_64 || true
+          zip -j CubaLibre-Windows.zip windows/CubaLibre.exe
+          zip -j CubaLibre-Linux.zip linux/CubaLibre.x86_64
+          cp macos/CubaLibre.zip CubaLibre-macOS.zip
+          ls -lh CubaLibre-*.zip
+
+      - name: Pubblica la Release "desktop-latest"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-latest
+          name: "App desktop — ultima versione"
+          body: |
+            Eseguibili generati automaticamente dall'ultimo aggiornamento del gioco.
+
+            - **Windows**: scarica `CubaLibre-Windows.zip`, estrai, doppio click su `CubaLibre.exe`.
+            - **Linux**: scarica `CubaLibre-Linux.zip`, estrai, rendi eseguibile e avvia `CubaLibre.x86_64`.
+            - **macOS**: scarica `CubaLibre-macOS.zip`, estrai. L'app non è firmata: al primo avvio fai
+              **clic destro → Apri** (oppure Impostazioni → Privacy e sicurezza → Apri comunque).
+          files: |
+            dist/CubaLibre-Windows.zip
+            dist/CubaLibre-Linux.zip
+            dist/CubaLibre-macOS.zip
