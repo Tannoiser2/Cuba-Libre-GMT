@@ -525,7 +525,7 @@ func _set_btn(b: Button, on: bool) -> void:
 func _select_faction(fid: String) -> void:
 	_cur_faction = fid
 	_rebuild_action_buttons(fid)
-	_on_cancel()
+	_clear_pending()
 
 
 ## Ricrea i tasti delle Operazioni e Attività Speciali per la Fazione data.
@@ -671,7 +671,7 @@ func _on_execute() -> void:
 		return
 	var params := _build_params()
 	GameController.run_operation(_cur_action, params)
-	_on_cancel()
+	_clear_pending()
 
 
 ## Esegue l'Attività Speciale (tasto), con parametri ricavati dalla selezione/spostamenti.
@@ -746,7 +746,7 @@ func _on_event(side: String) -> void:
 	if _selected.size() > 0:
 		params["space"] = _selected[0]
 	GameController.run_event(n, side, _cur_faction, params)
-	_on_cancel()
+	_clear_pending()
 
 
 func _on_all_bots() -> void:
@@ -754,7 +754,8 @@ func _on_all_bots() -> void:
 	GameController.run_card_paced()
 
 
-func _on_cancel() -> void:
+## Pulizia interna della selezione/coda in preparazione (senza undo).
+func _clear_pending() -> void:
 	_mode = "idle"
 	_selected.clear()
 	_pending_moves.clear()
@@ -762,6 +763,19 @@ func _on_cancel() -> void:
 	_sa_from = ""
 	_clear_highlights()
 	_instr.text = ""
+
+
+## Tasto "Annulla": scarta l'azione in preparazione oppure annulla (undo) l'ultima eseguita.
+func _on_cancel() -> void:
+	var had_pending := _mode != "idle" or not _selected.is_empty() or not _pending_moves.is_empty() or _pending_sa != ""
+	_clear_pending()
+	if had_pending:
+		_instr.text = "Azione in preparazione annullata"
+		return
+	if GameController.undo_last():
+		_instr.text = "↩ Ultima azione annullata"
+	else:
+		_instr.text = "Niente da annullare"
 
 
 func _clear_highlights() -> void:

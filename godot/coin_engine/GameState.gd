@@ -317,25 +317,31 @@ func to_dict() -> Dictionary:
 ## Crea un GameState da un dizionario salvato, dato il GameDef di riferimento.
 static func from_dict(p_game_def: GameDef, d: Dictionary) -> GameState:
 	var gs := GameState.new(p_game_def)
+	gs.load_dict(d)
+	return gs
+
+
+## Ripristina lo stato (in place) da un dizionario prodotto da to_dict().
+## Usato per il salvataggio/caricamento e per l'Annulla (undo) di una mossa.
+func load_dict(d: Dictionary) -> void:
 	var sp: Dictionary = d.get("spaces", {})
 	for sid in sp.keys():
-		if gs.spaces.has(sid):
-			gs.spaces[sid].apply_dict(sp[sid])
+		if spaces.has(sid):
+			spaces[sid].apply_dict(sp[sid])
 	for k in d.get("resources", {}).keys():
-		gs.resources[k] = int(d["resources"][k])
-	gs.tracks = (d.get("tracks", {}) as Dictionary).duplicate(true)
+		resources[k] = int(d["resources"][k])
+	tracks = (d.get("tracks", {}) as Dictionary).duplicate(true)
 	for k in d.get("eligibility", {}).keys():
-		gs.eligibility[k] = int(d["eligibility"][k])
-	gs.draw_deck.clear()
+		eligibility[k] = int(d["eligibility"][k])
+	draw_deck.clear()
 	for n in d.get("draw_deck", []):
-		gs.draw_deck.append(int(n))
-	gs.played_deck.clear()
+		draw_deck.append(int(n))
+	played_deck.clear()
 	for n in d.get("played_deck", []):
-		gs.played_deck.append(int(n))
-	gs.current_card = int(d.get("current_card", -1))
-	gs.active_capabilities = PackedStringArray(d.get("active_capabilities", []))
-	gs.active_momentum = PackedStringArray(d.get("active_momentum", []))
-	return gs
+		played_deck.append(int(n))
+	current_card = int(d.get("current_card", -1))
+	active_capabilities = PackedStringArray(d.get("active_capabilities", []))
+	active_momentum = PackedStringArray(d.get("active_momentum", []))
 
 
 ## Salva su file JSON. Restituisce true in caso di successo.

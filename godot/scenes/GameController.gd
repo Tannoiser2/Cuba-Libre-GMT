@@ -23,6 +23,9 @@ var _turn_did_op := false
 var _turn_did_special := false
 var _turn_did_event := false
 
+## Annulla (undo) a un livello: istantanea catturata prima dell'ultima azione eseguita.
+var _undo: Dictionary = {}
+
 
 func _ready() -> void:
 	new_game()
@@ -91,6 +94,7 @@ func draw_next() -> int:
 ## Costruisce la Sequenza di Gioco per la carta Evento corrente (per il turno guidato).
 func _start_card_sequence() -> void:
 	seq = null
+	_undo = {}   # l'Annulla non attraversa il confine tra le carte
 	_reset_turn_flags()
 	if state.current_card > 0:
 		var card: CardDef = game_def.card(state.current_card)
@@ -393,7 +397,41 @@ func current_card_text() -> String:
 
 
 ## Esegue un'Operazione per id e ne propaga il risultato/log.
+## Cattura un'istantanea dello stato per consentire l'Annulla dell'ultima azione.
+func _capture_undo() -> void:
+	_undo = {
+		"state": state.to_dict(),
+		"seq": seq.snapshot() if seq != null else {},
+		"did_op": _turn_did_op,
+		"did_special": _turn_did_special,
+		"did_event": _turn_did_event,
+	}
+
+
+func can_undo() -> bool:
+	return not _undo.is_empty()
+
+
+## Annulla l'ultima Operazione/Att.Speciale/Evento eseguito (un solo livello).
+func undo_last() -> bool:
+	if _undo.is_empty():
+		return false
+	state.load_dict(_undo["state"])
+	if seq != null and not (_undo["seq"] as Dictionary).is_empty():
+		seq.restore_snapshot(_undo["seq"])
+	_turn_did_op = bool(_undo["did_op"])
+	_turn_did_special = bool(_undo["did_special"])
+	_turn_did_event = bool(_undo["did_event"])
+	_undo = {}
+	state.recompute_all_control()
+	module._refresh_victory_tracks(state)
+	emit_signal("action_logged", "↩ Annullata l'ultima azione", "")
+	emit_signal("state_changed")
+	return true
+
+
 func run_operation(op_id: String, params: Dictionary) -> Dictionary:
+	_capture_undo()
 	var res: Dictionary
 	match op_id:
 		"train": res = ops.train(params)
@@ -408,11 +446,14 @@ func run_operation(op_id: String, params: Dictionary) -> Dictionary:
 		_: res = {"ok": false, "error": "Operazione sconosciuta: %s" % op_id, "log": []}
 	if res.get("ok", false):
 		_turn_did_op = true
+	else:
+		_undo = {}   # azione fallita: niente da annullare
 	_emit_result(res)
 	return res
 
 
 func run_special(sa_id: String, params: Dictionary) -> Dictionary:
+	_capture_undo()
 	var res: Dictionary
 	match sa_id:
 		"transport": res = specials.transport(params)
@@ -430,14 +471,19 @@ func run_special(sa_id: String, params: Dictionary) -> Dictionary:
 		_: res = {"ok": false, "error": "Attività speciale sconosciuta: %s" % sa_id, "log": []}
 	if res.get("ok", false):
 		_turn_did_special = true
+	else:
+		_undo = {}   # azione fallita: niente da annullare
 	_emit_result(res)
 	return res
 
 
 func run_event(number: int, side: String, faction: String, params: Dictionary = {}) -> Dictionary:
+	_capture_undo()
 	var res := events.apply(number, side, faction, params)
 	if res.get("ok", true):
 		_turn_did_event = true
+	else:
+		_undo = {}   # azione fallita: niente da annullare
 	for line in res.get("log", []):
 		emit_signal("action_logged", String(line), faction)
 	emit_signal("state_changed")
