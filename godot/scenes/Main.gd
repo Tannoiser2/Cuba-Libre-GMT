@@ -121,6 +121,11 @@ var _train_plan: Dictionary = {}       # sid -> {kind:"cubes"/"base"/"civic", n:
 var _build_choice: Dictionary = {}     # sid -> "new"/"open" (Costruzione Sindacato)
 var _garrison_ec := ""                 # EC scelto per l'Assalto gratuito della Guarnigione
 var _reprisal_from := ""               # spazio Rappresaglia in attesa dello spostamento opzionale
+var _attack_target: Dictionary = {}    # sid -> fazione bersaglio preferita (Attacco)
+var _sa_move_to := ""                  # destinazione Trasporto/Muscle in attesa del numero
+var _sa_move_count := 0                # numero di cubi da spostare (Trasporto/Muscle)
+var _sa_spaces: Array = []             # Casinò scelti per il Profitto (multi-selezione)
+var _profit_mode := "cash"             # "cash" | "convert"
 var _pending_moves: Array = []
 var _pending_sa := ""                  # Att.Speciale in attesa di bersaglio
 var _sa_from := ""                     # origine (per Trasporto/Muscle)
@@ -905,8 +910,35 @@ func _on_space_clicked(sid: String) -> void:
 			if not _sa_valid.has(sid):
 				_instr.text = "Destinazione non valida: scegline una evidenziata"
 				return
-			_run_sa_move(_pending_sa, _sa_from, sid)
-			_end_sa()
+			# Passo numero cubi: scegli quanti spostarne (riclicca la destinazione per ciclare).
+			_sa_move_to = sid
+			_sa_move_count = _sa_move_max(_pending_sa, _sa_from, sid)
+			_mode = "sa_move_confirm"
+			_clear_highlights()
+			_space_views[sid].set_highlight(true)
+			_sa_move_instr()
+		return
+	# Trasporto/Muscle: scelta del numero di cubi.
+	if _mode == "sa_move_confirm":
+		if sid == _sa_move_to:
+			var mx := _sa_move_max(_pending_sa, _sa_from, _sa_move_to)
+			_sa_move_count = (_sa_move_count % mx) + 1 if mx > 0 else 0
+			_sa_move_instr()
+		return
+	# Profitto: selezione di 1-2 Casinò (cash) o dei Casinò da chiudere (convert).
+	if _mode == "sa_profit":
+		if not _sa_valid.has(sid):
+			_instr.text = "Profitto: scegli uno spazio con Casinò aperto evidenziato"
+			return
+		if _sa_spaces.has(sid):
+			_sa_spaces.erase(sid)
+		elif _profit_mode == "cash" and _sa_spaces.size() >= 2:
+			_instr.text = "Profitto (incassa): massimo 2 spazi"
+			return
+		else:
+			_sa_spaces.append(sid)
+		_space_views[sid].flash(Color(0.4, 1.0, 0.5))
+		_profit_instr()
 		return
 	if _mode != "select_spaces" and _mode != "space_list":
 		return
@@ -917,6 +949,9 @@ func _on_space_clicked(sid: String) -> void:
 		return
 	if _cur_action == "train":
 		_train_click(sid)
+		return
+	if _cur_action == "attack":
+		_attack_click(sid)
 		return
 	if _cur_action == "build":
 		_build_click(sid)
@@ -984,6 +1019,44 @@ func _rally_click(sid: String) -> void:
 	for s in _selected:
 		parts.append("%s [%s]" % [GameController.game_def.space(s).name, RALLY_LABEL.get(_rally_choice.get(s, "place"), "?")])
 	_instr.text = "Riorganizza: %s — riclicca uno spazio per cambiare azione, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Riorganizzazione: clicca gli spazi"
+	_refresh_turn_banner()
+
+
+# ---- Attacco: bersaglio (Fazione) scelto per ogni spazio ----
+
+func _attack_enemies(sid: String) -> Array:
+	var st: SpaceState = GameController.state.space_state(sid)
+	var out: Array = []
+	for ff in ["m26", "directorio", "syndicate", "government"]:
+		if ff == _cur_faction:
+			continue
+		if st.count(ff, "guerrilla") + st.count(ff, "troops") + st.count(ff, "police") \
+				+ st.count(ff, "base") + st.count(ff, "casino", "open") > 0:
+			out.append(ff)
+	return out
+
+func _attack_click(sid: String) -> void:
+	if not _selected.has(sid):
+		if not _valid_spaces(_cur_faction, "attack").has(sid):
+			_instr.text = "Attacco: serve una tua Guerriglia e un nemico — scegli uno spazio evidenziato"
+			return
+		_selected.append(sid)
+		var en := _attack_enemies(sid)
+		_attack_target[sid] = en[0] if not en.is_empty() else ""
+		_space_views[sid].set_highlight(true)
+	else:
+		var en := _attack_enemies(sid)
+		var i := en.find(String(_attack_target.get(sid, "")))
+		if i + 1 < en.size():
+			_attack_target[sid] = en[i + 1]
+		else:
+			_selected.erase(sid)
+			_attack_target.erase(sid)
+			_space_views[sid].set_highlight(false)
+	var parts: Array = []
+	for s in _selected:
+		parts.append("%s → %s" % [GameController.game_def.space(s).name, GameController.faction_name(String(_attack_target.get(s, "")))])
+	_instr.text = "Attacco: %s — riclicca uno spazio per cambiare bersaglio, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Attacco: clicca gli spazi"
 	_refresh_turn_banner()
 
 
@@ -1092,6 +1165,31 @@ func _build_click(sid: String) -> void:
 	_refresh_turn_banner()
 
 
+# ---- Trasporto/Muscle: numero di cubi ----
+
+func _sa_move_max(sa: String, from_id: String, to_id: String) -> int:
+	var from_st: SpaceState = GameController.state.space_state(from_id)
+	if sa == "muscle":
+		var dest: SpaceDef = GameController.game_def.space(to_id)
+		var typ := "police" if dest.type == CoinEnums.SpaceType.CITY else "troops"
+		return mini(2, from_st.count("government", typ))
+	return mini(3, from_st.count("government", "troops"))
+
+func _sa_move_instr() -> void:
+	_instr.text = "%s: sposta %d da %s a %s — riclicca la destinazione per cambiare numero, poi 'Esegui'" % [
+		_sa_label(_pending_sa), _sa_move_count,
+		GameController.game_def.space(_sa_from).name, GameController.game_def.space(_sa_move_to).name]
+	_refresh_turn_banner()
+
+func _profit_instr() -> void:
+	var names: Array = []
+	for s in _sa_spaces:
+		names.append(GameController.game_def.space(s).name)
+	var verb := "incassa Denaro in" if _profit_mode == "cash" else "converti (chiudi)"
+	_instr.text = "Profitto: %s %s — poi 'Esegui'" % [verb, ", ".join(names) if not names.is_empty() else "(scegli i Casinò)"]
+	_refresh_turn_banner()
+
+
 func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: String) -> void:
 	if _mode != "moves":
 		_instr.text = "⚠ Per spostare i pezzi scegli prima un'operazione di movimento (Marcia / Perlustrazione / Guarnigione / Trasporto)"
@@ -1128,6 +1226,29 @@ func _update_moves_overlay() -> void:
 
 
 func _on_execute() -> void:
+	# Conferma del numero di cubi (Trasporto/Muscle).
+	if _mode == "sa_move_confirm":
+		if _sa_move_count <= 0:
+			_instr.text = "Nessun cubo da spostare"
+			return
+		_run_sa_move(_pending_sa, _sa_from, _sa_move_to, _sa_move_count)
+		_sa_move_to = ""
+		_end_sa()
+		return
+	# Conferma del Profitto (1-2 Casinò).
+	if _mode == "sa_profit":
+		if _sa_spaces.is_empty():
+			_instr.text = "Profitto: scegli almeno 1 Casinò"
+			return
+		var pp := {"mode": _profit_mode}
+		if _profit_mode == "cash":
+			pp["spaces"] = _sa_spaces.duplicate()
+		else:
+			pp["close"] = _sa_spaces.duplicate()
+		GameController.run_special("profit", pp)
+		_sa_spaces = []
+		_end_sa()
+		return
 	if _cur_action == "":
 		return
 	var params := _build_params()
@@ -1144,6 +1265,22 @@ func _do_special(sa: String) -> void:
 	var sa_desc: String = SA_DESC.get(_sa_base(sa), "")
 	# Avvia la selezione del BERSAGLIO dell'Attività Speciale (prima/durante/dopo l'Operazione).
 	var resume := _mode if _mode in ["space_list", "select_spaces", "moves"] else "idle"
+	if _sa_base(sa) == "profit":
+		var pvalid := _sa_valid_spaces(sa)
+		if pvalid.is_empty():
+			_instr.text = "%s: nessun Casinò aperto al momento" % sa_name
+			return
+		_resume_mode = resume
+		_pending_sa = sa
+		_profit_mode = String(_sa_variant_p(sa).get("mode", "cash"))
+		_sa_spaces = []
+		_sa_valid = pvalid
+		_clear_highlights()
+		for s in pvalid:
+			_space_views[s].set_highlight(true)
+		_mode = "sa_profit"
+		_profit_instr()
+		return
 	if sa == "transport" or sa == "muscle":
 		var origins := _sa_valid_origins(sa)
 		if origins.is_empty():
@@ -1293,18 +1430,12 @@ func _run_sa(sa: String, space: String) -> void:
 	GameController.run_special(_sa_target_id(sa), _sa_params(sa, space))
 
 
-## Esegue Trasporto/Muscle come spostamento origine→destinazione.
-## Sposta il massimo consentito dalla regola (Trasporto fino a 3 Truppe, Muscle fino a 2 cubi).
-func _run_sa_move(sa: String, from_id: String, to_id: String) -> void:
-	var from_st: SpaceState = GameController.state.space_state(from_id)
-	var p := {"from": from_id, "to": to_id}
+## Esegue Trasporto/Muscle come spostamento origine→destinazione del numero scelto di cubi.
+func _run_sa_move(sa: String, from_id: String, to_id: String, count: int) -> void:
+	var p := {"from": from_id, "to": to_id, "count": count}
 	if sa == "muscle":
 		var dest: SpaceDef = GameController.game_def.space(to_id)
-		var typ := "police" if dest.type == CoinEnums.SpaceType.CITY else "troops"
-		p["type"] = typ
-		p["count"] = mini(2, from_st.count("government", typ))
-	else:
-		p["count"] = mini(3, from_st.count("government", "troops"))
+		p["type"] = "police" if dest.type == CoinEnums.SpaceType.CITY else "troops"
 	GameController.run_special(sa, p)
 
 
@@ -1312,6 +1443,10 @@ func _end_sa() -> void:
 	_pending_sa = ""
 	_sa_from = ""
 	_sa_valid = []
+	_sa_move_to = ""
+	_sa_move_count = 0
+	_sa_spaces = []
+	_reprisal_from = ""
 	_clear_highlights()
 	# Se l'Operazione era in corso, riprendila (Att.Speciale fatta DURANTE l'operazione).
 	if _resume_mode != "idle" and _cur_action != "":
@@ -1363,6 +1498,10 @@ func _clear_pending() -> void:
 	_build_choice.clear()
 	_garrison_ec = ""
 	_reprisal_from = ""
+	_attack_target.clear()
+	_sa_move_to = ""
+	_sa_move_count = 0
+	_sa_spaces = []
 	_pending_moves.clear()
 	_pending_sa = ""
 	_sa_from = ""
@@ -1406,7 +1545,9 @@ func _build_params() -> Dictionary:
 			return {"faction": _cur_faction, "moves": _pending_moves}
 		"rally":
 			return {"faction": _cur_faction, "spaces": _selected, "choices": _rally_choice.duplicate()}
-		"attack", "terror":
+		"attack":
+			return {"faction": _cur_faction, "spaces": _selected, "targets": _attack_target.duplicate()}
+		"terror":
 			return {"faction": _cur_faction, "spaces": _selected}
 		"assault":
 			return {"spaces": _selected}

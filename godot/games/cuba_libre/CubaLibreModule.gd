@@ -214,7 +214,7 @@ func activate_guerrillas(state: GameState, space_id: String, n: int, exclude: St
 ## opts: { active_g, underground_g, cubes, bases }. Restituisce il numero rimosso.
 ## Il Denaro dei pezzi rimossi viene trasferito a un'altra Fazione presente o eliminato.
 func remove_enemy_pieces(state: GameState, space_id: String, capacity: int,
-		attacker: String, opts: Dictionary) -> int:
+		attacker: String, opts: Dictionary, prefer: String = "") -> int:
 	var st: SpaceState = state.space_state(space_id)
 	var order := ["m26", "directorio", "syndicate", "government"]
 	order.erase(attacker)
@@ -222,6 +222,10 @@ func remove_enemy_pieces(state: GameState, space_id: String, capacity: int,
 	# dell'altro Insorgente con Operazioni o Attività Speciali (carta #18).
 	if has_capability(state, "Pact of Caracas") and (attacker == "m26" or attacker == "directorio"):
 		order.erase("directorio" if attacker == "m26" else "m26")
+	# Fazione bersaglio preferita (scelta del giocatore): colpita per prima.
+	if prefer != "" and order.has(prefer):
+		order.erase(prefer)
+		order.push_front(prefer)
 	var removed := 0
 	while removed < capacity:
 		var done := true
