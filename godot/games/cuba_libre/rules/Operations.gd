@@ -32,6 +32,9 @@ func _err(msg: String) -> Dictionary:
 
 
 func _can_pay(faction: String, amount: int) -> bool:
+	# Le Fazioni NP che non tracciano Risorse possono sempre pagare (Calixto C8.5.9).
+	if not state.tracks_resources(faction):
+		return true
 	return state.get_resources(faction) >= amount
 
 
