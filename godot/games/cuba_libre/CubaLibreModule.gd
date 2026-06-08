@@ -222,6 +222,17 @@ func remove_enemy_pieces(state: GameState, space_id: String, capacity: int,
 	# dell'altro Insorgente con Operazioni o Attività Speciali (carta #18).
 	if has_capability(state, "Pact of Caracas") and (attacker == "m26" or attacker == "directorio"):
 		order.erase("directorio" if attacker == "m26" else "m26")
+	# NP Piece Priorities (C8.5.8, nota A): un NP (bot) colpisce PRIMA i pezzi del Giocatore
+	# (umano) e poi quelli delle altre Fazioni NP.
+	if String(state.roles.get(attacker, "bot")) == "bot":
+		var players: Array = []
+		var nps: Array = []
+		for fid in order:
+			if String(state.roles.get(fid, "bot")) == "player":
+				players.append(fid)
+			else:
+				nps.append(fid)
+		order = players + nps
 	# Fazione bersaglio preferita (scelta del giocatore): colpita per prima.
 	if prefer != "" and order.has(prefer):
 		order.erase(prefer)
