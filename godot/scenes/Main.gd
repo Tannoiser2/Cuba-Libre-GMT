@@ -182,6 +182,12 @@ func _build_ui() -> void:
 	_track_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_map.add_child(_track_overlay)
 
+	# Overlay frecce degli spostamenti in coda (anteprima del trascinamento)
+	_moves_overlay = MovesOverlay.new()
+	_moves_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_moves_overlay.z_index = 40
+	_map.add_child(_moves_overlay)
+
 	# Layer per le animazioni dei pezzi che si spostano (sopra tutto, non interattivo)
 	_anim_layer = Control.new()
 	_anim_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -464,6 +470,10 @@ func _layout_board() -> void:
 	if _anim_layer != null:
 		_anim_layer.position = Vector2.ZERO
 		_anim_layer.size = base
+	if _moves_overlay != null:
+		_moves_overlay.position = Vector2.ZERO
+		_moves_overlay.size = base
+		_update_moves_overlay()
 
 
 # ---------------------------------------------------------------------------
@@ -477,6 +487,7 @@ const ACTION_NAMES := {
 
 var _prev_fp: Dictionary = {}
 var _anim_layer: Control                  # layer per le animazioni dei pezzi
+var _moves_overlay: MovesOverlay          # frecce degli spostamenti in coda
 var _prev_pc: Dictionary = {}             # conteggi precedenti "sid|faction|type" -> n
 var _avail_box: Dictionary = {}           # faction -> centro (normalizzato) del box Forze Disponibili
 const ANIM_SZ := 26.0
@@ -855,7 +866,23 @@ func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: St
 	var fn: String = GameController.game_def.space(from_id).name
 	var tn: String = GameController.game_def.space(to_id).name
 	_instr.text = "✓ In coda (%d): 1 %s da %s → %s — poi 'Esegui'" % [_pending_moves.size(), pn, fn, tn]
+	_update_moves_overlay()
 	_refresh_turn_banner()
+
+
+## Aggiorna le frecce di anteprima degli spostamenti in coda.
+func _update_moves_overlay() -> void:
+	if _moves_overlay == null:
+		return
+	var segs: Array = []
+	for m in _pending_moves:
+		var fi: String = m["from"]
+		var ti: String = m["to"]
+		if _space_views.has(fi) and _space_views.has(ti):
+			var fv: RegionView = _space_views[fi]
+			var tv: RegionView = _space_views[ti]
+			segs.append({"from": fv.center_point(), "to": tv.center_point()})
+	_moves_overlay.set_segments(segs)
 
 
 func _on_execute() -> void:
@@ -1032,6 +1059,7 @@ func _clear_pending() -> void:
 	_sa_from = ""
 	_sa_valid = []
 	_clear_highlights()
+	_update_moves_overlay()
 	_instr.text = ""
 
 
