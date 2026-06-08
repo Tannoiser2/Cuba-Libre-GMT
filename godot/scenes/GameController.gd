@@ -578,6 +578,7 @@ func resolve_propaganda() -> Dictionary:
 	plog.append_array(propaganda.resources_phase())
 	plog.append_array(propaganda.support_phase())
 	plog.append_array(bot.propaganda_support())
+	plog.append_array(propaganda.redeploy_phase())
 	for line in plog:
 		emit_signal("action_logged", "📣 " + String(line), "")
 	if is_final:
