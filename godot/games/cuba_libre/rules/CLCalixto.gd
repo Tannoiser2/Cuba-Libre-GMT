@@ -617,12 +617,17 @@ func _insurgent_rally_spaces(faction: String) -> Array:
 		if faction == "directorio" and abs(s) == 2:
 			continue
 		out.append(sid)
+	# Priorità: spazi con Base (per piazzare "extra" → Controllo), poi alta Popolazione,
+	# poi numero di Guerriglie. Aiuta a conquistare il Controllo di spazi a 2-Pop.
 	out.sort_custom(func(a, b):
-		var sa: SpaceState = state.space_state(a)
-		var sb: SpaceState = state.space_state(b)
-		return sa.count(faction, "base") * 10 + sa.count(faction, "guerrilla") \
-			> sb.count(faction, "base") * 10 + sb.count(faction, "guerrilla"))
+		return _rally_score(faction, a) > _rally_score(faction, b))
 	return out
+
+
+func _rally_score(faction: String, sid: String) -> int:
+	var st: SpaceState = state.space_state(sid)
+	var sd: SpaceDef = state.game_def.space(sid)
+	return st.count(faction, "base") * 100 + sd.pop * 10 + st.count(faction, "guerrilla")
 
 
 func _most(faction: String, type: String) -> String:
