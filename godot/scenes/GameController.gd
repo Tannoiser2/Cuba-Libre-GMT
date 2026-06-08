@@ -226,6 +226,11 @@ func cards_left() -> int:
 	return state.draw_deck.size()
 
 
+## La prossima carta in cima al mazzo (-1 se mazzo vuoto). 0 = Propaganda.
+func next_card() -> int:
+	return state.draw_deck[0] if not state.draw_deck.is_empty() else -1
+
+
 ## Risolve automaticamente la carta corrente (Propaganda o Evento con i bot).
 func auto_resolve_current() -> Dictionary:
 	if game_over or state.current_card == -1:

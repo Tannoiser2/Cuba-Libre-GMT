@@ -41,6 +41,7 @@ var _bar: VBoxContainer
 var _side: PanelContainer
 var _track_overlay: TrackOverlay
 var _card_img: TextureRect
+var _next_card_img: TextureRect
 var _zoom := 1.0
 var _card_label: RichTextLabel
 var _faction_label: RichTextLabel
@@ -274,12 +275,33 @@ func _build_side_panel() -> PanelContainer:
 	var vb := VBoxContainer.new()
 	pc.add_child(vb)
 
-	# Immagine della carta corrente
+	# Carte: corrente e prossima (Upcoming), affiancate
+	var cards_row := HBoxContainer.new()
+	cards_row.add_theme_constant_override("separation", 6)
+	vb.add_child(cards_row)
+	var col_cur := VBoxContainer.new()
+	var lbl_cur := Label.new()
+	lbl_cur.text = "Corrente"
+	lbl_cur.add_theme_color_override("font_color", Color("f1c40f"))
+	col_cur.add_child(lbl_cur)
 	_card_img = TextureRect.new()
 	_card_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_card_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
-	_card_img.custom_minimum_size = Vector2(360, 200)
-	vb.add_child(_card_img)
+	_card_img.custom_minimum_size = Vector2(176, 240)
+	col_cur.add_child(_card_img)
+	cards_row.add_child(col_cur)
+	var col_next := VBoxContainer.new()
+	var lbl_next := Label.new()
+	lbl_next.text = "Prossima"
+	lbl_next.add_theme_color_override("font_color", Color("9fb3c8"))
+	col_next.add_child(lbl_next)
+	_next_card_img = TextureRect.new()
+	_next_card_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_next_card_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+	_next_card_img.custom_minimum_size = Vector2(176, 240)
+	_next_card_img.modulate = Color(1, 1, 1, 0.75)
+	col_next.add_child(_next_card_img)
+	cards_row.add_child(col_next)
 
 	_card_label = RichTextLabel.new()
 	_card_label.bbcode_enabled = true
@@ -473,6 +495,8 @@ func _refresh_side() -> void:
 	var s: GameState = GameController.state
 	var cc: int = s.current_card
 	_card_img.texture = CLAssets.card(cc) if cc >= 0 else null
+	var nc: int = GameController.next_card()
+	_next_card_img.texture = CLAssets.card(nc) if nc >= 0 else null
 	_card_label.text = GameController.current_card_text()
 	var vic := GameController.victory()
 	var txt := "[b]Fazioni[/b]\n"
