@@ -29,7 +29,7 @@ const OP_NAMES := {
 # Cosa permette di fare ogni Operazione (sintesi mostrata nel banner).
 const OP_DESC := {
 	"train": "Clicca uno spazio per piazzare cubi (riclicca per +1, fino a 4); un altro click cicla a Base (da 2 cubi) o Azione Civica (1 sola Att. speciale per Addestramento).",
-	"garrison": "Ridispiega la Polizia tra spazi collegati; poi puoi attivare le Guerriglie in un EC.",
+	"garrison": "Sposta cubi verso Città/EC (trascina); attiva le Guerriglie negli EC. Clicca un EC per un Assalto gratuito lì.",
 	"sweep": "Sposta Truppe negli spazi adiacenti e attiva 1 Guerriglia clandestina nemica per ogni Truppa/Polizia.",
 	"assault": "Rimuovi pezzi nemici scoperti (1 per Truppa, o per Polizia in Città): prima le Guerriglie Attive, poi le Basi.",
 	"rally": "Clicca uno spazio per piazzare Guerriglie; riclicca per cambiare azione (Base = sostituisci 2 Guerriglie con 1 Base; Clandestine = gira sotto, dove hai una Base).",
@@ -51,6 +51,23 @@ const SA_DESC := {
 	"profit": "Accumula 1 Denaro in 1-2 spazi con un Casinò aperto.",
 	"muscle": "Sposta 1-2 Polizia (verso Città) o Truppe (verso Provincia/EC) in uno spazio con Casinò aperto o EC.",
 	"bribe": "Spendi 3 Risorse del Sindacato per rimuovere fino a 2 cubi/Guerriglie nemici (o 1 Base) in uno spazio.",
+}
+# Att.Speciali con scelte multiple: ogni variante è un tasto distinto col suo bersaglio valido.
+const SA_VARIANTS := {
+	"kidnap": [
+		{"id": "kidnap:government", "label": "Sequestro (Governo)", "p": {"target": "government"}},
+		{"id": "kidnap:syndicate", "label": "Sequestro (Sindacato)", "p": {"target": "syndicate"}},
+	],
+	"profit": [
+		{"id": "profit:cash", "label": "Profitto (incassa Denaro)", "p": {"mode": "cash"}},
+		{"id": "profit:convert", "label": "Profitto (converti in Risorse)", "p": {"mode": "convert"}},
+	],
+	"bribe": [
+		{"id": "bribe:cubes", "label": "Corruzione (cubi)", "p": {"action": "cubes"}},
+		{"id": "bribe:guerrillas_remove", "label": "Corruzione (rimuovi Guerriglie)", "p": {"action": "guerrillas_remove"}},
+		{"id": "bribe:guerrillas_flip", "label": "Corruzione (gira Guerriglie)", "p": {"action": "guerrillas_flip"}},
+		{"id": "bribe:base", "label": "Corruzione (rimuovi Base)", "p": {"action": "base"}},
+	],
 }
 # Tipo di flusso per ogni Operazione.
 const OP_KIND := {
@@ -102,6 +119,8 @@ var _selected: Array = []
 var _rally_choice: Dictionary = {}     # sid -> "place"/"extra"/"base"/"flip" (Riorganizzazione)
 var _train_plan: Dictionary = {}       # sid -> {kind:"cubes"/"base"/"civic", n:int} (Addestramento)
 var _build_choice: Dictionary = {}     # sid -> "new"/"open" (Costruzione Sindacato)
+var _garrison_ec := ""                 # EC scelto per l'Assalto gratuito della Guarnigione
+var _reprisal_from := ""               # spazio Rappresaglia in attesa dello spostamento opzionale
 var _pending_moves: Array = []
 var _pending_sa := ""                  # Att.Speciale in attesa di bersaglio
 var _sa_from := ""                     # origine (per Trasporto/Muscle)
@@ -691,7 +710,7 @@ func _refresh_turn_banner() -> void:
 	# Guida passo-passo in base allo stato del flusso.
 	var step := ""
 	if _mode == "sa_point" or _mode == "sa_move":
-		step = "Att.Speciale %s: clicca lo spazio bersaglio" % SA_NAMES.get(_pending_sa, _pending_sa)
+		step = "Att.Speciale %s: clicca lo spazio bersaglio" % _sa_label(_pending_sa)
 	elif _mode == "idle":
 		var acts: Array = []
 		for a in legal:
@@ -727,9 +746,15 @@ func _rebuild_action_buttons(fid: String) -> void:
 	for c in _sa_btns.get_children():
 		c.queue_free()
 	for sa in GameController.game_def.faction(fid).special_activities:
-		var sb: Button = _mk_btn(SA_NAMES.get(sa, sa), _do_special.bind(sa))
-		sb.tooltip_text = SA_DESC.get(sa, "")
-		_sa_btns.add_child(sb)
+		if SA_VARIANTS.has(sa):
+			for v in SA_VARIANTS[sa]:
+				var vb: Button = _mk_btn(String(v["label"]), _do_special.bind(String(v["id"])))
+				vb.tooltip_text = SA_DESC.get(sa, "")
+				_sa_btns.add_child(vb)
+		else:
+			var sb: Button = _mk_btn(SA_NAMES.get(sa, sa), _do_special.bind(sa))
+			sb.tooltip_text = SA_DESC.get(sa, "")
+			_sa_btns.add_child(sb)
 
 
 func _refresh_side() -> void:
@@ -831,9 +856,34 @@ func _on_space_clicked(sid: String) -> void:
 	# Bersaglio Attività Speciale
 	if _mode == "sa_point":
 		if not _sa_valid.has(sid):
-			_instr.text = "%s: spazio non valido, scegline uno evidenziato" % SA_NAMES.get(_pending_sa, _pending_sa)
+			_instr.text = "%s: spazio non valido, scegline uno evidenziato" % _sa_label(_pending_sa)
+			return
+		# Rappresaglia: dopo il bersaglio, scelta opzionale dello spostamento di 1 Guerriglia.
+		if _sa_base(_pending_sa) == "reprisal" and _reprisal_movable(sid) != "" and not _reprisal_dests(sid).is_empty():
+			_reprisal_from = sid
+			_sa_valid = _reprisal_dests(sid)
+			_mode = "sa_reprisal"
+			_clear_highlights()
+			_space_views[sid].set_highlight(true)
+			for d in _sa_valid:
+				_space_views[d].set_highlight(true)
+			_instr.text = "Rappresaglia a %s — clicca uno spazio ADIACENTE per spostarci 1 Guerriglia, oppure riclicca %s per non spostare" % [GameController.game_def.space(sid).name, GameController.game_def.space(sid).name]
 			return
 		_run_sa(_pending_sa, sid)
+		_end_sa()
+		return
+	# Rappresaglia: 2° passo (spostamento opzionale).
+	if _mode == "sa_reprisal":
+		if sid == _reprisal_from:
+			GameController.run_special("reprisal", {"space": _reprisal_from, "move": {}})
+			_reprisal_from = ""
+			_end_sa()
+			return
+		if not _sa_valid.has(sid):
+			_instr.text = "Spostamento non valido: scegli uno spazio adiacente evidenziato"
+			return
+		GameController.run_special("reprisal", {"space": _reprisal_from, "move": {"faction": _reprisal_movable(_reprisal_from), "to": sid}})
+		_reprisal_from = ""
 		_end_sa()
 		return
 	if _mode == "sa_move":
@@ -870,6 +920,14 @@ func _on_space_clicked(sid: String) -> void:
 		return
 	if _cur_action == "build":
 		_build_click(sid)
+		return
+	# Guarnigione (modalità trascinamento): clicca un EC per l'Assalto gratuito opzionale.
+	if _cur_action == "garrison" and _mode == "moves":
+		if GameController.game_def.space(sid).is_economic():
+			_garrison_ec = "" if _garrison_ec == sid else sid
+			_space_views[sid].flash(Color(1.0, 0.7, 0.3))
+			var nm := GameController.game_def.space(sid).name
+			_instr.text = ("Guarnigione: Assalto gratuito a %s — trascina i cubi e 'Esegui'" % nm) if _garrison_ec != "" else "Guarnigione: Assalto in EC annullato"
 		return
 	if _selected.has(sid):
 		_selected.erase(sid)
@@ -1082,8 +1140,8 @@ func _do_special(sa: String) -> void:
 	if _limited:
 		_instr.text = "Operazione Limitata: niente Attività Speciale"
 		return
-	var sa_name: String = SA_NAMES.get(sa, sa)
-	var sa_desc: String = SA_DESC.get(sa, "")
+	var sa_name: String = _sa_label(sa)
+	var sa_desc: String = SA_DESC.get(_sa_base(sa), "")
 	# Avvia la selezione del BERSAGLIO dell'Attività Speciale (prima/durante/dopo l'Operazione).
 	var resume := _mode if _mode in ["space_list", "select_spaces", "moves"] else "idle"
 	if sa == "transport" or sa == "muscle":
@@ -1117,19 +1175,63 @@ func _do_special(sa: String) -> void:
 	_refresh_turn_banner()
 
 
+## Fazione Insorgente con una Guerriglia da spostare nella Rappresaglia (o "").
+func _reprisal_movable(sid: String) -> String:
+	var st: SpaceState = GameController.state.space_state(sid)
+	for f in ["m26", "directorio", "syndicate"]:
+		if st.count(f, "guerrilla") > 0:
+			return f
+	return ""
+
+
+## Spazi adiacenti dove spostare la Guerriglia nella Rappresaglia.
+func _reprisal_dests(sid: String) -> Array:
+	return Array(GameController.game_def.space(sid).adjacent)
+
+
+## Att.Speciale di base dietro a un id-variante ("bribe:cubes" -> "bribe").
+func _sa_base(sa: String) -> String:
+	var i := sa.find(":")
+	return sa.substr(0, i) if i >= 0 else sa
+
+
+## Parametri extra di una variante (azione/modo/bersaglio), o {} se non è una variante.
+func _sa_variant_p(sa: String) -> Dictionary:
+	var base := _sa_base(sa)
+	for v in SA_VARIANTS.get(base, []):
+		if v["id"] == sa:
+			return v["p"]
+	return {}
+
+
+## Etichetta da mostrare (variante o nome base).
+func _sa_label(sa: String) -> String:
+	var base := _sa_base(sa)
+	for v in SA_VARIANTS.get(base, []):
+		if v["id"] == sa:
+			return v["label"]
+	return SA_NAMES.get(sa, sa)
+
+
 ## sa_id effettivo (Imboscata dipende dalla Fazione attiva).
 func _sa_target_id(sa: String) -> String:
-	if sa == "ambush":
+	var base := _sa_base(sa)
+	if base == "ambush":
 		return "ambush_m26" if _cur_faction == "m26" else "ambush_dr"
-	return sa
+	return base
 
 
 ## Parametri per un'Att.Speciale a bersaglio singolo su `space`.
 func _sa_params(sa: String, space: String) -> Dictionary:
-	match sa:
-		"profit": return {"mode": "cash", "spaces": [space]}
+	var vp := _sa_variant_p(sa)
+	match _sa_base(sa):
+		"profit":
+			if String(vp.get("mode", "cash")) == "convert":
+				return {"mode": "convert", "close": [space]}
+			return {"mode": "cash", "spaces": [space]}
 		"reprisal": return {"space": space, "move": {}}
-		"kidnap": return {"space": space, "target": "government"}
+		"kidnap": return {"space": space, "target": String(vp.get("target", "government"))}
+		"bribe": return {"space": space, "action": String(vp.get("action", "cubes"))}
 		_: return {"space": space, "faction": _cur_faction}
 
 
@@ -1137,7 +1239,11 @@ func _sa_params(sa: String, space: String) -> Dictionary:
 func _sa_valid_spaces(sa: String) -> Array:
 	var out: Array = []
 	var sid_id := _sa_target_id(sa)
+	var st: GameState = GameController.state
 	for s in _space_views.keys():
+		# Profitto (anche "converti") agisce solo dove c'è un Casinò aperto da chiudere/usare.
+		if _sa_base(sa) == "profit" and st.space_state(s).count("syndicate", "casino", "open") < 1:
+			continue
 		if GameController.can_special(sid_id, _sa_params(sa, s)):
 			out.append(s)
 	return out
@@ -1188,11 +1294,17 @@ func _run_sa(sa: String, space: String) -> void:
 
 
 ## Esegue Trasporto/Muscle come spostamento origine→destinazione.
+## Sposta il massimo consentito dalla regola (Trasporto fino a 3 Truppe, Muscle fino a 2 cubi).
 func _run_sa_move(sa: String, from_id: String, to_id: String) -> void:
-	var p := {"from": from_id, "to": to_id, "count": 2}
+	var from_st: SpaceState = GameController.state.space_state(from_id)
+	var p := {"from": from_id, "to": to_id}
 	if sa == "muscle":
 		var dest: SpaceDef = GameController.game_def.space(to_id)
-		p["type"] = "police" if dest.type == CoinEnums.SpaceType.CITY else "troops"
+		var typ := "police" if dest.type == CoinEnums.SpaceType.CITY else "troops"
+		p["type"] = typ
+		p["count"] = mini(2, from_st.count("government", typ))
+	else:
+		p["count"] = mini(3, from_st.count("government", "troops"))
 	GameController.run_special(sa, p)
 
 
@@ -1249,6 +1361,8 @@ func _clear_pending() -> void:
 	_rally_choice.clear()
 	_train_plan.clear()
 	_build_choice.clear()
+	_garrison_ec = ""
+	_reprisal_from = ""
 	_pending_moves.clear()
 	_pending_sa = ""
 	_sa_from = ""
@@ -1284,7 +1398,10 @@ func _build_params() -> Dictionary:
 				dests[m["to"]] = true
 			return {"spaces": dests.keys(), "moves": _pending_moves}
 		"garrison":
-			return {"moves": _pending_moves}
+			var gp := {"moves": _pending_moves}
+			if _garrison_ec != "":
+				gp["assault_ec"] = _garrison_ec
+			return gp
 		"march":
 			return {"faction": _cur_faction, "moves": _pending_moves}
 		"rally":
