@@ -383,6 +383,7 @@ func attack(params: Dictionary) -> Dictionary:
 	state.add_resources(f, -cost)
 	var log: Array = []
 	var die_rolls: Dictionary = params.get("die_rolls", {})
+	var targets: Dictionary = params.get("targets", {})
 	for sid in spaces:
 		var st: SpaceState = state.space_state(sid)
 		# Attiva tutte le proprie Guerriglie
@@ -391,7 +392,8 @@ func attack(params: Dictionary) -> Dictionary:
 		var roll := int(die_rolls.get(sid, randi() % 6 + 1))
 		if roll <= num_g:
 			var removed := mod.remove_enemy_pieces(state, sid, 2, f,
-				{"active_g": true, "underground_g": true, "cubes": true, "bases": true})
+				{"active_g": true, "underground_g": true, "cubes": true, "bases": true},
+				String(targets.get(sid, "")))
 			log.append("Attacco a %s (tiro %d ≤ %d): rimossi %d pezzi" % [sid, roll, num_g, removed])
 			if roll == 1:
 				state.place_from_available(f, "guerrilla", sid, 1)
