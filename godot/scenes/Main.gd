@@ -81,8 +81,11 @@ func _ready() -> void:
 	_build_ui()
 	GameController.state_changed.connect(_refresh)
 	GameController.action_logged.connect(_on_log)
+	get_viewport().size_changed.connect(_layout_board)
 	_on_faction_changed(0)
 	_refresh()
+	# Il layout va calcolato quando la finestra ha la sua dimensione reale (non a 0).
+	_layout_board.call_deferred()
 
 
 # ---------------------------------------------------------------------------
@@ -273,8 +276,13 @@ func _on_execute_and_end() -> void:
 func _build_side_panel() -> PanelContainer:
 	var pc := PanelContainer.new()
 	pc.clip_contents = true
+	# Contenuto scrollabile: niente più nulla che esce dal riquadro.
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	pc.add_child(scroll)
 	var vb := VBoxContainer.new()
-	pc.add_child(vb)
+	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(vb)
 
 	# Carte: corrente e prossima (Upcoming), affiancate
 	var cards_row := HBoxContainer.new()
@@ -307,14 +315,14 @@ func _build_side_panel() -> PanelContainer:
 	_card_label = RichTextLabel.new()
 	_card_label.bbcode_enabled = true
 	_card_label.fit_content = true
-	_card_label.custom_minimum_size = Vector2(360, 56)
+	_card_label.custom_minimum_size = Vector2(330, 56)
 	vb.add_child(_card_label)
 	vb.add_child(HSeparator.new())
 
 	_faction_label = RichTextLabel.new()
 	_faction_label.bbcode_enabled = true
 	_faction_label.fit_content = true
-	_faction_label.custom_minimum_size = Vector2(360, 92)
+	_faction_label.custom_minimum_size = Vector2(330, 92)
 	vb.add_child(_faction_label)
 
 	vb.add_child(HSeparator.new())
@@ -322,7 +330,7 @@ func _build_side_panel() -> PanelContainer:
 	_track_label = RichTextLabel.new()
 	_track_label.bbcode_enabled = true
 	_track_label.fit_content = true
-	_track_label.custom_minimum_size = Vector2(360, 92)
+	_track_label.custom_minimum_size = Vector2(330, 92)
 	vb.add_child(_track_label)
 
 	vb.add_child(HSeparator.new())
@@ -331,13 +339,12 @@ func _build_side_panel() -> PanelContainer:
 	log_title.text = "Log"
 	vb.add_child(log_title)
 
-	# Il log riempie lo spazio rimanente ed è scrollabile (non sborda).
+	# Log con altezza fissa, sempre visibile e scrollabile.
 	_log = RichTextLabel.new()
 	_log.bbcode_enabled = true
 	_log.scroll_following = true
 	_log.scroll_active = true
-	_log.custom_minimum_size = Vector2(360, 120)
-	_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_log.custom_minimum_size = Vector2(340, 260)
 	vb.add_child(_log)
 
 	pc.custom_minimum_size = Vector2(380, 0)
