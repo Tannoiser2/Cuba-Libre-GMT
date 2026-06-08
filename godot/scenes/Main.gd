@@ -94,6 +94,7 @@ var _turn_banner: Label
 var _btn_end: Button
 var _btn_pass: Button
 var _btn_bot: Button
+var _role_btns: Dictionary = {}        # fid -> Button (toggle Giocatore/Bot)
 var _btn_ev_u: Button
 var _btn_ev_s: Button
 
@@ -141,6 +142,13 @@ func _ready() -> void:
 	GameController.bot_decision.connect(_on_bot_decision)
 	get_viewport().size_changed.connect(_layout_board)
 	_rebuild_action_buttons(_cur_faction)
+	# Driver automatico delle Fazioni Bot (gioca da sole al loro turno).
+	var bot_timer := Timer.new()
+	bot_timer.wait_time = 1.0
+	bot_timer.one_shot = false
+	add_child(bot_timer)
+	bot_timer.timeout.connect(_auto_bot_tick)
+	bot_timer.start()
 	_refresh()
 	# Il layout va calcolato quando la finestra ha la sua dimensione reale (non a 0).
 	_layout_board.call_deferred()
@@ -367,6 +375,17 @@ func _build_action_bar() -> VBoxContainer:
 	row2.add_child(_mk_btn("Zoom -", func(): _set_zoom(_zoom / 1.25)))
 	row2.add_child(_mk_btn("Adatta", func(): _set_zoom(1.0)))
 
+	# Riga ruoli: Giocatore/Bot per ogni Fazione (clic per cambiare).
+	var row3 := HFlowContainer.new()
+	row3.add_theme_constant_override("h_separation", 5)
+	bar.add_child(row3)
+	row3.add_child(_mk_label("Ruoli:"))
+	for fid in ["government", "m26", "directorio", "syndicate"]:
+		var rb := _mk_btn("", _toggle_role.bind(fid))
+		_role_btns[fid] = rb
+		row3.add_child(rb)
+	_update_role_btns()
+
 	# Istruzione di passo (sotto le righe)
 	_instr = Label.new()
 	_instr.add_theme_color_override("font_color", Color("f1c40f"))
@@ -539,6 +558,8 @@ func _refresh() -> void:
 	_flash_changes()
 	_refresh_turn_banner()
 	_refresh_side()
+	if not _role_btns.is_empty():
+		_update_role_btns()
 
 
 ## Centri normalizzati dei box "Forze Disponibili" (per animare piazzamenti/rimozioni).
@@ -1479,6 +1500,35 @@ func _on_event(side: String) -> void:
 func _on_all_bots() -> void:
 	# Risolve la carta corrente con i bot, una mossa alla volta (con pausa/flash).
 	GameController.run_card_paced()
+
+
+const _ROLE_SHORT := {"government": "Gov", "m26": "26J", "directorio": "DR", "syndicate": "SYN"}
+
+
+func _toggle_role(fid: String) -> void:
+	GameController.set_role(fid, "bot" if GameController.is_player(fid) else "player")
+	_update_role_btns()
+
+
+func _update_role_btns() -> void:
+	for fid in _role_btns:
+		var player := GameController.is_player(fid)
+		var b: Button = _role_btns[fid]
+		b.text = "%s: %s" % [_ROLE_SHORT.get(fid, fid), "Giocatore" if player else "Bot"]
+		b.add_theme_color_override("font_color", GameController.faction_color(fid) if player else Color("8aa0b3"))
+
+
+## Tick automatico: se tocca a una Fazione Bot (e non sto scegliendo nulla), gioca da sola.
+func _auto_bot_tick() -> void:
+	if GameController.game_over or _mode != "idle":
+		return
+	var s: GameState = GameController.state
+	if s == null or s.current_card <= 0:
+		return
+	var st := GameController.seq_status()
+	var pending := String(st.get("pending", ""))
+	if pending != "" and bool(st.get("active", false)) and GameController.is_bot(pending):
+		GameController.bot_act_pending()
 
 
 ## Nuova partita: ripulisce il log e la selezione, poi reinizializza.
