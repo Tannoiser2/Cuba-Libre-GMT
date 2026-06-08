@@ -415,6 +415,8 @@ func _build_side_panel() -> PanelContainer:
 	# Testo del log piccolo (override di tema = affidabile, non dipende dal bbcode).
 	for fs in ["normal_font_size", "bold_font_size", "italics_font_size", "bold_italics_font_size", "mono_font_size"]:
 		_log.add_theme_font_size_override(fs, 11)
+	# Un po' d'aria tra una riga (Fazione) e l'altra.
+	_log.add_theme_constant_override("line_separation", 5)
 	_log.meta_clicked.connect(_on_log_meta)
 	vb.add_child(_log)
 
@@ -430,24 +432,31 @@ func _set_zoom(z: float) -> void:
 func _layout_board() -> void:
 	if _bar == null or _board == null:
 		return
-	var side_w := 388.0
+	# Larghezza minima del pannello laterale (log/carte); può crescere oltre.
+	var min_side := 360.0
 	# La barra azioni occupa la larghezza utile e va a capo; il board parte sotto.
 	_bar.size.x = maxf(300.0, size.x - 16.0)
 	var top: float = _bar.get_combined_minimum_size().y + 16.0
-	_board.position = Vector2(8, top)
-	_board.size = Vector2(maxf(300.0, size.x - side_w - 16.0), maxf(200.0, size.y - top - 8.0))
-	# Pannello laterale a destra, sotto la barra
-	_side.position = Vector2(size.x - side_w + 4.0, top)
-	_side.size = Vector2(side_w - 8.0, size.y - top - 8.0)
-	# Dimensione base della mappa per riempire il viewport, poi moltiplicata per lo zoom
+	var avail_h := maxf(200.0, size.y - top - 8.0)
+	# La mappa (landscape) si adatta all'area disponibile lasciando spazio al pannello.
 	var aspect := 2040.0 / 2640.0
-	var vw := _board.size.x
-	var vh := _board.size.y
-	var mw0 := vw
+	var max_map_w := maxf(300.0, size.x - 16.0 - min_side - 8.0)
+	var mw0 := max_map_w
 	var mh0 := mw0 * aspect
-	if mh0 > vh:
-		mh0 = vh
+	if mh0 > avail_h:
+		mh0 = avail_h
 		mw0 = mh0 / aspect
+	# Pannello laterale di larghezza comoda (né troppo stretto né esageratamente largo);
+	# la mappa e il pannello stanno attaccati e il blocco è centrato, così l'eventuale
+	# spazio extra diventa due piccoli margini bilanciati invece di un vuoto tra i due.
+	var max_side := 470.0
+	var side_w := clampf(size.x - 16.0 - mw0 - 8.0, min_side, max_side)
+	var block_w := mw0 + 8.0 + side_w
+	var lm := maxf(8.0, (size.x - block_w) * 0.5)
+	_board.position = Vector2(lm, top)
+	_board.size = Vector2(mw0, avail_h)
+	_side.position = Vector2(lm + mw0 + 8.0, top)
+	_side.size = Vector2(side_w, avail_h)
 	# Dimensione base (zoom=1); lo zoom è applicato come SCALA al nodo mappa, così tutto
 	# (mappa, pedine, segnalini) scala in modo uniforme. Il wrapper definisce l'area scrollabile.
 	var base := Vector2(mw0, mh0)
@@ -751,9 +760,16 @@ func _render_log() -> void:
 	if _log_entries.size() > 300:
 		_log_entries = _log_entries.slice(_log_entries.size() - 300)
 	var s := ""
+	var turn := 0
 	for i in range(_log_entries.size()):
 		var e: Dictionary = _log_entries[i]
-		s += _fmt_log_line(String(e["t"]), String(e["f"]))
+		var txt := String(e["t"])
+		# Fine carta = fine di un turno: divisore prominente con il numero del turno.
+		if String(e["f"]) == "" and txt.find("Carta conclusa") != -1:
+			turn += 1
+			s += "\n[center][b][color=#f1c40f]═════  Fine turno %d  ═════[/color][/b][/center]\n\n" % turn
+			continue
+		s += _fmt_log_line(txt, String(e["f"]))
 		if e["tr"].size() > 0:
 			var exp: bool = e.get("exp", false)
 			s += "  [url=%d][font_size=10][color=#7fb0ff]%s[/color][/font_size][/url]\n" % [i, ("▼ logica" if exp else "▶ logica")]
