@@ -886,15 +886,16 @@ func _end_sa() -> void:
 
 ## Gioca l'Evento della carta corrente (lato chiaro/ombreggiato) per la Fazione selezionata.
 func _on_event(side: String) -> void:
-	var n: int = GameController.state.current_card
-	if n <= 0:
-		_instr.text = "Nessuna carta Evento corrente"
-		return
-	var params := {"faction": _cur_faction}
+	var params := {}
 	if _selected.size() > 0:
 		params["space"] = _selected[0]
-	GameController.run_event(n, side, _cur_faction, params)
+	var res := GameController.play_event(side, params)
 	_clear_pending()
+	if not res.get("ok", false):
+		_instr.text = "⚠ " + String(res.get("error", "Evento non eseguibile"))
+	else:
+		_instr.text = "Evento giocato — turno concluso"
+	_refresh_turn_banner()
 
 
 func _on_all_bots() -> void:

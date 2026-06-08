@@ -86,33 +86,42 @@ func _has_point(point: Vector2) -> bool:
 	return Geometry2D.is_point_in_polygon(point, _scaled_poly())
 
 
-const PSZ := 27.0      # dimensione pezzo
-const STEP := 18.0     # passo griglia (< PSZ → leggera sovrapposizione)
+const PSZ := 23.0      # dimensione pezzo
+const STEP := 15.0     # passo griglia base (< PSZ → sovrapposizione)
+const MIN_STEP := 8.0  # passo minimo (massima sovrapposizione quando è affollato)
 
 
 func relayout() -> void:
 	var a := Vector2(_anchor_norm.x * size.x, _anchor_norm.y * size.y)
-	# Pezzi a GRIGLIA centrata sull'anchor (con sovrapposizione), entro la larghezza della zona.
+	# Pezzi a GRIGLIA centrata sull'anchor; il passo si stringe (più sovrapposizione)
+	# quanti più pezzi ci sono, così restano dentro lo spazio/cerchio.
 	var n := _pieces.size()
 	var grid_top := a.y
 	if n > 0:
-		var max_cols := maxi(2, int(_bounds_w * size.x / STEP))
-		var cols := clampi(int(ceil(sqrt(float(n)))), 1, max_cols)
-		cols = mini(cols, n)
-		var rows := int(ceil(float(n) / cols))
-		var total_w := (cols - 1) * STEP + PSZ
-		var total_h := (rows - 1) * STEP + PSZ
-		var origin := Vector2(a.x - total_w * 0.5, a.y - total_h * 0.5)
-		grid_top = origin.y
+		# Larghezza/altezza utili della zona (per i cerchi ≈ diametro).
+		var aw := maxf(PSZ, _bounds_w * size.x)
+		var ah: float = aw if _circle.z >= 0.0 else aw * 1.6
+		var cols := clampi(int(round(sqrt(float(n)))), 1, n)
+		var rows := int(ceil(float(n) / float(cols)))
+		# Passi che fanno stare la griglia nella zona (con sovrapposizione se serve).
+		var stepx := STEP
+		if cols > 1:
+			stepx = clampf((aw - PSZ) / float(cols - 1), MIN_STEP, STEP)
+		var stepy := STEP
+		if rows > 1:
+			stepy = clampf((ah - PSZ) / float(rows - 1), MIN_STEP, STEP)
+		var total_h := (rows - 1) * stepy + PSZ
+		var origin_y := a.y - total_h * 0.5
+		grid_top = origin_y
 		for i in range(n):
 			var col := i % cols
 			var row := i / cols
 			# ultima riga (eventualmente incompleta) centrata
 			var in_row := cols if row < rows - 1 else (n - row * cols)
-			var row_w := (in_row - 1) * STEP + PSZ
-			var rx := a.x - row_w * 0.5 + col * STEP
+			var row_w := (in_row - 1) * stepx + PSZ
+			var rx := a.x - row_w * 0.5 + col * stepx
 			_pieces[i].size = Vector2(PSZ, PSZ)
-			_pieces[i].position = Vector2(rx, origin.y + row * STEP)
+			_pieces[i].position = Vector2(rx, origin_y + row * stepy)
 	# Terrore/Sabotaggio appena sopra la griglia.
 	_stack.reset_size()
 	_stack.position = Vector2(a.x - _stack.size.x * 0.5, grid_top - 16.0)

@@ -132,6 +132,29 @@ func seq_is_limited_only() -> bool:
 		and not legal.has(A.OPERATION) and not legal.has(A.OPERATION_WITH_SPECIAL)
 
 
+## La Fazione di turno gioca l'Evento della carta corrente: applica l'effetto e
+## REGISTRA subito l'azione nella sequenza (l'Evento è l'intera azione della Fazione),
+## così non può essere rigiocato. Restituisce {"ok", "error"}.
+func play_event(side: String, params: Dictionary = {}) -> Dictionary:
+	var A := CoinEnums.ActionType
+	if seq == null or seq.pending_faction() == "":
+		return {"ok": false, "error": "Non è il turno di nessuna Fazione"}
+	if not seq.is_legal(A.EVENT):
+		return {"ok": false, "error": "L'Evento non è un'azione legale in questo slot"}
+	var n: int = state.current_card
+	if n <= 0:
+		return {"ok": false, "error": "Nessuna carta Evento corrente"}
+	var fid := seq.pending_faction()
+	var p := params.duplicate()
+	p["faction"] = fid
+	var res := run_event(n, side, fid, p)
+	if not res.get("ok", true):
+		return {"ok": false, "error": String(res.get("error", "Evento non eseguibile"))}
+	seq.act(A.EVENT)
+	_after_decision()
+	return {"ok": true, "error": ""}
+
+
 ## La Fazione di turno Passa.
 func seq_pass() -> bool:
 	if seq == null or seq.pending_faction() == "":
