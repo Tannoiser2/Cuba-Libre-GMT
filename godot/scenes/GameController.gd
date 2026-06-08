@@ -189,21 +189,22 @@ func _bot_take_pending() -> void:
 				emit_signal("action_logged", "🤖 Evento (%s): %s" % [side, String(line)], fid)
 			seq.act(A.EVENT)
 			return
-	var br := bot.take_turn(fid)
-	for line in br.get("log", []):
-		emit_signal("action_logged", "🤖 " + String(line), fid)
-	if br.get("action", "pass") == "pass":
-		seq.act_pass()
-		return
-	# Il bot svolge Operazione (+ Att.Speciale). Scegli il tipo legale più ricco.
-	var t := A.OPERATION
+	# Tipo di Operazione legale per questo slot (se nessuno è legale, NON eseguire l'Operazione).
+	var t := -1
 	if seq.is_legal(A.OPERATION_WITH_SPECIAL):
 		t = A.OPERATION_WITH_SPECIAL
 	elif seq.is_legal(A.OPERATION):
 		t = A.OPERATION
 	elif seq.is_legal(A.LIMITED_OPERATION):
 		t = A.LIMITED_OPERATION
-	else:
+	if t == -1:
+		# Solo Evento/Pass erano possibili: l'Evento non conveniva → Passa.
+		seq.act_pass()
+		return
+	var br := bot.take_turn(fid)
+	for line in br.get("log", []):
+		emit_signal("action_logged", "🤖 " + String(line), fid)
+	if br.get("action", "pass") == "pass":
 		seq.act_pass()
 		return
 	seq.act(t)

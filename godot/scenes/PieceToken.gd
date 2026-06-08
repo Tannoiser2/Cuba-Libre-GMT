@@ -22,8 +22,13 @@ func setup(p_from: String, p_faction: String, p_type: String, p_state: String, l
 	if _tex != null:
 		icon = _tex
 		expand_icon = true
-		custom_minimum_size = Vector2(24, 24)
+		custom_minimum_size = Vector2(32, 32)
 		flat = true
+		# Niente padding/bordo del Button: i pezzi restano compatti e adiacenti.
+		var empty := StyleBoxEmpty.new()
+		for st in ["normal", "hover", "pressed", "focus", "disabled"]:
+			add_theme_stylebox_override(st, empty)
+		add_theme_constant_override("h_separation", 0)
 		tooltip_text = "%s — trascina per spostare 1 pezzo" % label
 	else:
 		text = label

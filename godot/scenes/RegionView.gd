@@ -128,7 +128,7 @@ func refresh(state: GameState) -> void:
 	prow.add_theme_constant_override("h_separation", 0)
 	prow.add_theme_constant_override("v_separation", 0)
 	# Larghezza area pezzi adattata alla zona: i pezzi si distribuiscono entro lo spazio.
-	prow.custom_minimum_size = Vector2(clampf(_bounds_w * size.x, 48.0, 240.0), 0)
+	prow.custom_minimum_size = Vector2(clampf(_bounds_w * size.x, 66.0, 220.0), 0)
 	prow.mouse_filter = Control.MOUSE_FILTER_PASS
 	_stack.add_child(prow)
 	for fid in ["government", "m26", "directorio", "syndicate"]:
