@@ -87,7 +87,7 @@ func _has_point(point: Vector2) -> bool:
 
 
 const PSZ := 23.0      # dimensione pezzo
-const STEP := 15.0     # passo griglia base (< PSZ → sovrapposizione)
+const STEP := 15.0     # passo griglia base (< PSZ -> sovrapposizione)
 const MIN_STEP := 8.0  # passo minimo (massima sovrapposizione quando è affollato)
 
 
@@ -98,7 +98,7 @@ func relayout() -> void:
 	var n := _pieces.size()
 	var grid_top := a.y
 	if n > 0:
-		# Larghezza/altezza utili della zona (per i cerchi ≈ diametro).
+		# Larghezza/altezza utili della zona (per i cerchi ~ diametro).
 		var aw := maxf(PSZ, _bounds_w * size.x)
 		var ah: float = aw if _circle.z >= 0.0 else aw * 1.6
 		var cols := clampi(int(round(sqrt(float(n)))), 1, n)
@@ -158,7 +158,7 @@ func refresh(state: GameState) -> void:
 	if st.marker("sabotage") > 0:
 		_add_marker(mrow, CLAssets.sabotage())
 
-	# Pezzi (sprite trascinabili) — posizionati a griglia centrata in relayout.
+	# Pezzi (sprite trascinabili) - posizionati a griglia centrata in relayout.
 	for p in _pieces:
 		p.queue_free()
 	_pieces = []

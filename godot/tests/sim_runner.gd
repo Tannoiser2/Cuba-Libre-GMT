@@ -80,7 +80,7 @@ func _best_by_margin(vs: Dictionary, tiebreak: PackedStringArray) -> String:
 
 func _print_report(n, wins, win_by_condition, sum_value, sum_margin, best_value, rows) -> void:
 	print("\n==================================================")
-	print("  REPORT SIMULAZIONE — %d partite (bot vs bot)" % n)
+	print("  REPORT SIMULAZIONE - %d partite (bot vs bot)" % n)
 	print("==================================================\n")
 	if n <= 30:
 		print("Dettaglio partite (margine di vittoria per Fazione; * = vittoria per condizione):")

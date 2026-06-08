@@ -262,21 +262,21 @@ func _bot_take_pending() -> void:
 		if ec.get("play", false):
 			var side: String = ec["side"]
 			var eres := events.apply(state.current_card, side, fid)
-			var etrace := ["C8.5.2 → EVENTO (Critical/efficace), lato %s" % side]
+			var etrace := ["C8.5.2 -> EVENTO (Critical/efficace), lato %s" % side]
 			etrace.append_array(eres.get("log", []))
-			emit_signal("bot_decision", "%s → EVENTO (%s)" % [fname, side], fid, etrace)
+			emit_signal("bot_decision", "%s -> EVENTO (%s)" % [fname, side], fid, etrace)
 			seq.act(A.EVENT)
 			_count("event")
 			return
 		decision = "op_sa"  # Evento non più conveniente: ripiega su Operazione
 	# PASS deciso dalla tabella
 	if decision == "pass":
-		emit_signal("bot_decision", "%s → PASSA (C8.5.2)" % fname, fid, ["C8.5.2: conviene restare Disponibile."])
+		emit_signal("bot_decision", "%s -> PASSA (C8.5.2)" % fname, fid, ["C8.5.2: conviene restare Disponibile."])
 		seq.act_pass(); _count("pass"); _count("pass#" + fid)
 		return
 	# Nessuna Operazione legale -> Pass
 	if not (can_full or can_op or can_lim):
-		emit_signal("bot_decision", "%s → PASSA" % fname, fid, ["Solo Evento/Pass legali e l'Evento non conveniva."])
+		emit_signal("bot_decision", "%s -> PASSA" % fname, fid, ["Solo Evento/Pass legali e l'Evento non conveniva."])
 		seq.act_pass(); _count("pass"); _count("pass#" + fid)
 		return
 	# OPERAZIONE: op_sa / op_only / lim_op (rispettando la legalità dello slot)
@@ -285,7 +285,7 @@ func _bot_take_pending() -> void:
 	var br := bot.take_turn(fid, want_sa and not limited, limited)
 	var trace: Array = br.get("trace", [])
 	if br.get("action", "pass") == "pass":
-		emit_signal("bot_decision", "%s → PASSA (nessuna Operazione legale)" % fname, fid, trace)
+		emit_signal("bot_decision", "%s -> PASSA (nessuna Operazione legale)" % fname, fid, trace)
 		seq.act_pass(); _count("pass"); _count("pass#" + fid)
 		return
 	var optype := String(br.get("action", ""))
@@ -309,7 +309,7 @@ func _bot_take_pending() -> void:
 	var label := "%s: %s" % [atype, _OP_IT.get(optype, optype)]
 	if t == A.OPERATION_WITH_SPECIAL:
 		label += " + " + String(_SA_IT.get(String(br.get("special_type", "")), br.get("special_type", "")))
-	emit_signal("bot_decision", "%s → %s" % [fname, label], fid, trace)
+	emit_signal("bot_decision", "%s -> %s" % [fname, label], fid, trace)
 	seq.act(t)
 	_count("act#" + fid)
 	_count("op:" + optype)
@@ -404,7 +404,7 @@ func _after_decision() -> void:
 	module._refresh_victory_tracks(state)
 	if seq != null and seq.is_done():
 		seq.finish()
-		emit_signal("action_logged", "— Carta conclusa —", "")
+		emit_signal("action_logged", "- Carta conclusa -", "")
 		advance_card()
 		return
 	emit_signal("state_changed")
@@ -475,7 +475,7 @@ func step_card() -> void:
 
 
 var _busy := false
-var pace_delay := 1.1   ## Pausa (s) tra le mosse dei bot; regolabile dalla UI (≥ durata animazioni).
+var pace_delay := 1.1   ## Pausa (s) tra le mosse dei bot; regolabile dalla UI (>= durata animazioni).
 
 
 ## Risolve la carta corrente con i bot facendo una PAUSA tra le mosse (per vederle una alla
@@ -521,7 +521,7 @@ func run_full_game_paced(delay: float = -1.0) -> void:
 
 func current_card_text() -> String:
 	if game_over:
-		return "Partita conclusa" + ("" if winner == "" else " — vince %s" % winner)
+		return "Partita conclusa" + ("" if winner == "" else " - vince %s" % winner)
 	if state.current_card == -1:
 		return "Mazzo esaurito"
 	if state.current_card == 0:
@@ -651,7 +651,7 @@ func run_bot_turn(faction: String) -> Dictionary:
 	return res
 
 
-## Risolve la carta Propaganda corrente (Vittoria → Risorse → Supporto → azioni NP → Reset),
+## Risolve la carta Propaganda corrente (Vittoria -> Risorse -> Supporto -> azioni NP -> Reset),
 ## gestendo conteggio (X/4), vittoria e Propaganda finale. Percorso UNICO e corretto.
 func resolve_propaganda() -> Dictionary:
 	if state.current_card != 0:
@@ -687,7 +687,7 @@ func resolve_propaganda() -> Dictionary:
 
 ## Report finale nel log: dichiara la Fazione vincente e i punteggi di tutte
 ## (valore/soglia e margine). Se non è già noto, il vincitore è chi ha il margine
-## maggiore rispetto alla propria soglia di vittoria (parità → ordine di spareggio).
+## maggiore rispetto alla propria soglia di vittoria (parità -> ordine di spareggio).
 func _emit_final_report(forced_winner: String) -> void:
 	var vs := module.victory_status(state)
 	var order := ["government", "m26", "directorio", "syndicate"]
@@ -701,14 +701,14 @@ func _emit_final_report(forced_winner: String) -> void:
 			if m > bm or (m == bm and tb.find(fid) < tb.find(win)):
 				win = fid
 	winner = win
-	emit_signal("action_logged", "═══ FINE PARTITA", "")
+	emit_signal("action_logged", "=== FINE PARTITA", "")
 	emit_signal("action_logged", "» Vince: %s" % faction_name(win), win)
 	# Classifica per margine decrescente.
 	var ranking := order.duplicate()
 	ranking.sort_custom(func(a, b): return int(vs[a]["margin"]) > int(vs[b]["margin"]))
 	for fid in ranking:
 		var d: Dictionary = vs[fid]
-		var mark := "» " if fid == win else "•  "
+		var mark := "» " if fid == win else "-  "
 		var extra := ""
 		if fid == "syndicate":
 			extra = " · Risorse %d/30" % int(d.get("resources", 0))

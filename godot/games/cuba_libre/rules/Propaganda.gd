@@ -256,7 +256,7 @@ func _ec_guerrillas(sid: String) -> int:
 		n += st.count(f, "guerrilla")
 	return n
 
-## Muove 1 Polizia verso `dest` dallo spazio (≠dest) che ne ha di più.
+## Muove 1 Polizia verso `dest` dallo spazio (!=dest) che ne ha di più.
 func _pull_police_to(dest: String) -> bool:
 	var donor := ""
 	var bn := 0
@@ -317,6 +317,6 @@ func run(params: Dictionary = {}) -> Dictionary:
 	if bool(params.get("final", false)):
 		# Propaganda finale: niente Spostamento/Sistemazione (6.3.5)
 		return {"winner": "", "log": log, "ended": true}
-	# (Spostamento del Governo: a scelta del giocatore — gestito dal livello UI)
+	# (Spostamento del Governo: a scelta del giocatore - gestito dal livello UI)
 	log.append_array(reset_phase())
 	return {"winner": "", "log": log, "ended": false}

@@ -17,7 +17,7 @@ var draw_deck: Array[int] = []          ## numeri carta (cima = ultimo)
 var played_deck: Array[int] = []
 var current_card: int = -1
 
-## Capacità/Momentum attivi (id evento) — effetti duraturi.
+## Capacità/Momentum attivi (id evento) - effetti duraturi.
 var active_capabilities: PackedStringArray = PackedStringArray()
 var active_momentum: PackedStringArray = PackedStringArray()
 
@@ -251,7 +251,7 @@ func set_support(space_id: String, level: CoinEnums.Support) -> void:
 
 
 # ---------------------------------------------------------------------------
-# Denaro (Cash) — limite globale 4 segnalini sulla mappa (Cuba Libre 4.5.2)
+# Denaro (Cash) - limite globale 4 segnalini sulla mappa (Cuba Libre 4.5.2)
 # ---------------------------------------------------------------------------
 
 const CASH_LIMIT := 4

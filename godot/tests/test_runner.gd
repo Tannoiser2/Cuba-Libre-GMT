@@ -9,7 +9,7 @@ var _failed := 0
 
 
 func _initialize() -> void:
-	print("== COIN Engine — Test Cuba Libre ==")
+	print("== COIN Engine - Test Cuba Libre ==")
 	_test_game_def()
 	_test_setup_forces()
 	_test_setup_tracks()
@@ -97,7 +97,7 @@ func _test_game_def() -> void:
 
 
 func _test_setup_forces() -> void:
-	print("\n[Setup — Forze]")
+	print("\n[Setup - Forze]")
 	var r := _new_game()
 	var state: GameState = r[2]
 	# Forze del Governo a Havana: 6 Truppe, 4 Polizia
@@ -114,7 +114,7 @@ func _test_setup_forces() -> void:
 
 
 func _test_setup_tracks() -> void:
-	print("\n[Setup — Tracciati]")
+	print("\n[Setup - Tracciati]")
 	var r := _new_game()
 	var mod: CubaLibreModule = r[0]
 	var state: GameState = r[2]
@@ -155,7 +155,7 @@ func _card(order: Array) -> CardDef:
 
 
 func _test_sequence_basic() -> void:
-	print("\n[Sequenza — base: Op+SA poi Evento]")
+	print("\n[Sequenza - base: Op+SA poi Evento]")
 	var r := _new_game()
 	var mod: CubaLibreModule = r[0]
 	var state: GameState = r[2]
@@ -180,7 +180,7 @@ func _test_sequence_basic() -> void:
 
 
 func _test_sequence_pass_cascade() -> void:
-	print("\n[Sequenza — Passare a cascata]")
+	print("\n[Sequenza - Passare a cascata]")
 	var r := _new_game()
 	var mod: CubaLibreModule = r[0]
 	var state: GameState = r[2]
@@ -206,7 +206,7 @@ func _test_sequence_pass_cascade() -> void:
 
 
 func _test_sequence_all_pass() -> void:
-	print("\n[Sequenza — tutti Passano]")
+	print("\n[Sequenza - tutti Passano]")
 	var r := _new_game()
 	var mod: CubaLibreModule = r[0]
 	var state: GameState = r[2]
@@ -224,7 +224,7 @@ func _test_sequence_all_pass() -> void:
 
 
 func _test_sequence_eligibility_filter() -> void:
-	print("\n[Sequenza — fazioni Non Disponibili saltate]")
+	print("\n[Sequenza - fazioni Non Disponibili saltate]")
 	var r := _new_game()
 	var mod: CubaLibreModule = r[0]
 	var state: GameState = r[2]
@@ -235,7 +235,7 @@ func _test_sequence_eligibility_filter() -> void:
 
 
 func _test_sequence_final_card() -> void:
-	print("\n[Sequenza — Carta Evento Finale: solo LimOp]")
+	print("\n[Sequenza - Carta Evento Finale: solo LimOp]")
 	var r := _new_game()
 	var mod: CubaLibreModule = r[0]
 	var state: GameState = r[2]
@@ -285,7 +285,7 @@ func _ops() -> Array:
 
 
 func _test_op_train() -> void:
-	print("\n[Operazione — Train]")
+	print("\n[Operazione - Train]")
 	var r := _ops()
 	var state: GameState = r[2]
 	var ops: CubaLibreOperations = r[3]
@@ -306,7 +306,7 @@ func _test_op_train() -> void:
 
 
 func _test_op_sweep() -> void:
-	print("\n[Operazione — Sweep]")
+	print("\n[Operazione - Sweep]")
 	var r := _ops()
 	var state: GameState = r[2]
 	var ops: CubaLibreOperations = r[3]
@@ -329,7 +329,7 @@ func _test_op_sweep() -> void:
 
 
 func _test_op_assault() -> void:
-	print("\n[Operazione — Assault]")
+	print("\n[Operazione - Assault]")
 	# Provincia prateria: 3 Truppe -> capacità 3
 	var r := _ops()
 	var state: GameState = r[2]
@@ -360,7 +360,7 @@ func _test_op_assault() -> void:
 
 
 func _test_op_rally() -> void:
-	print("\n[Operazione — Rally]")
+	print("\n[Operazione - Rally]")
 	var r := _ops()
 	var state: GameState = r[2]
 	var ops: CubaLibreOperations = r[3]
@@ -378,7 +378,7 @@ func _test_op_rally() -> void:
 
 
 func _test_op_march() -> void:
-	print("\n[Operazione — March]")
+	print("\n[Operazione - March]")
 	var r := _ops()
 	var state: GameState = r[2]
 	var ops: CubaLibreOperations = r[3]
@@ -392,7 +392,7 @@ func _test_op_march() -> void:
 
 
 func _test_op_attack() -> void:
-	print("\n[Operazione — Attack]")
+	print("\n[Operazione - Attack]")
 	var r := _ops()
 	var state: GameState = r[2]
 	var ops: CubaLibreOperations = r[3]
@@ -414,7 +414,7 @@ func _test_op_attack() -> void:
 
 
 func _test_op_terror() -> void:
-	print("\n[Operazione — Terror]")
+	print("\n[Operazione - Terror]")
 	var r := _ops()
 	var state: GameState = r[2]
 	var ops: CubaLibreOperations = r[3]
@@ -428,7 +428,7 @@ func _test_op_terror() -> void:
 
 
 func _test_op_build() -> void:
-	print("\n[Operazione — Build]")
+	print("\n[Operazione - Build]")
 	var r := _ops()
 	var state: GameState = r[2]
 	var ops: CubaLibreOperations = r[3]
@@ -451,7 +451,7 @@ func _sa() -> Array:
 
 
 func _test_sa_government() -> void:
-	print("\n[Att.Speciale — Governo]")
+	print("\n[Att.Speciale - Governo]")
 	# Transport
 	var r := _sa()
 	var state: GameState = r[2]
@@ -493,7 +493,7 @@ func _test_sa_government() -> void:
 
 
 func _test_sa_m26() -> void:
-	print("\n[Att.Speciale — 26 Luglio]")
+	print("\n[Att.Speciale - 26 Luglio]")
 	# Infiltrate
 	var r := _sa()
 	var state: GameState = r[2]
@@ -536,7 +536,7 @@ func _test_sa_m26() -> void:
 
 
 func _test_sa_directorio() -> void:
-	print("\n[Att.Speciale — Directorio]")
+	print("\n[Att.Speciale - Directorio]")
 	# Subvert (Camagüey Provincia: DR controllata, Pop 1, Opp Passiva)
 	var r := _sa()
 	var state: GameState = r[2]
@@ -557,7 +557,7 @@ func _test_sa_directorio() -> void:
 
 
 func _test_sa_syndicate() -> void:
-	print("\n[Att.Speciale — Sindacato]")
+	print("\n[Att.Speciale - Sindacato]")
 	# Profit cash
 	var r := _sa()
 	var state: GameState = r[2]
@@ -599,7 +599,7 @@ func _prop() -> Array:
 
 
 func _test_propaganda_resources() -> void:
-	print("\n[Propaganda — Risorse]")
+	print("\n[Propaganda - Risorse]")
 	var r := _prop()
 	var state: GameState = r[2]
 	var prop: CubaLibrePropaganda = r[3]
@@ -615,7 +615,7 @@ func _test_propaganda_resources() -> void:
 
 
 func _test_propaganda_support_reset() -> void:
-	print("\n[Propaganda — Supporto + Sistemazione]")
+	print("\n[Propaganda - Supporto + Sistemazione]")
 	var r := _prop()
 	var state: GameState = r[2]
 	var prop: CubaLibrePropaganda = r[3]
@@ -638,7 +638,7 @@ func _test_propaganda_support_reset() -> void:
 
 
 func _test_propaganda_victory() -> void:
-	print("\n[Propaganda — Vittoria]")
+	print("\n[Propaganda - Vittoria]")
 	var r := _prop()
 	var state: GameState = r[2]
 	var prop: CubaLibrePropaganda = r[3]
@@ -653,7 +653,7 @@ func _test_propaganda_victory() -> void:
 
 
 func _test_cards_data() -> void:
-	print("\n[Carte — dati]")
+	print("\n[Carte - dati]")
 	var mod := CubaLibreModule.new()
 	var gd := mod.build_game_def()
 	_eq("48 carte Evento caricate", gd.cards.size(), 48)
@@ -717,7 +717,7 @@ func _test_events() -> void:
 
 
 func _test_all_events() -> void:
-	print("\n[Eventi — smoke test 1..48 entrambi i lati]")
+	print("\n[Eventi - smoke test 1..48 entrambi i lati]")
 	var auto_count := 0
 	var manual_count := 0
 	var fail := 0
@@ -832,7 +832,7 @@ func _test_capabilities() -> void:
 
 
 func _test_game_loop() -> void:
-	print("\n[Loop di gioco — partita automatica]")
+	print("\n[Loop di gioco - partita automatica]")
 	var gc = load("res://scenes/GameController.gd").new()
 	gc.new_game()
 	_eq("Carte rimaste dopo la prima pesca", gc.cards_left(), 51)

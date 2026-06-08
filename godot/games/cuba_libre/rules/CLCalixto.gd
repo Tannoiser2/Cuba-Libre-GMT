@@ -154,7 +154,7 @@ func _explain_selection(applicable: Array, scored: Array) -> void:
 		return
 	# Priorità di selezione applicate, in ordine.
 	if applicable.is_empty():
-		_trace.append("  Priorità spazio: nessun criterio applicabile → scelta casuale")
+		_trace.append("  Priorità spazio: nessun criterio applicabile -> scelta casuale")
 	else:
 		var labels: Array = []
 		for c in applicable:
@@ -173,7 +173,7 @@ func _explain_selection(applicable: Array, scored: Array) -> void:
 			if wv[i] != rv[i]:
 				reason = "%s (%s vs %s)" % [_crit_label(String(applicable[i])), str(wv[i]), str(rv[i])]
 				break
-	_trace.append("  → scelto «%s»: %s" % [win_name, reason])
+	_trace.append("  -> scelto «%s»: %s" % [win_name, reason])
 	# Mostra la classifica dei primi spazi candidati.
 	if scored.size() > 1:
 		var rank: Array = []
@@ -288,10 +288,10 @@ func take_turn(faction: String, allow_special: bool = true, limited: bool = fals
 		var res := CalixtoEngine.walk(side, func(n): return _pred(n, faction), _trace)
 		if res["result"] == "flip":
 			side = card.get("back", {})
-			_trace.append("→ giro: carta %s-%s%s (retro)" % [faction, letter, letter])
+			_trace.append("-> giro: carta %s-%s%s (retro)" % [faction, letter, letter])
 			res = CalixtoEngine.walk(side, func(n): return _pred(n, faction), _trace)
 		if res["result"] == "draw":
-			_trace.append("→ pesco una nuova carta")
+			_trace.append("-> pesco una nuova carta")
 			letter = deck.draw_next(faction)
 			continue
 		# res = op
@@ -301,7 +301,7 @@ func take_turn(faction: String, allow_special: bool = true, limited: bool = fals
 		_trace.append("Operazione scelta: %s (AN=%d%s)" % [String(op_def.get("type", op_id)), an, " · LimOp" if limited else ""])
 		var done := _execute_op(faction, op_def, an, letter)
 		if not done:
-			_trace.append("→ Operazione non eseguibile, pesco una nuova carta")
+			_trace.append("-> Operazione non eseguibile, pesco una nuova carta")
 			letter = deck.draw_next(faction)
 			continue
 		# Attività Speciale (prima fattibile), solo se consentita dalla scelta C8.5.2.
@@ -312,15 +312,15 @@ func take_turn(faction: String, allow_special: bool = true, limited: bool = fals
 			_trace.append("Attività Speciale: %s" % sa)
 		state.recompute_all_control()
 		mod._refresh_victory_tracks(state)
-		_log.append("Calixto %s: carta %s → %s" % [faction, letter, op_def.get("type", op_id)])
+		_log.append("Calixto %s: carta %s -> %s" % [faction, letter, op_def.get("type", op_id)])
 		return {"ok": true, "action": String(op_def.get("type", op_id)),
 			"special": sa != "", "special_type": sa, "log": _log, "trace": _trace}
-	_trace.append("Nessuna Operazione legale in 6 carte → Passa")
+	_trace.append("Nessuna Operazione legale in 6 carte -> Passa")
 	return _pass(faction)
 
 
 func _pass(faction: String) -> Dictionary:
-	_log.append("Calixto %s: nessuna Operazione legale → Passa" % faction)
+	_log.append("Calixto %s: nessuna Operazione legale -> Passa" % faction)
 	return {"ok": false, "action": "pass", "log": _log, "trace": _trace}
 
 
@@ -411,7 +411,7 @@ func event_choice(faction: String, card_number: int) -> Dictionary:
 		sides = [String(entry["side"])]
 	else:
 		sides = ["unshaded", "shaded"]
-	# Soglia: Critical (per tabella) → basta non peggiorare; con istruzione → 2; senza → 3.
+	# Soglia: Critical (per tabella) -> basta non peggiorare; con istruzione -> 2; senza -> 3.
 	var gain_min := 3
 	if not entry.is_empty():
 		gain_min = 1 if entry.get("critical", false) else 2
@@ -656,7 +656,7 @@ func _do_march(faction: String) -> bool:
 		if not moves.is_empty():
 			_trace.append("  Movimento verso «%s» (Move Priorities: tieni in origine il minimo per non cedere Controllo e 1 Clandestina se c'è una Base):" % _space_name(dest))
 			for m in moves:
-				_trace.append("    • %d Guerriglie da «%s»" % [int(m["count"]), _space_name(String(m["from"]))])
+				_trace.append("    - %d Guerriglie da «%s»" % [int(m["count"]), _space_name(String(m["from"]))])
 			return _run(ops.march({"faction": faction, "moves": moves}))
 	return false
 
@@ -698,7 +698,7 @@ func _do_attack(faction: String, an: int) -> bool:
 	if spaces.is_empty():
 		return false
 	spaces = _ordered(faction, "attack", spaces)
-	_trace.append("  Priorità eliminazione (Attacco): rimuove i pezzi nemici scoperti — prima cubi/Guerriglie Attive, poi Basi se restano scoperte.")
+	_trace.append("  Priorità eliminazione (Attacco): rimuove i pezzi nemici scoperti - prima cubi/Guerriglie Attive, poi Basi se restano scoperte.")
 	return _run(ops.attack({"faction": faction, "spaces": spaces.slice(0, _spaces_allowed(an, spaces.size()))}))
 
 
@@ -742,7 +742,7 @@ func _insurgent_rally_spaces(faction: String) -> Array:
 		if faction == "directorio" and abs(s) == 2:
 			continue
 		out.append(sid)
-	# Priorità: spazi con Base (per piazzare "extra" → Controllo), poi alta Popolazione,
+	# Priorità: spazi con Base (per piazzare "extra" -> Controllo), poi alta Popolazione,
 	# poi numero di Guerriglie. Aiuta a conquistare il Controllo di spazi a 2-Pop.
 	out.sort_custom(func(a, b):
 		return _rally_score(faction, a) > _rally_score(faction, b))

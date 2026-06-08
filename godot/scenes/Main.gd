@@ -326,7 +326,7 @@ func _build_action_bar() -> VBoxContainer:
 	var op_box := HBoxContainer.new()
 	op_box.add_theme_constant_override("separation", 3)
 	op_box.add_child(_op_btns)
-	var btn_exec := _mk_btn("▶ Esegui", _on_execute)
+	var btn_exec := _mk_btn("Esegui", _on_execute)
 	_accent_btn(btn_exec, Color("2e7d46"), Color("57c97e"))   # sfondo verde, risalta
 	op_box.add_child(btn_exec)
 	row1.add_child(_labeled_group("Operazione", op_box))
@@ -341,9 +341,9 @@ func _build_action_bar() -> VBoxContainer:
 	# Gruppo Evento
 	var ev_box := HBoxContainer.new()
 	ev_box.add_theme_constant_override("separation", 3)
-	_btn_ev_u = _mk_btn("▸ chiaro", func(): _on_event("unshaded"))
+	_btn_ev_u = _mk_btn("- chiaro", func(): _on_event("unshaded"))
 	ev_box.add_child(_btn_ev_u)
-	_btn_ev_s = _mk_btn("▸ ombr.", func(): _on_event("shaded"))
+	_btn_ev_s = _mk_btn("- ombr.", func(): _on_event("shaded"))
 	ev_box.add_child(_btn_ev_s)
 	row1.add_child(_labeled_group("Evento", ev_box))
 
@@ -351,7 +351,7 @@ func _build_action_bar() -> VBoxContainer:
 	# Gruppo Turno
 	var turn_box := HBoxContainer.new()
 	turn_box.add_theme_constant_override("separation", 3)
-	_btn_end = _mk_btn("✓ Concludi", func(): _on_execute_and_end())
+	_btn_end = _mk_btn("Concludi", func(): _on_execute_and_end())
 	_btn_end.add_theme_color_override("font_color", Color("a3e635"))
 	turn_box.add_child(_btn_end)
 	_btn_pass = _mk_btn("Passa", func(): GameController.seq_pass())
@@ -462,7 +462,7 @@ func _build_side_panel() -> PanelContainer:
 	log_title.text = "Log"
 	vb.add_child(log_title)
 
-	# Log con altezza fissa, sempre visibile e scrollabile; righe "▶ logica" espandibili.
+	# Log con altezza fissa, sempre visibile e scrollabile; righe "[+] logica" espandibili.
 	_log = RichTextLabel.new()
 	_log.bbcode_enabled = true
 	_log.scroll_following = true
@@ -621,7 +621,7 @@ func _animate_moves() -> void:
 					sources.append([sid, -d])
 				elif d > 0:
 					dests.append([sid, d])
-			# Accoppia sorgenti→destinazioni (movimento mappa→mappa); le restanti
+			# Accoppia sorgenti->destinazioni (movimento mappa->mappa); le restanti
 			# destinazioni vengono dal box Disponibili, le restanti sorgenti vi tornano.
 			var si := 0
 			var sleft := 0 if sources.is_empty() else int(sources[0][1])
@@ -675,7 +675,7 @@ func _spawn_ghost(faction: String, type: String, from_pos: Vector2, to_pos: Vect
 		g.modulate = Color(1.5, 1.5, 1.2, 1.0) if head else Color(1.2, 1.2, 1.1, 0.5 - 0.1 * float(e))
 		g.scale = Vector2(1.45, 1.45) if head else Vector2(1.2, 1.2)
 		_anim_layer.add_child(g)
-		var lead := float(e) * 0.08   # ritardo crescente → la copia resta "indietro" (scia)
+		var lead := float(e) * 0.08   # ritardo crescente -> la copia resta "indietro" (scia)
 		var tw := create_tween()
 		tw.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 		if lead > 0.0:
@@ -729,10 +729,10 @@ func _refresh_turn_banner() -> void:
 		_turn_banner.add_theme_color_override("font_color", Color("ffffff"))
 		if GameController.game_over:
 			if GameController.winner != "":
-				_turn_banner.text = "» Partita conclusa — vince %s" % GameController.faction_name(GameController.winner)
+				_turn_banner.text = "» Partita conclusa - vince %s" % GameController.faction_name(GameController.winner)
 				_turn_banner.add_theme_color_override("font_color", GameController.faction_color(GameController.winner))
 			else:
-				_turn_banner.text = "═══ Partita conclusa"
+				_turn_banner.text = "=== Partita conclusa"
 		elif card == -1:
 			_turn_banner.text = "Mazzo esaurito"
 		else:
@@ -753,10 +753,10 @@ func _refresh_turn_banner() -> void:
 			acts.append(ACTION_NAMES.get(int(a), str(a)))
 		step = "scegli un'Operazione (tasti), oppure: %s" % ", ".join(acts)
 	elif _mode == "moves":
-		step = "trascina i pezzi (%d spostamenti) → '✓ Concludi turno'" % _pending_moves.size()
+		step = "trascina i pezzi (%d spostamenti) -> 'Concludi turno'" % _pending_moves.size()
 	else:
-		step = "clicca gli spazi evidenziati (%d selezionati) → '✓ Concludi turno'" % _selected.size()
-	_turn_banner.text = "▶ Tocca a %s (%s Fazione) — %s" % \
+		step = "clicca gli spazi evidenziati (%d selezionati) -> 'Concludi turno'" % _selected.size()
+	_turn_banner.text = "> Tocca a %s (%s Fazione) - %s" % \
 		[GameController.faction_name(pending), slot, step]
 
 
@@ -835,16 +835,16 @@ func _render_log() -> void:
 		# Fine carta = fine di un turno: divisore prominente con il numero del turno.
 		if String(e["f"]) == "" and txt.find("Carta conclusa") != -1:
 			turn += 1
-			s += "\n[center][b][color=#f1c40f]═════  Fine turno %d  ═════[/color][/b][/center]\n\n" % turn
+			s += "[center][b][color=#f1c40f]=====  Fine turno %d  =====[/color][/b][/center]\n" % turn
 			continue
 		# Banner di fine partita.
 		if String(e["f"]) == "" and txt.find("FINE PARTITA") != -1:
-			s += "\n[center][b][font_size=16][color=#f1c40f]═══  FINE PARTITA  ═══[/color][/font_size][/b][/center]\n"
+			s += "\n[center][b][font_size=16][color=#f1c40f]===  FINE PARTITA  ===[/color][/font_size][/b][/center]\n"
 			continue
 		s += _fmt_log_line(txt, String(e["f"]))
 		if e["tr"].size() > 0:
 			var exp: bool = e.get("exp", false)
-			s += " [url=%d][font_size=10][color=#7fb0ff]%s[/color][/font_size][/url]\n" % [i, ("▼ logica" if exp else "▶ logica")]
+			s += " [url=%d][font_size=10][color=#7fb0ff]%s[/color][/font_size][/url]\n" % [i, ("[-] logica" if exp else "[+] logica")]
 			if exp:
 				for tl in e["tr"]:
 					s += "     [font_size=9][color=#9fb3c8]%s[/color][/font_size]\n" % String(tl)
@@ -884,7 +884,7 @@ func _start_op(op_id: String) -> void:
 	var lim := " (Op Limitata: 1 spazio, niente Att.Speciale)" if _limited else ""
 	var desc: String = OP_DESC.get(op_id, "")
 	var hint := "trascina i pezzi nei loro spazi" if _mode == "moves" else "clicca gli spazi evidenziati"
-	_instr.text = "%s%s — %s\n➤ %s, poi 'Esegui' o '✓ Concludi turno'" % [OP_NAMES.get(op_id, op_id), lim, desc, hint]
+	_instr.text = "%s%s - %s\n> %s, poi 'Esegui' o 'Concludi turno'" % [OP_NAMES.get(op_id, op_id), lim, desc, hint]
 	_refresh_turn_banner()
 
 
@@ -903,7 +903,7 @@ func _on_space_clicked(sid: String) -> void:
 			_space_views[sid].set_highlight(true)
 			for d in _sa_valid:
 				_space_views[d].set_highlight(true)
-			_instr.text = "Rappresaglia a %s — clicca uno spazio ADIACENTE per spostarci 1 Guerriglia, oppure riclicca %s per non spostare" % [GameController.game_def.space(sid).name, GameController.game_def.space(sid).name]
+			_instr.text = "Rappresaglia a %s - clicca uno spazio ADIACENTE per spostarci 1 Guerriglia, oppure riclicca %s per non spostare" % [GameController.game_def.space(sid).name, GameController.game_def.space(sid).name]
 			return
 		_run_sa(_pending_sa, sid)
 		_end_sa()
@@ -934,9 +934,9 @@ func _on_space_clicked(sid: String) -> void:
 			for d in _sa_valid:
 				_space_views[d].set_highlight(true)
 			if _sa_valid.is_empty():
-				_instr.text = "Nessuna destinazione valida da %s — Annulla per cambiare" % GameController.game_def.space(sid).name
+				_instr.text = "Nessuna destinazione valida da %s - Annulla per cambiare" % GameController.game_def.space(sid).name
 			else:
-				_instr.text = "Origine: %s — clicca una DESTINAZIONE evidenziata" % GameController.game_def.space(sid).name
+				_instr.text = "Origine: %s - clicca una DESTINAZIONE evidenziata" % GameController.game_def.space(sid).name
 		else:
 			if not _sa_valid.has(sid):
 				_instr.text = "Destinazione non valida: scegline una evidenziata"
@@ -974,7 +974,7 @@ func _on_space_clicked(sid: String) -> void:
 	if _mode != "select_spaces" and _mode != "space_list":
 		return
 	# Riorganizzazione: ogni spazio ha un'AZIONE che si cambia ri-cliccando
-	# (Guerriglie → Base → … → deseleziona), così si può anche costruire una Base.
+	# (Guerriglie -> Base -> ... -> deseleziona), così si può anche costruire una Base.
 	if _cur_action == "rally":
 		_rally_click(sid)
 		return
@@ -993,7 +993,7 @@ func _on_space_clicked(sid: String) -> void:
 			_garrison_ec = "" if _garrison_ec == sid else sid
 			_space_views[sid].flash(Color(1.0, 0.7, 0.3))
 			var nm := GameController.game_def.space(sid).name
-			_instr.text = ("Guarnigione: Assalto gratuito a %s — trascina i cubi e 'Esegui'" % nm) if _garrison_ec != "" else "Guarnigione: Assalto in EC annullato"
+			_instr.text = ("Guarnigione: Assalto gratuito a %s - trascina i cubi e 'Esegui'" % nm) if _garrison_ec != "" else "Guarnigione: Assalto in EC annullato"
 		return
 	if _selected.has(sid):
 		_selected.erase(sid)
@@ -1049,7 +1049,7 @@ func _rally_click(sid: String) -> void:
 	var parts: Array = []
 	for s in _selected:
 		parts.append("%s [%s]" % [GameController.game_def.space(s).name, RALLY_LABEL.get(_rally_choice.get(s, "place"), "?")])
-	_instr.text = "Riorganizza: %s — riclicca uno spazio per cambiare azione, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Riorganizzazione: clicca gli spazi"
+	_instr.text = "Riorganizza: %s - riclicca uno spazio per cambiare azione, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Riorganizzazione: clicca gli spazi"
 	_refresh_turn_banner()
 
 
@@ -1069,7 +1069,7 @@ func _attack_enemies(sid: String) -> Array:
 func _attack_click(sid: String) -> void:
 	if not _selected.has(sid):
 		if not _valid_spaces(_cur_faction, "attack").has(sid):
-			_instr.text = "Attacco: serve una tua Guerriglia e un nemico — scegli uno spazio evidenziato"
+			_instr.text = "Attacco: serve una tua Guerriglia e un nemico - scegli uno spazio evidenziato"
 			return
 		_selected.append(sid)
 		var en := _attack_enemies(sid)
@@ -1086,8 +1086,8 @@ func _attack_click(sid: String) -> void:
 			_space_views[sid].set_highlight(false)
 	var parts: Array = []
 	for s in _selected:
-		parts.append("%s → %s" % [GameController.game_def.space(s).name, GameController.faction_name(String(_attack_target.get(s, "")))])
-	_instr.text = "Attacco: %s — riclicca uno spazio per cambiare bersaglio, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Attacco: clicca gli spazi"
+		parts.append("%s -> %s" % [GameController.game_def.space(s).name, GameController.faction_name(String(_attack_target.get(s, "")))])
+	_instr.text = "Attacco: %s - riclicca uno spazio per cambiare bersaglio, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Attacco: clicca gli spazi"
 	_refresh_turn_banner()
 
 
@@ -1155,7 +1155,7 @@ func _train_instr() -> void:
 			_:
 				var typ := "Polizia" if GameController.game_def.space(s).type == CoinEnums.SpaceType.CITY else "Truppe"
 				parts.append("%s [%d %s]" % [nm, int(p["n"]), typ])
-	_instr.text = "Addestramento: %s — riclicca per +cubo / Base / Civica, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Addestramento: clicca gli spazi"
+	_instr.text = "Addestramento: %s - riclicca per +cubo / Base / Civica, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Addestramento: clicca gli spazi"
 	_refresh_turn_banner()
 
 
@@ -1192,7 +1192,7 @@ func _build_click(sid: String) -> void:
 	for s in _selected:
 		var lbl := "apri Casinò" if String(_build_choice.get(s, "new")) == "open" else "nuovo Casinò"
 		parts.append("%s [%s]" % [GameController.game_def.space(s).name, lbl])
-	_instr.text = "Costruzione: %s — riclicca per cambiare, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Costruzione: clicca gli spazi"
+	_instr.text = "Costruzione: %s - riclicca per cambiare, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Costruzione: clicca gli spazi"
 	_refresh_turn_banner()
 
 
@@ -1207,7 +1207,7 @@ func _sa_move_max(sa: String, from_id: String, to_id: String) -> int:
 	return mini(3, from_st.count("government", "troops"))
 
 func _sa_move_instr() -> void:
-	_instr.text = "%s: sposta %d da %s a %s — riclicca la destinazione per cambiare numero, poi 'Esegui'" % [
+	_instr.text = "%s: sposta %d da %s a %s - riclicca la destinazione per cambiare numero, poi 'Esegui'" % [
 		_sa_label(_pending_sa), _sa_move_count,
 		GameController.game_def.space(_sa_from).name, GameController.game_def.space(_sa_move_to).name]
 	_refresh_turn_banner()
@@ -1217,7 +1217,7 @@ func _profit_instr() -> void:
 	for s in _sa_spaces:
 		names.append(GameController.game_def.space(s).name)
 	var verb := "incassa Denaro in" if _profit_mode == "cash" else "converti (chiudi)"
-	_instr.text = "Profitto: %s %s — poi 'Esegui'" % [verb, ", ".join(names) if not names.is_empty() else "(scegli i Casinò)"]
+	_instr.text = "Profitto: %s %s - poi 'Esegui'" % [verb, ", ".join(names) if not names.is_empty() else "(scegli i Casinò)"]
 	_refresh_turn_banner()
 
 
@@ -1236,7 +1236,7 @@ func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: St
 	var pn: String = PIECE_NAMES.get(type, type)
 	var fn: String = GameController.game_def.space(from_id).name
 	var tn: String = GameController.game_def.space(to_id).name
-	_instr.text = "✓ In coda (%d): 1 %s da %s → %s — poi 'Esegui'" % [_pending_moves.size(), pn, fn, tn]
+	_instr.text = "In coda (%d): 1 %s da %s -> %s - poi 'Esegui'" % [_pending_moves.size(), pn, fn, tn]
 	_update_moves_overlay()
 	_refresh_turn_banner()
 
@@ -1325,7 +1325,7 @@ func _do_special(sa: String) -> void:
 		for s in origins:
 			_space_views[s].set_highlight(true)
 		_mode = "sa_move"
-		_instr.text = "%s — %s\n➤ clicca un'ORIGINE evidenziata, poi la destinazione" % [sa_name, sa_desc]
+		_instr.text = "%s - %s\n> clicca un'ORIGINE evidenziata, poi la destinazione" % [sa_name, sa_desc]
 	else:
 		var valid := _sa_valid_spaces(sa)
 		if valid.is_empty():
@@ -1339,7 +1339,7 @@ func _do_special(sa: String) -> void:
 		for s in valid:
 			_space_views[s].set_highlight(true)
 		_mode = "sa_point"
-		_instr.text = "%s — %s\n➤ clicca uno spazio bersaglio evidenziato" % [sa_name, sa_desc]
+		_instr.text = "%s - %s\n> clicca uno spazio bersaglio evidenziato" % [sa_name, sa_desc]
 	_refresh_turn_banner()
 
 
@@ -1461,7 +1461,7 @@ func _run_sa(sa: String, space: String) -> void:
 	GameController.run_special(_sa_target_id(sa), _sa_params(sa, space))
 
 
-## Esegue Trasporto/Muscle come spostamento origine→destinazione del numero scelto di cubi.
+## Esegue Trasporto/Muscle come spostamento origine->destinazione del numero scelto di cubi.
 func _run_sa_move(sa: String, from_id: String, to_id: String, count: int) -> void:
 	var p := {"from": from_id, "to": to_id, "count": count}
 	if sa == "muscle":
@@ -1486,7 +1486,7 @@ func _end_sa() -> void:
 			_space_views[sid].set_highlight(true)
 		for sid in _selected:
 			_space_views[sid].set_highlight(true)
-		_instr.text = "Continua l'Operazione (clicca/trascina), poi 'Esegui' o '✓ Concludi turno'"
+		_instr.text = "Continua l'Operazione (clicca/trascina), poi 'Esegui' o 'Concludi turno'"
 	else:
 		_mode = "idle"
 	_resume_mode = "idle"
@@ -1503,7 +1503,7 @@ func _on_event(side: String) -> void:
 	if not res.get("ok", false):
 		_instr.text = "! " + String(res.get("error", "Evento non eseguibile"))
 	else:
-		_instr.text = "Evento giocato — turno concluso"
+		_instr.text = "Evento giocato - turno concluso"
 	_refresh_turn_banner()
 
 

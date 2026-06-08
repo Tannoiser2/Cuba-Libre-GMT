@@ -22,10 +22,10 @@ static func walk(side: Dictionary, eval: Callable, trace: Array = []) -> Diction
 		if node.has("cond"):
 			var res := bool(eval.call(node))
 			target = String(node["t"]) if res else String(node["f"])
-			trace.append("• Condizione «%s» = %s → %s" % [String(node["cond"]), ("VERO" if res else "FALSO"), _target_label(target)])
+			trace.append("- Condizione «%s» = %s -> %s" % [String(node["cond"]), ("VERO" if res else "FALSO"), _target_label(target)])
 		else:
 			target = String(node.get("t", "next"))
-			trace.append("• (incondizionata) → %s" % _target_label(target))
+			trace.append("- (incondizionata) -> %s" % _target_label(target))
 		match target:
 			"next":
 				continue

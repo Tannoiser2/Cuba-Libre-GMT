@@ -29,7 +29,7 @@ func setup(sd: SpaceDef) -> void:
 	vb.add_theme_constant_override("separation", 0)
 	add_child(vb)
 
-	# Riga marcatori (Controllo/Supporto/Terrore) — compatta
+	# Riga marcatori (Controllo/Supporto/Terrore) - compatta
 	_markers = HBoxContainer.new()
 	_markers.add_theme_constant_override("separation", 1)
 	vb.add_child(_markers)
