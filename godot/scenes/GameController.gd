@@ -40,7 +40,7 @@ func new_game(scenario: String = "standard") -> void:
 	bot = CLCalixto.new(state, module)
 	stats = {}
 	build_deck()
-	draw_next()
+	advance_card()
 	emit_signal("state_changed")
 
 
@@ -260,9 +260,20 @@ func _after_decision() -> void:
 	if seq != null and seq.is_done():
 		seq.finish()
 		emit_signal("action_logged", "— Carta conclusa —", "")
-		draw_next()
+		advance_card()
 		return
 	emit_signal("state_changed")
+
+
+## Pesca la carta successiva e risolve in automatico le eventuali Propaganda incontrate.
+func advance_card() -> void:
+	draw_next()
+	var guard := 0
+	while state.current_card == 0 and not game_over and guard < 6:
+		guard += 1
+		resolve_propaganda()
+		if not game_over:
+			draw_next()
 
 
 func cards_left() -> int:
@@ -330,12 +341,6 @@ func run_card_paced(delay: float = -1.0) -> void:
 	if _busy or game_over or state.current_card == -1:
 		return
 	_busy = true
-	if state.current_card == 0:
-		resolve_propaganda()
-		if not game_over:
-			draw_next()
-		_busy = false
-		return
 	if seq == null:
 		_start_card_sequence()
 	var guard := 0
@@ -348,9 +353,9 @@ func run_card_paced(delay: float = -1.0) -> void:
 		seq.finish()
 	state.recompute_all_control()
 	module._refresh_victory_tracks(state)
-	emit_signal("state_changed")
 	if not game_over:
-		draw_next()
+		advance_card()
+	emit_signal("state_changed")
 	_busy = false
 
 

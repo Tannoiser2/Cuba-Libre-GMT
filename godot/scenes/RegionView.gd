@@ -86,10 +86,11 @@ func _has_point(point: Vector2) -> bool:
 
 
 func relayout() -> void:
-	# Posiziona lo stack centrato sull'anchor
+	# Pezzi centrati in orizzontale sull'anchor e che CRESCONO VERSO IL BASSO (la prima riga
+	# resta all'altezza dell'anchor): così non "salgono" coprendo le scritte sopra lo spazio.
 	_stack.reset_size()
 	var a := Vector2(_anchor_norm.x * size.x, _anchor_norm.y * size.y)
-	_stack.position = a - _stack.size * 0.5
+	_stack.position = Vector2(a.x - _stack.size.x * 0.5, a.y - 16.0)
 	# Marcatori Controllo/Supporto nelle caselle (o sull'anchor se non definite)
 	if _ctrl_tr != null:
 		var cp := _cbox if _cbox.x >= 0 else Vector2(_anchor_norm.x - 0.012, _anchor_norm.y - 0.03)
