@@ -166,8 +166,12 @@ func _crit_value(crit: String, sid: String, faction: String) -> float:
 # Turno
 # ---------------------------------------------------------------------------
 
+var _trace: Array = []   # traccia decisionale (debug)
+
+
 func take_turn(faction: String) -> Dictionary:
 	_log = []
+	_trace = []
 	if not _cards.has(faction):
 		return _pass(faction)
 	var letter := deck.draw_for(faction)
@@ -176,34 +180,42 @@ func take_turn(faction: String) -> Dictionary:
 		attempts += 1
 		var card: Dictionary = _cards[faction].get(letter, {})
 		var side: Dictionary = card.get("front", {})
-		var res := CalixtoEngine.walk(side, func(n): return _pred(n, faction))
+		_trace.append("Carta Calixto %s-%s (fronte), AN=%s" % [faction, letter, str(side.get("an", "US Alliance"))])
+		var res := CalixtoEngine.walk(side, func(n): return _pred(n, faction), _trace)
 		if res["result"] == "flip":
 			side = card.get("back", {})
-			res = CalixtoEngine.walk(side, func(n): return _pred(n, faction))
+			_trace.append("→ giro: carta %s-%s%s (retro)" % [faction, letter, letter])
+			res = CalixtoEngine.walk(side, func(n): return _pred(n, faction), _trace)
 		if res["result"] == "draw":
+			_trace.append("→ pesco una nuova carta")
 			letter = deck.draw_next(faction)
 			continue
 		# res = op
 		var op_id: String = res["op_id"]
 		var op_def: Dictionary = side.get("ops", {}).get(op_id, {})
 		var an := _activation_number(faction, side)
+		_trace.append("Operazione scelta: %s (AN=%d)" % [String(op_def.get("type", op_id)), an])
 		var done := _execute_op(faction, op_def, an, letter)
 		if not done:
+			_trace.append("→ Operazione non eseguibile, pesco una nuova carta")
 			letter = deck.draw_next(faction)
 			continue
 		# Attività Speciale (prima fattibile)
 		var sa := _execute_special(faction, CalixtoEngine.specials_for(side, op_id))
+		if sa != "":
+			_trace.append("Attività Speciale: %s" % sa)
 		state.recompute_all_control()
 		mod._refresh_victory_tracks(state)
 		_log.append("Calixto %s: carta %s → %s" % [faction, letter, op_def.get("type", op_id)])
 		return {"ok": true, "action": String(op_def.get("type", op_id)),
-			"special": sa != "", "special_type": sa, "log": _log}
+			"special": sa != "", "special_type": sa, "log": _log, "trace": _trace}
+	_trace.append("Nessuna Operazione legale in 6 carte → Passa")
 	return _pass(faction)
 
 
 func _pass(faction: String) -> Dictionary:
 	_log.append("Calixto %s: nessuna Operazione legale → Passa" % faction)
-	return {"ok": false, "action": "pass", "log": _log}
+	return {"ok": false, "action": "pass", "log": _log, "trace": _trace}
 
 
 ## Azioni della Fase di Supporto della Propaganda NP (Calixto C8.5.9):
@@ -362,9 +374,11 @@ func _is_ec(sid: String) -> bool:
 func _run(res: Dictionary) -> bool:
 	for line in res.get("log", []):
 		_log.append(String(line))
+		_trace.append("   " + String(line))
 	if not res.get("ok", false):
 		if res.has("error"):
 			_log.append("⚠ " + String(res["error"]))
+			_trace.append("   ⚠ " + String(res["error"]))
 		return false
 	return true
 

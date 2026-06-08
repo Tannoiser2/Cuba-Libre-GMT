@@ -13,15 +13,19 @@ extends RefCounted
 
 
 ## Percorre il flusso. eval = Callable(node: Dictionary) -> bool.
+## trace (opzionale): vi vengono aggiunte righe leggibili sulla logica seguita.
 ## Restituisce { "result": "op"/"draw"/"flip", "op_id": String }.
-static func walk(side: Dictionary, eval: Callable) -> Dictionary:
+static func walk(side: Dictionary, eval: Callable, trace: Array = []) -> Dictionary:
 	var flow: Array = side.get("flow", [])
 	for node in flow:
 		var target: String
 		if node.has("cond"):
-			target = String(node["t"]) if bool(eval.call(node)) else String(node["f"])
+			var res := bool(eval.call(node))
+			target = String(node["t"]) if res else String(node["f"])
+			trace.append("• Condizione «%s» = %s → %s" % [String(node["cond"]), ("VERO" if res else "FALSO"), _target_label(target)])
 		else:
 			target = String(node.get("t", "next"))
+			trace.append("• (incondizionata) → %s" % _target_label(target))
 		match target:
 			"next":
 				continue
@@ -38,6 +42,14 @@ static func walk(side: Dictionary, eval: Callable) -> Dictionary:
 	if not ops.is_empty():
 		return {"result": "op", "op_id": ops.keys()[0]}
 	return {"result": "draw", "op_id": ""}
+
+
+static func _target_label(t: String) -> String:
+	match t:
+		"next": return "scendi"
+		"draw": return "pesca nuova carta"
+		"flip": return "gira la carta"
+		_: return "Operazione %s" % (t.substr(3) if t.begins_with("op:") else t)
 
 
 ## Lista Attività Speciali per la faccia, eventualmente specifica del ramo (op scelta).

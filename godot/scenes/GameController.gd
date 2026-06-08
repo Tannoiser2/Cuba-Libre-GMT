@@ -6,6 +6,7 @@ extends Node
 
 signal state_changed
 signal action_logged(text: String, faction: String)
+signal bot_decision(text: String, faction: String, trace: Array)
 
 var module: CubaLibreModule
 var game_def: GameDef
@@ -203,9 +204,9 @@ func _bot_take_pending() -> void:
 		if ec.get("play", false):
 			var side: String = ec["side"]
 			var eres := events.apply(state.current_card, side, fid)
-			emit_signal("action_logged", "%s → EVENTO (%s)" % [fname, side], fid)
-			for line in eres.get("log", []):
-				emit_signal("action_logged", "    " + String(line), fid)
+			var etrace := ["Evento giocato dal bot (lato %s) perché migliora il margine" % side]
+			etrace.append_array(eres.get("log", []))
+			emit_signal("bot_decision", "%s → EVENTO (%s)" % [fname, side], fid, etrace)
 			seq.act(A.EVENT)
 			_count("event")
 			return
@@ -213,13 +214,15 @@ func _bot_take_pending() -> void:
 	var can_op := seq.is_legal(A.OPERATION)
 	var can_lim := seq.is_legal(A.LIMITED_OPERATION)
 	if not (can_full or can_op or can_lim):
-		emit_signal("action_logged", "%s → PASSA" % fname, fid)
+		emit_signal("bot_decision", "%s → PASSA" % fname, fid,
+			["Solo Evento/Pass erano legali in questo slot e l'Evento non conveniva."])
 		seq.act_pass()
 		_count("pass")
 		return
 	var br := bot.take_turn(fid)
+	var trace: Array = br.get("trace", [])
 	if br.get("action", "pass") == "pass":
-		emit_signal("action_logged", "%s → PASSA (nessuna Operazione legale)" % fname, fid)
+		emit_signal("bot_decision", "%s → PASSA (nessuna Operazione legale)" % fname, fid, trace)
 		seq.act_pass()
 		_count("pass")
 		return
@@ -243,9 +246,7 @@ func _bot_take_pending() -> void:
 	var label := "%s: %s" % [atype, _OP_IT.get(optype, optype)]
 	if t == A.OPERATION_WITH_SPECIAL:
 		label += " + " + String(_SA_IT.get(String(br.get("special_type", "")), br.get("special_type", "")))
-	emit_signal("action_logged", "%s → %s" % [fname, label], fid)
-	for line in br.get("log", []):
-		emit_signal("action_logged", "    " + String(line), fid)
+	emit_signal("bot_decision", "%s → %s" % [fname, label], fid, trace)
 	seq.act(t)
 	_count("op:" + optype)
 	if t == A.OPERATION_WITH_SPECIAL:
