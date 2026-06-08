@@ -260,7 +260,7 @@ func _btn_style(bg: Color, border: Color) -> StyleBoxFlat:
 
 
 func _mk_btn(text: String, cb: Callable) -> Button:
-	var b := Button.new()
+	var b := TipButton.new()
 	b.text = text
 	b.pressed.connect(cb)
 	# Aspetto da vero bottone: box arrotondato con bordo e stati hover/pressed.
@@ -361,6 +361,19 @@ func _build_action_bar() -> VBoxContainer:
 	turn_box.add_child(_mk_btn("Annulla", _on_cancel))
 	row1.add_child(_labeled_group("Turno", turn_box))
 
+	# Gruppo Ruoli (Giocatore/Bot) in griglia 2x2, subito dopo il Turno.
+	var roles_grid := GridContainer.new()
+	roles_grid.columns = 2
+	roles_grid.add_theme_constant_override("h_separation", 3)
+	roles_grid.add_theme_constant_override("v_separation", 2)
+	for fid in ["government", "m26", "directorio", "syndicate"]:
+		var rb := _mk_btn("", _toggle_role.bind(fid))
+		rb.add_theme_font_size_override("font_size", 11)
+		_role_btns[fid] = rb
+		roles_grid.add_child(rb)
+	row1.add_child(_labeled_group("Ruoli", roles_grid))
+	_update_role_btns()
+
 	# --- Riga 2: PARTITA / VISTA ---
 	var row2 := HFlowContainer.new()
 	row2.add_theme_constant_override("h_separation", 5)
@@ -389,21 +402,10 @@ func _build_action_bar() -> VBoxContainer:
 	row2.add_child(_mk_btn("Zoom -", func(): _set_zoom(_zoom / 1.25)))
 	row2.add_child(_mk_btn("Adatta", func(): _set_zoom(1.0)))
 
-	# Riga ruoli: Giocatore/Bot per ogni Fazione (clic per cambiare).
-	var row3 := HFlowContainer.new()
-	row3.add_theme_constant_override("h_separation", 5)
-	bar.add_child(row3)
-	row3.add_child(_mk_label("Ruoli:"))
-	for fid in ["government", "m26", "directorio", "syndicate"]:
-		var rb := _mk_btn("", _toggle_role.bind(fid))
-		_role_btns[fid] = rb
-		row3.add_child(rb)
-	_update_role_btns()
-
 	# Istruzione di passo (sotto le righe)
 	_instr = Label.new()
 	_instr.add_theme_color_override("font_color", Color("f1c40f"))
-	_instr.add_theme_font_size_override("font_size", 12)
+	_instr.add_theme_font_size_override("font_size", 10)
 	_instr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_instr.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	# Contenitore ad altezza FISSA: così la barra non cambia altezza e la mappa
@@ -820,7 +822,7 @@ func _variant_short(label: String) -> String:
 
 ## Tasto a tendina (MenuButton) con la stessa veste degli altri tasti.
 func _mk_menu_btn(text: String) -> MenuButton:
-	var b := MenuButton.new()
+	var b := TipMenuButton.new()
 	b.text = text
 	b.flat = false
 	b.add_theme_stylebox_override("normal", _btn_style(Color("2b3442"), Color("4a5666")))
