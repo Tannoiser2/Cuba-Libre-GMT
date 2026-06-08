@@ -45,24 +45,20 @@ var _next_card_img: TextureRect
 var _zoom := 1.0
 var _card_label: RichTextLabel
 var _faction_label: RichTextLabel
-var _track_label: RichTextLabel
 var _log: RichTextLabel
 var _instr: Label
 var _turn_banner: Label
 var _btn_end: Button
 var _btn_pass: Button
 var _btn_bot: Button
-var _btn_prop: Button
-var _btn_sa: Button
 var _btn_ev_u: Button
 var _btn_ev_s: Button
 
 # Stato del flusso azione
 var _mode := "idle"                   # idle | select_spaces | moves
 var _limited := false                 # turno limitato a 1 spazio, niente Att.Speciale
-var _faction_select: OptionButton
-var _action_select: OptionButton
-var _special_select: OptionButton
+var _op_btns: HBoxContainer
+var _sa_btns: HBoxContainer
 
 const SA_NAMES := {
 	"transport": "Trasporto", "air_strike": "Attacco Aereo", "reprisal": "Rappresaglia",
@@ -82,7 +78,7 @@ func _ready() -> void:
 	GameController.state_changed.connect(_refresh)
 	GameController.action_logged.connect(_on_log)
 	get_viewport().size_changed.connect(_layout_board)
-	_on_faction_changed(0)
+	_rebuild_action_buttons(_cur_faction)
 	_refresh()
 	# Il layout va calcolato quando la finestra ha la sua dimensione reale (non a 0).
 	_layout_board.call_deferred()
@@ -191,32 +187,25 @@ func _build_action_bar() -> VBoxContainer:
 	_turn_banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	bar.add_child(_turn_banner)
 
-	# --- Riga 1: AZIONI DI TURNO ---
+	# --- Riga 1: AZIONI DI TURNO (tasti: Operazioni, Att.Speciali, Evento, Passa) ---
 	var row1 := HFlowContainer.new()
 	row1.add_theme_constant_override("h_separation", 5)
 	row1.add_theme_constant_override("v_separation", 3)
 	bar.add_child(row1)
 
-	_faction_select = OptionButton.new()
-	for f in GameController.game_def.factions:
-		_faction_select.add_item(f.name)
-		_faction_select.set_item_metadata(_faction_select.item_count - 1, f.id)
-	_faction_select.item_selected.connect(_on_faction_changed)
-	row1.add_child(_mk_label("Fazione:"))
-	row1.add_child(_faction_select)
-
-	_action_select = OptionButton.new()
-	_action_select.item_selected.connect(func(_i): _on_start())
 	row1.add_child(_mk_label("Operazione:"))
-	row1.add_child(_action_select)
+	_op_btns = HBoxContainer.new()
+	_op_btns.add_theme_constant_override("separation", 3)
+	row1.add_child(_op_btns)
 	row1.add_child(_mk_btn("Esegui", _on_execute))
 
-	_special_select = OptionButton.new()
-	row1.add_child(_mk_label("Att.Spec:"))
-	row1.add_child(_special_select)
-	_btn_sa = _mk_btn("Aggiungi Att.Speciale", _on_special)
-	row1.add_child(_btn_sa)
+	row1.add_child(VSeparator.new())
+	row1.add_child(_mk_label("Att.Speciale:"))
+	_sa_btns = HBoxContainer.new()
+	_sa_btns.add_theme_constant_override("separation", 3)
+	row1.add_child(_sa_btns)
 
+	row1.add_child(VSeparator.new())
 	_btn_ev_u = _mk_btn("Evento ▸ chiaro", func(): _on_event("unshaded"))
 	row1.add_child(_btn_ev_u)
 	_btn_ev_s = _mk_btn("Evento ▸ ombr.", func(): _on_event("shaded"))
@@ -228,23 +217,20 @@ func _build_action_bar() -> VBoxContainer:
 	row1.add_child(_btn_end)
 	_btn_pass = _mk_btn("Passa", func(): GameController.seq_pass())
 	row1.add_child(_btn_pass)
-	_btn_bot = _mk_btn("🤖 Gioca la fazione di turno", func(): GameController.bot_act_pending())
-	row1.add_child(_btn_bot)
-	_btn_prop = _mk_btn("Risolvi Propaganda", func(): GameController.run_propaganda())
-	row1.add_child(_btn_prop)
 	row1.add_child(_mk_btn("Annulla", _on_cancel))
 
-	# --- Riga 2: STRUMENTI ---
+	# --- Riga 2: PARTITA / VISTA ---
 	var row2 := HFlowContainer.new()
 	row2.add_theme_constant_override("h_separation", 5)
 	row2.add_theme_constant_override("v_separation", 3)
 	bar.add_child(row2)
 
-	row2.add_child(_mk_label("Partita:"))
-	row2.add_child(_mk_btn("Avanza carta", func(): GameController.step_card()))
-	row2.add_child(_mk_btn("Auto: tutta la partita", func(): GameController.run_full_game_paced()))
+	_btn_bot = _mk_btn("🤖 Gioca la fazione di turno", func(): GameController.bot_act_pending())
+	row2.add_child(_btn_bot)
 	row2.add_child(_mk_btn("Tutti i Bot (questa carta)", _on_all_bots))
+	row2.add_child(_mk_btn("Auto: tutta la partita", func(): GameController.run_full_game_paced()))
 	row2.add_child(_mk_btn("Nuova Partita", func(): GameController.new_game()))
+	row2.add_child(VSeparator.new())
 	row2.add_child(_mk_label("Velocità:"))
 	var spd := OptionButton.new()
 	for it in [["Lento", 1.3], ["Medio", 0.7], ["Veloce", 0.3]]:
@@ -318,15 +304,6 @@ func _build_side_panel() -> PanelContainer:
 	_card_label.add_theme_font_size_override("normal_font_size", 12)
 	_card_label.custom_minimum_size = Vector2(330, 48)
 	vb.add_child(_card_label)
-	vb.add_child(HSeparator.new())
-
-	_faction_label = RichTextLabel.new()
-	_faction_label.bbcode_enabled = true
-	_faction_label.fit_content = true
-	_faction_label.add_theme_font_size_override("normal_font_size", 13)
-	_faction_label.custom_minimum_size = Vector2(330, 84)
-	vb.add_child(_faction_label)
-
 	vb.add_child(HSeparator.new())
 
 	var log_title := Label.new()
@@ -439,23 +416,23 @@ func _refresh_turn_banner() -> void:
 	var st := GameController.seq_status()
 	var card: int = GameController.state.current_card
 	var turn_active: bool = st.get("active", false) and String(st.get("pending", "")) != ""
-	var is_prop := card == 0 and not GameController.game_over
 	# Stato pulsanti contestuale
 	_set_btn(_btn_end, turn_active)
 	_set_btn(_btn_pass, turn_active)
 	_set_btn(_btn_bot, turn_active)
-	_set_btn(_btn_prop, is_prop)
 	var legal: Array = st.get("legal", [])
 	var event_ok := turn_active and (legal.has(4))  # EVENT
 	_set_btn(_btn_ev_u, event_ok)
 	_set_btn(_btn_ev_s, event_ok)
-	_set_btn(_btn_sa, turn_active and not GameController.seq_is_limited_only())
+	var lim := GameController.seq_is_limited_only()
+	for b in _op_btns.get_children():
+		b.disabled = not turn_active
+	for b in _sa_btns.get_children():
+		b.disabled = not turn_active or lim
 
 	if not turn_active:
 		_turn_banner.add_theme_color_override("font_color", Color("ffffff"))
-		if is_prop:
-			_turn_banner.text = "📣 Carta Propaganda %d/4 — premi 'Risolvi Propaganda'" % (GameController.propaganda_played + 1)
-		elif GameController.game_over:
+		if GameController.game_over:
 			_turn_banner.text = "🏁 Partita conclusa"
 		elif card == -1:
 			_turn_banner.text = "Mazzo esaurito"
@@ -473,7 +450,7 @@ func _refresh_turn_banner() -> void:
 		var acts: Array = []
 		for a in legal:
 			acts.append(ACTION_NAMES.get(int(a), str(a)))
-		step = "scegli un'Operazione (menu), oppure: %s" % ", ".join(acts)
+		step = "scegli un'Operazione (tasti), oppure: %s" % ", ".join(acts)
 	elif _mode == "moves":
 		step = "trascina i pezzi (%d spostamenti) → '✓ Concludi turno'" % _pending_moves.size()
 	else:
@@ -488,11 +465,21 @@ func _set_btn(b: Button, on: bool) -> void:
 
 
 func _select_faction(fid: String) -> void:
-	for i in range(_faction_select.item_count):
-		if _faction_select.get_item_metadata(i) == fid:
-			_faction_select.select(i)
-			_on_faction_changed(i)
-			return
+	_cur_faction = fid
+	_rebuild_action_buttons(fid)
+	_on_cancel()
+
+
+## Ricrea i tasti delle Operazioni e Attività Speciali per la Fazione data.
+func _rebuild_action_buttons(fid: String) -> void:
+	for c in _op_btns.get_children():
+		c.queue_free()
+	for op in GameController.game_def.faction(fid).operations:
+		_op_btns.add_child(_mk_btn(OP_NAMES.get(op, op), _start_op.bind(op)))
+	for c in _sa_btns.get_children():
+		c.queue_free()
+	for sa in GameController.game_def.faction(fid).special_activities:
+		_sa_btns.add_child(_mk_btn(SA_NAMES.get(sa, sa), _do_special.bind(sa)))
 
 
 func _refresh_side() -> void:
@@ -502,15 +489,6 @@ func _refresh_side() -> void:
 	var nc: int = GameController.next_card()
 	_next_card_img.texture = CLAssets.card(nc) if nc >= 0 else null
 	_card_label.text = GameController.current_card_text()
-	# Progresso verso la vittoria (info NON ripetuta sulla plancia): valore/soglia per fazione.
-	var vic := GameController.victory()
-	var txt := "[b]Progresso vittoria[/b]\n"
-	for f in GameController.game_def.factions:
-		var col := GameController.faction_color(f.id).to_html(false)
-		var v: Dictionary = vic[f.id]
-		var won := " ✓" if v.get("won", false) else ""
-		txt += "[color=#%s]●[/color] %s: %+d%s\n" % [col, f.short_name, int(v.margin), won]
-	_faction_label.text = txt
 
 
 func _on_log(text: String, faction: String = "") -> void:
@@ -526,35 +504,21 @@ func _on_log(text: String, faction: String = "") -> void:
 # Flusso azione guidato
 # ---------------------------------------------------------------------------
 
-func _on_faction_changed(idx: int) -> void:
-	_cur_faction = _faction_select.get_item_metadata(idx)
-	_action_select.clear()
-	for op in GameController.game_def.faction(_cur_faction).operations:
-		_action_select.add_item(OP_NAMES.get(op, op))
-		_action_select.set_item_metadata(_action_select.item_count - 1, op)
-	_special_select.clear()
-	for sa in GameController.game_def.faction(_cur_faction).special_activities:
-		_special_select.add_item(SA_NAMES.get(sa, sa))
-		_special_select.set_item_metadata(_special_select.item_count - 1, sa)
-	_on_cancel()
-
-
-func _on_start() -> void:
-	if _action_select.item_count == 0:
-		return
-	_cur_action = _action_select.get_item_metadata(_action_select.selected)
+## Avvia l'Operazione scelta (tasto): evidenzia gli spazi e imposta il flusso.
+func _start_op(op_id: String) -> void:
+	_cur_action = op_id
 	_selected.clear()
 	_pending_moves.clear()
 	_limited = GameController.seq_is_limited_only()
-	_mode = OP_KIND.get(_cur_action, "space_list")
+	_mode = OP_KIND.get(op_id, "space_list")
 	_clear_highlights()
-	for sid in _valid_spaces(_cur_faction, _cur_action):
+	for sid in _valid_spaces(_cur_faction, op_id):
 		_space_views[sid].set_highlight(true)
 	var lim := " (Op Limitata: 1 spazio, niente Att.Speciale)" if _limited else ""
 	if _mode == "moves":
-		_instr.text = "%s%s: trascina i pezzi, poi '✓ Concludi turno'" % [OP_NAMES.get(_cur_action, _cur_action), lim]
+		_instr.text = "%s%s: trascina i pezzi, poi '✓ Concludi turno'" % [OP_NAMES.get(op_id, op_id), lim]
 	else:
-		_instr.text = "%s%s: clicca gli spazi, poi '✓ Concludi turno'" % [OP_NAMES.get(_cur_action, _cur_action), lim]
+		_instr.text = "%s%s: clicca gli spazi, poi '✓ Concludi turno'" % [OP_NAMES.get(op_id, op_id), lim]
 	_refresh_turn_banner()
 
 
@@ -590,14 +554,11 @@ func _on_execute() -> void:
 	_on_cancel()
 
 
-## Esegue l'Attività Speciale selezionata, con parametri ricavati dalla selezione/spostamenti.
-func _on_special() -> void:
-	if _special_select.item_count == 0:
-		return
+## Esegue l'Attività Speciale (tasto), con parametri ricavati dalla selezione/spostamenti.
+func _do_special(sa: String) -> void:
 	if _limited:
 		_instr.text = "Operazione Limitata: niente Attività Speciale"
 		return
-	var sa: String = _special_select.get_item_metadata(_special_select.selected)
 	var sa_id := sa
 	if sa == "ambush":
 		sa_id = "ambush_m26" if _cur_faction == "m26" else "ambush_dr"
