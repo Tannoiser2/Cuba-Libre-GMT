@@ -23,3 +23,8 @@ window/stretch/mode="canvas_items"
 [debug]
 
 gdscript/warnings/unused_parameter=0
+
+[rendering]
+
+; Necessario per esportare l'app macOS universale (Intel + Apple Silicon).
+textures/vram_compression/import_etc2_astc=true

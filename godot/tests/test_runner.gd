@@ -793,6 +793,43 @@ func _test_capabilities() -> void:
 	ops5.march({"faction": "m26", "moves": [{"from": "la_habana", "to": "havana", "count": 3}]})
 	_eq("El Che: Guerriglie restano Clandestine a Havana", st5.space_state("havana").count("m26", "guerrilla", "active"), 0)
 
+	# Guantánamo Bay (Capacità): 26July può Sequestrare a Sierra Maestra come fosse Città
+	var r6 := _ops()
+	var st6: GameState = r6[2]
+	var sa6 := CubaLibreSpecials.new(st6, r6[0])
+	st6.space_state("sierra_maestra").remove_piece("government", "police", 9, "")
+	st6.space_state("sierra_maestra").add_piece("m26", "guerrilla", 2, "underground")
+	var k_no := sa6.kidnap({"space": "sierra_maestra", "target": "government", "die": 3})
+	_check("Senza Guantánamo: Sequestro a Sierra Maestra vietato", not k_no.ok)
+	st6.active_capabilities.append("Guantánamo Bay")
+	var k_yes := sa6.kidnap({"space": "sierra_maestra", "target": "government", "die": 3})
+	_check("Con Guantánamo: Sequestro a Sierra Maestra consentito", k_yes.ok)
+
+	# Pact of Caracas (Capacità): l'Imboscata di 26July non rimuove i pezzi del Directorio
+	var r7 := _ops()
+	var st7: GameState = r7[2]
+	var sa7 := CubaLibreSpecials.new(st7, r7[0])
+	st7.space_state("matanzas").add_piece("m26", "guerrilla", 1, "underground")
+	st7.space_state("matanzas").add_piece("directorio", "guerrilla", 1, "active")
+	st7.space_state("matanzas").add_piece("government", "troops", 1)
+	st7.active_capabilities.append("Pact of Caracas")
+	sa7.ambush("m26", {"space": "matanzas"})
+	_eq("Pact of Caracas: l'Imboscata 26J NON tocca le Guerriglie DR", st7.space_state("matanzas").count("directorio", "guerrilla"), 1)
+	_eq("Pact of Caracas: l'Imboscata 26J rimuove comunque il cubo Govt", st7.space_state("matanzas").count("government", "troops"), 0)
+
+	# Mafia Offensive (Capacità): il Sindacato può Assassinare, ignorando la Polizia
+	var r8 := _ops()
+	var st8: GameState = r8[2]
+	var sa8 := CubaLibreSpecials.new(st8, r8[0])
+	st8.space_state("matanzas").add_piece("syndicate", "guerrilla", 1, "underground")
+	st8.space_state("matanzas").add_piece("government", "police", 2)
+	st8.space_state("matanzas").add_piece("m26", "guerrilla", 1, "active")
+	var a_no := sa8.assassinate({"space": "matanzas", "faction": "syndicate"})
+	_check("Senza Mafia Offensive: il Sindacato non può Assassinare", not a_no.ok)
+	st8.active_capabilities.append("Mafia Offensive")
+	var a_yes := sa8.assassinate({"space": "matanzas", "faction": "syndicate"})
+	_check("Con Mafia Offensive: il Sindacato Assassina ignorando la Polizia", a_yes.ok)
+
 
 func _test_game_loop() -> void:
 	print("\n[Loop di gioco — partita automatica]")

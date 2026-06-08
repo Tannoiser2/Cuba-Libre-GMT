@@ -135,9 +135,12 @@ func _ev_1(side, faction, params):
 			return _ok(["Armored Cars: Imboscata gratuita di %s a %s" % [f, sid]])
 	return _ok(["Armored Cars: nessuna Imboscata possibile"])
 
-## #2 Guantánamo Bay — Capacità + Momentum (registrati).
+## #2 Guantánamo Bay — Chiaro: Capacità (26J Sequestra a Sierra Maestra come Città).
+## Ombr.: Momentum del Governo (Attacco Aereo rimuove 2 pezzi fino a Propaganda).
 func _ev_2(side, faction, params):
-	return _ok(["Guantánamo Bay: effetto duraturo registrato"])
+	if side == "unshaded":
+		return _ok(["Guantánamo Bay: Capacità (26J può Sequestrare a Sierra Maestra come Città)"])
+	return _ok(["Guantánamo Bay: Momentum (l'Attacco Aereo rimuove 2 pezzi fino a Propaganda)"])
 
 ## #3 Eulogio Cantillo
 func _ev_3(side, faction, params):

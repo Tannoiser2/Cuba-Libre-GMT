@@ -785,6 +785,8 @@ func _try_special(faction: String, entry: Dictionary) -> bool:
 		"kidnap":
 			for sid in _ids():
 				var st: SpaceState = state.space_state(sid)
+				if not specials.kidnap_allowed_space(sid):
+					continue
 				if st.count("m26", "guerrilla") > st.count("government", "police"):
 					return _run(specials.kidnap({"space": sid, "target": "government"}))
 		"subvert":
