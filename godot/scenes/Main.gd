@@ -26,6 +26,32 @@ const OP_NAMES := {
 	"assault": "Assalto", "rally": "Riorganizzazione", "march": "Marcia",
 	"attack": "Attacco", "terror": "Terrorismo", "build": "Costruzione",
 }
+# Cosa permette di fare ogni Operazione (sintesi mostrata nel banner).
+const OP_DESC := {
+	"train": "Piazza fino a 4 Truppe/Polizia in Città o dove hai una Base; poi Azione Civica (verso Supporto) o piazza una Base.",
+	"garrison": "Ridispiega la Polizia tra spazi collegati; poi puoi attivare le Guerriglie in un EC.",
+	"sweep": "Sposta Truppe negli spazi adiacenti e attiva 1 Guerriglia clandestina nemica per ogni Truppa/Polizia.",
+	"assault": "Rimuovi pezzi nemici scoperti (1 per Truppa, o per Polizia in Città): prima le Guerriglie Attive, poi le Basi.",
+	"rally": "Piazza Guerriglie (o una Base dove ne hai 2+), oppure aggiungi Guerriglie dove hai già una Base.",
+	"march": "Sposta Guerriglie/cubi in spazi adiacenti; chi entra dove ci sono nemici o Polizia diventa Attivo.",
+	"attack": "Tira per rimuovere pezzi nemici (1 ogni 2 Guerriglie); con l'Imboscata colpisci senza tiro.",
+	"terror": "Con una Guerriglia clandestina: poni Terrore e sposta il Supporto verso l'Opposizione (o Sabotaggio su LoC/EC).",
+	"build": "Il Sindacato apre un Casinò (spesa di Risorse) in uno spazio che controlla o controllato dal Governo.",
+}
+# Cosa permette di fare ogni Attività Speciale (sintesi mostrata nel banner).
+const SA_DESC := {
+	"transport": "Sposta fino a 3 Truppe da una Città o da una Base verso un qualsiasi spazio.",
+	"air_strike": "Rimuovi 1 Guerriglia Attiva (o, se assente, 1 Base) in una Provincia/EC. Vietato durante l'Embargo.",
+	"reprisal": "In uno spazio a Controllo Govt: poni Terrore, riduci l'Opposizione e sposta 1 Guerriglia in uno spazio adiacente.",
+	"infiltrate": "Rimpiazza 1 cubo del Governo con una Guerriglia 26J in uno spazio senza Supporto (serve una clandestina 26J lì o adiacente).",
+	"ambush": "In uno spazio scelto per l'Attacco: colpisci senza tiro rimuovendo 2 pezzi nemici (anche Basi).",
+	"kidnap": "Trasferisci Risorse/Denaro dal Governo al 26J e chiudi 1 Casinò; servono più Guerriglie 26J che Polizia.",
+	"subvert": "In una Provincia a Controllo DR: aggiungi Risorse pari alla Popolazione e rendi lo spazio Neutrale.",
+	"assassinate": "Rimuovi 1 pezzo nemico (anche una Base) dove le Guerriglie DR superano la Polizia.",
+	"profit": "Accumula 1 Denaro in 1-2 spazi con un Casinò aperto.",
+	"muscle": "Sposta 1-2 Polizia (verso Città) o Truppe (verso Provincia/EC) in uno spazio con Casinò aperto o EC.",
+	"bribe": "Spendi 3 Risorse del Sindacato per rimuovere fino a 2 cubi/Guerriglie nemici (o 1 Base) in uno spazio.",
+}
 # Tipo di flusso per ogni Operazione.
 const OP_KIND := {
 	"train": "space_list", "assault": "space_list", "rally": "space_list",
@@ -304,6 +330,7 @@ func _build_action_bar() -> VBoxContainer:
 	# Istruzione di passo (sotto le righe)
 	_instr = Label.new()
 	_instr.add_theme_color_override("font_color", Color("f1c40f"))
+	_instr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	bar.add_child(_instr)
 	return bar
 
@@ -534,11 +561,15 @@ func _rebuild_action_buttons(fid: String) -> void:
 	for c in _op_btns.get_children():
 		c.queue_free()
 	for op in GameController.game_def.faction(fid).operations:
-		_op_btns.add_child(_mk_btn(OP_NAMES.get(op, op), _start_op.bind(op)))
+		var ob: Button = _mk_btn(OP_NAMES.get(op, op), _start_op.bind(op))
+		ob.tooltip_text = OP_DESC.get(op, "")
+		_op_btns.add_child(ob)
 	for c in _sa_btns.get_children():
 		c.queue_free()
 	for sa in GameController.game_def.faction(fid).special_activities:
-		_sa_btns.add_child(_mk_btn(SA_NAMES.get(sa, sa), _do_special.bind(sa)))
+		var sb: Button = _mk_btn(SA_NAMES.get(sa, sa), _do_special.bind(sa))
+		sb.tooltip_text = SA_DESC.get(sa, "")
+		_sa_btns.add_child(sb)
 
 
 func _refresh_side() -> void:
@@ -618,10 +649,9 @@ func _start_op(op_id: String) -> void:
 	for sid in valid:
 		_space_views[sid].set_highlight(true)
 	var lim := " (Op Limitata: 1 spazio, niente Att.Speciale)" if _limited else ""
-	if _mode == "moves":
-		_instr.text = "%s%s: trascina i pezzi, poi '✓ Concludi turno'" % [OP_NAMES.get(op_id, op_id), lim]
-	else:
-		_instr.text = "%s%s: clicca gli spazi evidenziati, poi '✓ Concludi turno'" % [OP_NAMES.get(op_id, op_id), lim]
+	var desc: String = OP_DESC.get(op_id, "")
+	var hint := "trascina i pezzi nei loro spazi" if _mode == "moves" else "clicca gli spazi evidenziati"
+	_instr.text = "%s%s — %s\n➤ %s, poi 'Esegui' o '✓ Concludi turno'" % [OP_NAMES.get(op_id, op_id), lim, desc, hint]
 	_refresh_turn_banner()
 
 
@@ -708,6 +738,7 @@ func _do_special(sa: String) -> void:
 		_instr.text = "Operazione Limitata: niente Attività Speciale"
 		return
 	var sa_name: String = SA_NAMES.get(sa, sa)
+	var sa_desc: String = SA_DESC.get(sa, "")
 	# Avvia la selezione del BERSAGLIO dell'Attività Speciale (prima/durante/dopo l'Operazione).
 	var resume := _mode if _mode in ["space_list", "select_spaces", "moves"] else "idle"
 	if sa == "transport" or sa == "muscle":
@@ -723,7 +754,7 @@ func _do_special(sa: String) -> void:
 		for s in origins:
 			_space_views[s].set_highlight(true)
 		_mode = "sa_move"
-		_instr.text = "%s: clicca un'ORIGINE evidenziata, poi la destinazione" % sa_name
+		_instr.text = "%s — %s\n➤ clicca un'ORIGINE evidenziata, poi la destinazione" % [sa_name, sa_desc]
 	else:
 		var valid := _sa_valid_spaces(sa)
 		if valid.is_empty():
@@ -737,7 +768,7 @@ func _do_special(sa: String) -> void:
 		for s in valid:
 			_space_views[s].set_highlight(true)
 		_mode = "sa_point"
-		_instr.text = "%s: clicca uno spazio bersaglio evidenziato" % sa_name
+		_instr.text = "%s — %s\n➤ clicca uno spazio bersaglio evidenziato" % [sa_name, sa_desc]
 	_refresh_turn_banner()
 
 
