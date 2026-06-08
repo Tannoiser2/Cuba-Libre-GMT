@@ -72,6 +72,7 @@ var _selected: Array = []
 var _pending_moves: Array = []
 var _pending_sa := ""                  # Att.Speciale in attesa di bersaglio
 var _sa_from := ""                     # origine (per Trasporto/Muscle)
+var _resume_mode := "idle"             # modalità Operazione da riprendere dopo l'Att.Speciale
 
 
 func _ready() -> void:
@@ -163,10 +164,31 @@ func _load_regions() -> Dictionary:
 	return data.get("regions", {}) if typeof(data) == TYPE_DICTIONARY else {}
 
 
+func _btn_style(bg: Color, border: Color) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg
+	s.set_corner_radius_all(7)
+	s.set_border_width_all(1)
+	s.border_color = border
+	s.content_margin_left = 11.0
+	s.content_margin_right = 11.0
+	s.content_margin_top = 6.0
+	s.content_margin_bottom = 6.0
+	return s
+
+
 func _mk_btn(text: String, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.pressed.connect(cb)
+	# Aspetto da vero bottone: box arrotondato con bordo e stati hover/pressed.
+	b.add_theme_stylebox_override("normal", _btn_style(Color("2b3442"), Color("4a5666")))
+	b.add_theme_stylebox_override("hover", _btn_style(Color("3a4759"), Color("6f8197")))
+	b.add_theme_stylebox_override("pressed", _btn_style(Color("1d242e"), Color("4a5666")))
+	b.add_theme_stylebox_override("disabled", _btn_style(Color("222831"), Color("333b46")))
+	b.add_theme_color_override("font_color", Color("e6edf3"))
+	b.add_theme_color_override("font_hover_color", Color("ffffff"))
+	b.add_theme_color_override("font_disabled_color", Color("5b6571"))
 	return b
 
 
@@ -576,7 +598,8 @@ func _do_special(sa: String) -> void:
 	if _limited:
 		_instr.text = "Operazione Limitata: niente Attività Speciale"
 		return
-	# Avvia la selezione del BERSAGLIO dell'Attività Speciale (eseguibile prima o dopo l'Op).
+	# Avvia la selezione del BERSAGLIO dell'Attività Speciale (prima/durante/dopo l'Operazione).
+	_resume_mode = _mode if _mode in ["space_list", "select_spaces", "moves"] else "idle"
 	_pending_sa = sa
 	_sa_from = ""
 	_clear_highlights()
@@ -617,8 +640,18 @@ func _run_sa_move(sa: String, from_id: String, to_id: String) -> void:
 func _end_sa() -> void:
 	_pending_sa = ""
 	_sa_from = ""
-	_mode = "idle"
 	_clear_highlights()
+	# Se l'Operazione era in corso, riprendila (Att.Speciale fatta DURANTE l'operazione).
+	if _resume_mode != "idle" and _cur_action != "":
+		_mode = _resume_mode
+		for sid in _valid_spaces(_cur_faction, _cur_action):
+			_space_views[sid].set_highlight(true)
+		for sid in _selected:
+			_space_views[sid].set_highlight(true)
+		_instr.text = "Continua l'Operazione (clicca/trascina), poi 'Esegui' o '✓ Concludi turno'"
+	else:
+		_mode = "idle"
+	_resume_mode = "idle"
 	_refresh_turn_banner()
 
 
