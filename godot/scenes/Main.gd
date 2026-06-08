@@ -403,8 +403,16 @@ func _build_action_bar() -> VBoxContainer:
 	# Istruzione di passo (sotto le righe)
 	_instr = Label.new()
 	_instr.add_theme_color_override("font_color", Color("f1c40f"))
+	_instr.add_theme_font_size_override("font_size", 12)
 	_instr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	bar.add_child(_instr)
+	_instr.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Contenitore ad altezza FISSA: così la barra non cambia altezza e la mappa
+	# resta sempre adattata (le istruzioni lunghe vengono troncate, non spingono il board).
+	var instr_box := Control.new()
+	instr_box.custom_minimum_size = Vector2(0, 38)
+	instr_box.clip_contents = true
+	instr_box.add_child(_instr)
+	bar.add_child(instr_box)
 	return bar
 
 
@@ -475,8 +483,8 @@ func _build_side_panel() -> PanelContainer:
 	# Testo del log piccolo (override di tema = affidabile, non dipende dal bbcode).
 	for fs in ["normal_font_size", "bold_font_size", "italics_font_size", "bold_italics_font_size", "mono_font_size"]:
 		_log.add_theme_font_size_override(fs, 11)
-	# Un po' d'aria tra una riga (Fazione) e l'altra.
-	_log.add_theme_constant_override("line_separation", 5)
+	# Spaziatura compatta tra le righe del log.
+	_log.add_theme_constant_override("line_separation", 2)
 	_log.meta_clicked.connect(_on_log_meta)
 	vb.add_child(_log)
 
