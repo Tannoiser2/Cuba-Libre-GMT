@@ -23,6 +23,7 @@ var _control := ""
 var _stack: VBoxContainer
 var _ctrl_tr: TextureRect
 var _sup_tr: TextureRect
+var _pieces: Array = []   # token dei pezzi (posizionati a griglia)
 
 
 func setup(sd: SpaceDef, poly: Array, anchor: Vector2, cbox := Vector2(-1, -1),
@@ -85,12 +86,36 @@ func _has_point(point: Vector2) -> bool:
 	return Geometry2D.is_point_in_polygon(point, _scaled_poly())
 
 
+const PSZ := 27.0      # dimensione pezzo
+const STEP := 18.0     # passo griglia (< PSZ → leggera sovrapposizione)
+
+
 func relayout() -> void:
-	# Pezzi centrati in orizzontale sull'anchor e che CRESCONO VERSO IL BASSO (la prima riga
-	# resta all'altezza dell'anchor): così non "salgono" coprendo le scritte sopra lo spazio.
-	_stack.reset_size()
 	var a := Vector2(_anchor_norm.x * size.x, _anchor_norm.y * size.y)
-	_stack.position = Vector2(a.x - _stack.size.x * 0.5, a.y - 16.0)
+	# Pezzi a GRIGLIA centrata sull'anchor (con sovrapposizione), entro la larghezza della zona.
+	var n := _pieces.size()
+	var grid_top := a.y
+	if n > 0:
+		var max_cols := maxi(2, int(_bounds_w * size.x / STEP))
+		var cols := clampi(int(ceil(sqrt(float(n)))), 1, max_cols)
+		cols = mini(cols, n)
+		var rows := int(ceil(float(n) / cols))
+		var total_w := (cols - 1) * STEP + PSZ
+		var total_h := (rows - 1) * STEP + PSZ
+		var origin := Vector2(a.x - total_w * 0.5, a.y - total_h * 0.5)
+		grid_top = origin.y
+		for i in range(n):
+			var col := i % cols
+			var row := i / cols
+			# ultima riga (eventualmente incompleta) centrata
+			var in_row := cols if row < rows - 1 else (n - row * cols)
+			var row_w := (in_row - 1) * STEP + PSZ
+			var rx := a.x - row_w * 0.5 + col * STEP
+			_pieces[i].size = Vector2(PSZ, PSZ)
+			_pieces[i].position = Vector2(rx, origin.y + row * STEP)
+	# Terrore/Sabotaggio appena sopra la griglia.
+	_stack.reset_size()
+	_stack.position = Vector2(a.x - _stack.size.x * 0.5, grid_top - 16.0)
 	# Marcatori Controllo/Supporto nelle caselle (o sull'anchor se non definite)
 	if _ctrl_tr != null:
 		var cp := _cbox if _cbox.x >= 0 else Vector2(_anchor_norm.x - 0.012, _anchor_norm.y - 0.03)
@@ -124,22 +149,25 @@ func refresh(state: GameState) -> void:
 	if st.marker("sabotage") > 0:
 		_add_marker(mrow, CLAssets.sabotage())
 
-	# Pezzi (sprite trascinabili)
-	var prow := HFlowContainer.new()
-	prow.add_theme_constant_override("h_separation", 0)
-	prow.add_theme_constant_override("v_separation", 0)
-	# Larghezza area pezzi adattata alla zona: i pezzi si distribuiscono entro lo spazio.
-	prow.custom_minimum_size = Vector2(clampf(_bounds_w * size.x, 54.0, 200.0), 0)
-	prow.mouse_filter = Control.MOUSE_FILTER_PASS
-	_stack.add_child(prow)
+	# Pezzi (sprite trascinabili) — posizionati a griglia centrata in relayout.
+	for p in _pieces:
+		p.queue_free()
+	_pieces = []
 	for fid in ["government", "m26", "directorio", "syndicate"]:
 		for g in _piece_groups(st, fid):
 			for k in range(g.count):
 				var tok := PieceToken.new()
-				prow.add_child(tok)
 				tok.setup(space_id, fid, g.type, g.state, "%s %s" % [fid, g.type])
+				add_child(tok)
+				_pieces.append(tok)
 		for k in range(st.cash_for(fid)):
-			_add_marker(prow, CLAssets.cash())
+			var cm := TextureRect.new()
+			cm.texture = CLAssets.cash()
+			cm.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			cm.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			cm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			add_child(cm)
+			_pieces.append(cm)
 
 	call_deferred("relayout")
 

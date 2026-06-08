@@ -649,12 +649,20 @@ func _on_space_clicked(sid: String) -> void:
 
 func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: String) -> void:
 	if _mode != "moves":
+		_instr.text = "⚠ Per spostare i pezzi scegli prima un'operazione di movimento (Marcia / Perlustrazione / Guarnigione / Trasporto)"
+		return
+	if from_id == to_id:
 		return
 	_pending_moves.append({"from": from_id, "to": to_id, "count": 1, "type": type})
+	# Feedback: lampeggia origine (blu) e destinazione (verde).
+	if _space_views.has(from_id):
+		_space_views[from_id].flash(Color(0.35, 0.6, 1.0))
+	if _space_views.has(to_id):
+		_space_views[to_id].flash(Color(0.4, 1.0, 0.5))
 	var pn: String = PIECE_NAMES.get(type, type)
 	var fn: String = GameController.game_def.space(from_id).name
 	var tn: String = GameController.game_def.space(to_id).name
-	_instr.text = "Spostamento %d: 1 %s da %s → %s" % [_pending_moves.size(), pn, fn, tn]
+	_instr.text = "✓ In coda (%d): 1 %s da %s → %s — poi 'Esegui'" % [_pending_moves.size(), pn, fn, tn]
 	_refresh_turn_banner()
 
 
