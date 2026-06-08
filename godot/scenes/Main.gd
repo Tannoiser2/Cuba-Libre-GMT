@@ -272,6 +272,7 @@ func _on_execute_and_end() -> void:
 
 func _build_side_panel() -> PanelContainer:
 	var pc := PanelContainer.new()
+	pc.clip_contents = true
 	var vb := VBoxContainer.new()
 	pc.add_child(vb)
 
@@ -287,7 +288,7 @@ func _build_side_panel() -> PanelContainer:
 	_card_img = TextureRect.new()
 	_card_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_card_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
-	_card_img.custom_minimum_size = Vector2(176, 240)
+	_card_img.custom_minimum_size = Vector2(150, 200)
 	col_cur.add_child(_card_img)
 	cards_row.add_child(col_cur)
 	var col_next := VBoxContainer.new()
@@ -298,7 +299,7 @@ func _build_side_panel() -> PanelContainer:
 	_next_card_img = TextureRect.new()
 	_next_card_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_next_card_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
-	_next_card_img.custom_minimum_size = Vector2(176, 240)
+	_next_card_img.custom_minimum_size = Vector2(150, 200)
 	_next_card_img.modulate = Color(1, 1, 1, 0.75)
 	col_next.add_child(_next_card_img)
 	cards_row.add_child(col_next)
@@ -306,14 +307,14 @@ func _build_side_panel() -> PanelContainer:
 	_card_label = RichTextLabel.new()
 	_card_label.bbcode_enabled = true
 	_card_label.fit_content = true
-	_card_label.custom_minimum_size = Vector2(360, 70)
+	_card_label.custom_minimum_size = Vector2(360, 56)
 	vb.add_child(_card_label)
 	vb.add_child(HSeparator.new())
 
 	_faction_label = RichTextLabel.new()
 	_faction_label.bbcode_enabled = true
 	_faction_label.fit_content = true
-	_faction_label.custom_minimum_size = Vector2(360, 150)
+	_faction_label.custom_minimum_size = Vector2(360, 92)
 	vb.add_child(_faction_label)
 
 	vb.add_child(HSeparator.new())
@@ -321,7 +322,7 @@ func _build_side_panel() -> PanelContainer:
 	_track_label = RichTextLabel.new()
 	_track_label.bbcode_enabled = true
 	_track_label.fit_content = true
-	_track_label.custom_minimum_size = Vector2(360, 120)
+	_track_label.custom_minimum_size = Vector2(360, 92)
 	vb.add_child(_track_label)
 
 	vb.add_child(HSeparator.new())
@@ -330,10 +331,12 @@ func _build_side_panel() -> PanelContainer:
 	log_title.text = "Log"
 	vb.add_child(log_title)
 
+	# Il log riempie lo spazio rimanente ed è scrollabile (non sborda).
 	_log = RichTextLabel.new()
 	_log.bbcode_enabled = true
 	_log.scroll_following = true
-	_log.custom_minimum_size = Vector2(360, 360)
+	_log.scroll_active = true
+	_log.custom_minimum_size = Vector2(360, 120)
 	_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vb.add_child(_log)
 
