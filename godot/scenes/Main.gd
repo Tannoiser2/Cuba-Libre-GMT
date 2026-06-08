@@ -28,15 +28,15 @@ const OP_NAMES := {
 }
 # Cosa permette di fare ogni Operazione (sintesi mostrata nel banner).
 const OP_DESC := {
-	"train": "Piazza fino a 4 Truppe/Polizia in Città o dove hai una Base; poi Azione Civica (verso Supporto) o piazza una Base.",
+	"train": "Clicca uno spazio per piazzare cubi (riclicca per +1, fino a 4); un altro click cicla a Base (da 2 cubi) o Azione Civica (1 sola Att. speciale per Addestramento).",
 	"garrison": "Ridispiega la Polizia tra spazi collegati; poi puoi attivare le Guerriglie in un EC.",
 	"sweep": "Sposta Truppe negli spazi adiacenti e attiva 1 Guerriglia clandestina nemica per ogni Truppa/Polizia.",
 	"assault": "Rimuovi pezzi nemici scoperti (1 per Truppa, o per Polizia in Città): prima le Guerriglie Attive, poi le Basi.",
-	"rally": "Piazza Guerriglie (o una Base dove ne hai 2+), oppure aggiungi Guerriglie dove hai già una Base.",
+	"rally": "Clicca uno spazio per piazzare Guerriglie; riclicca per cambiare azione (Base = sostituisci 2 Guerriglie con 1 Base; Clandestine = gira sotto, dove hai una Base).",
 	"march": "Sposta Guerriglie/cubi in spazi adiacenti; chi entra dove ci sono nemici o Polizia diventa Attivo.",
 	"attack": "Tira per rimuovere pezzi nemici (1 ogni 2 Guerriglie); con l'Imboscata colpisci senza tiro.",
 	"terror": "Con una Guerriglia clandestina: poni Terrore e sposta il Supporto verso l'Opposizione (o Sabotaggio su LoC/EC).",
-	"build": "Il Sindacato apre un Casinò (spesa di Risorse) in uno spazio che controlla o controllato dal Governo.",
+	"build": "Sindacato (5 Risorse/spazio): clicca per un nuovo Casinò chiuso; riclicca per aprirne uno già chiuso, dove possibile.",
 }
 # Cosa permette di fare ogni Attività Speciale (sintesi mostrata nel banner).
 const SA_DESC := {
@@ -99,6 +99,9 @@ const SA_NAMES := {
 var _cur_faction := "government"
 var _cur_action := ""
 var _selected: Array = []
+var _rally_choice: Dictionary = {}     # sid -> "place"/"extra"/"base"/"flip" (Riorganizzazione)
+var _train_plan: Dictionary = {}       # sid -> {kind:"cubes"/"base"/"civic", n:int} (Addestramento)
+var _build_choice: Dictionary = {}     # sid -> "new"/"open" (Costruzione Sindacato)
 var _pending_moves: Array = []
 var _pending_sa := ""                  # Att.Speciale in attesa di bersaglio
 var _sa_from := ""                     # origine (per Trasporto/Muscle)
@@ -324,7 +327,7 @@ func _build_action_bar() -> VBoxContainer:
 	row2.add_child(_btn_bot)
 	row2.add_child(_mk_btn("Tutti i Bot (questa carta)", _on_all_bots))
 	row2.add_child(_mk_btn("Auto: tutta la partita", func(): GameController.run_full_game_paced()))
-	row2.add_child(_mk_btn("Nuova Partita", func(): GameController.new_game()))
+	row2.add_child(_mk_btn("Nuova Partita", _on_new_game))
 	row2.add_child(VSeparator.new())
 	row2.add_child(_mk_label("Velocità:"))
 	var spd := OptionButton.new()
@@ -857,6 +860,17 @@ func _on_space_clicked(sid: String) -> void:
 		return
 	if _mode != "select_spaces" and _mode != "space_list":
 		return
+	# Riorganizzazione: ogni spazio ha un'AZIONE che si cambia ri-cliccando
+	# (Guerriglie → Base → … → deseleziona), così si può anche costruire una Base.
+	if _cur_action == "rally":
+		_rally_click(sid)
+		return
+	if _cur_action == "train":
+		_train_click(sid)
+		return
+	if _cur_action == "build":
+		_build_click(sid)
+		return
 	if _selected.has(sid):
 		_selected.erase(sid)
 	else:
@@ -871,6 +885,152 @@ func _on_space_clicked(sid: String) -> void:
 		_selected.append(sid)
 		_space_views[sid].set_highlight(true)
 	_instr.text = "Selezionati: %s" % ", ".join(_selected)
+	_refresh_turn_banner()
+
+
+const RALLY_LABEL := {"place": "Guerriglie", "extra": "Guerriglie", "base": "Base", "flip": "Clandestine"}
+
+
+## Azioni di Riorganizzazione possibili in uno spazio (la 1ª è il default).
+func _rally_options(sid: String) -> Array:
+	var f := _cur_faction
+	var st: SpaceState = GameController.state.space_state(sid)
+	var has_base := st.count(f, "base") > 0
+	var opts: Array = ["extra"] if has_base else ["place"]
+	if st.count(f, "guerrilla") >= 2 and GameController.module.can_place_base(GameController.state, sid, false):
+		opts.append("base")  # sostituisci 2 Guerriglie con 1 Base
+	if has_base and st.count(f, "guerrilla", "active") > 0:
+		opts.append("flip")  # gira le Guerriglie Clandestine
+	return opts
+
+
+## Click su uno spazio durante la Riorganizzazione: seleziona o cicla l'azione.
+func _rally_click(sid: String) -> void:
+	if not _selected.has(sid):
+		if not _valid_spaces(_cur_faction, "rally").has(sid):
+			_instr.text = "Riorganizzazione: qui non è efficace, scegli uno spazio evidenziato"
+			return
+		_selected.append(sid)
+		_rally_choice[sid] = _rally_options(sid)[0]
+		_space_views[sid].set_highlight(true)
+	else:
+		var opts := _rally_options(sid)
+		var i := opts.find(String(_rally_choice.get(sid, opts[0])))
+		if i + 1 < opts.size():
+			_rally_choice[sid] = opts[i + 1]   # azione successiva
+		else:
+			_selected.erase(sid)               # dopo l'ultima: deseleziona
+			_rally_choice.erase(sid)
+			_space_views[sid].set_highlight(false)
+	var parts: Array = []
+	for s in _selected:
+		parts.append("%s [%s]" % [GameController.game_def.space(s).name, RALLY_LABEL.get(_rally_choice.get(s, "place"), "?")])
+	_instr.text = "Riorganizza: %s — riclicca uno spazio per cambiare azione, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Riorganizzazione: clicca gli spazi"
+	_refresh_turn_banner()
+
+
+# ---- Addestramento (Train): cubi per spazio + 1 azione speciale (Base/Civica) ----
+
+func _train_base_ok(sid: String) -> bool:
+	var st: SpaceState = GameController.state.space_state(sid)
+	return st.count("government", "troops") + st.count("government", "police") >= 2 \
+		and GameController.module.can_place_base(GameController.state, sid, false)
+
+func _train_civic_ok(sid: String) -> bool:
+	var st: SpaceState = GameController.state.space_state(sid)
+	return st.control == "government" and st.count("government", "troops") > 0 and st.count("government", "police") > 0
+
+## Lo spazio che già ospita la singola Att. speciale di Train (Base/Civica), o "".
+func _train_special_owner(exclude: String) -> String:
+	for s in _train_plan:
+		if s != exclude and String(_train_plan[s].get("kind", "cubes")) in ["base", "civic"]:
+			return s
+	return ""
+
+func _train_click(sid: String) -> void:
+	if not _selected.has(sid):
+		if not _valid_spaces(_cur_faction, "train").has(sid):
+			_instr.text = "Addestramento: scegli una Città o uno spazio con una Base del Governo"
+			return
+		_selected.append(sid)
+		_train_plan[sid] = {"kind": "cubes", "n": 1}
+		_space_views[sid].set_highlight(true)
+	else:
+		var p: Dictionary = _train_plan[sid]
+		var kind := String(p["kind"])
+		if kind == "cubes" and int(p["n"]) < 4:
+			p["n"] = int(p["n"]) + 1
+		elif kind == "cubes":
+			# Una sola Att. speciale per Addestramento.
+			if _train_special_owner(sid) == "" and _train_base_ok(sid):
+				p["kind"] = "base"
+			elif _train_special_owner(sid) == "" and _train_civic_ok(sid):
+				p["kind"] = "civic"
+			else:
+				_train_drop(sid); _train_instr(); return
+		elif kind == "base":
+			if _train_civic_ok(sid):
+				p["kind"] = "civic"
+			else:
+				_train_drop(sid); _train_instr(); return
+		else:
+			_train_drop(sid); _train_instr(); return
+	_train_instr()
+
+func _train_drop(sid: String) -> void:
+	_selected.erase(sid)
+	_train_plan.erase(sid)
+	_space_views[sid].set_highlight(false)
+
+func _train_instr() -> void:
+	var parts: Array = []
+	for s in _selected:
+		var p: Dictionary = _train_plan.get(s, {"kind": "cubes", "n": 1})
+		var nm: String = GameController.game_def.space(s).name
+		match String(p["kind"]):
+			"base": parts.append("%s [Base]" % nm)
+			"civic": parts.append("%s [Civica]" % nm)
+			_:
+				var typ := "Polizia" if GameController.game_def.space(s).type == CoinEnums.SpaceType.CITY else "Truppe"
+				parts.append("%s [%d %s]" % [nm, int(p["n"]), typ])
+	_instr.text = "Addestramento: %s — riclicca per +cubo / Base / Civica, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Addestramento: clicca gli spazi"
+	_refresh_turn_banner()
+
+
+# ---- Costruzione (Build, Sindacato): nuovo Casinò chiuso oppure apri uno chiuso ----
+
+func _build_options(sid: String) -> Array:
+	var s: GameState = GameController.state
+	var st: SpaceState = s.space_state(sid)
+	var opts: Array = []
+	if st.count("syndicate", "casino", "closed") > 0:
+		opts.append("open")
+	if GameController.module.can_place_base(s, sid, true):
+		opts.append("new")
+	return opts if not opts.is_empty() else ["new"]
+
+func _build_click(sid: String) -> void:
+	if not _selected.has(sid):
+		if not _valid_spaces(_cur_faction, "build").has(sid):
+			_instr.text = "Costruzione: scegli uno spazio con Controllo Govt o Sindacato"
+			return
+		_selected.append(sid)
+		_build_choice[sid] = _build_options(sid)[0]
+		_space_views[sid].set_highlight(true)
+	else:
+		var opts := _build_options(sid)
+		var i := opts.find(String(_build_choice.get(sid, opts[0])))
+		if i + 1 < opts.size():
+			_build_choice[sid] = opts[i + 1]
+		else:
+			_selected.erase(sid)
+			_build_choice.erase(sid)
+			_space_views[sid].set_highlight(false)
+	var parts: Array = []
+	for s in _selected:
+		var lbl := "apri Casinò" if String(_build_choice.get(s, "new")) == "open" else "nuovo Casinò"
+		parts.append("%s [%s]" % [GameController.game_def.space(s).name, lbl])
+	_instr.text = "Costruzione: %s — riclicca per cambiare, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Costruzione: clicca gli spazi"
 	_refresh_turn_banner()
 
 
@@ -1074,10 +1234,21 @@ func _on_all_bots() -> void:
 	GameController.run_card_paced()
 
 
+## Nuova partita: ripulisce il log e la selezione, poi reinizializza.
+func _on_new_game() -> void:
+	_clear_pending()
+	_log_entries.clear()
+	_render_log()
+	GameController.new_game()
+
+
 ## Pulizia interna della selezione/coda in preparazione (senza undo).
 func _clear_pending() -> void:
 	_mode = "idle"
 	_selected.clear()
+	_rally_choice.clear()
+	_train_plan.clear()
+	_build_choice.clear()
 	_pending_moves.clear()
 	_pending_sa = ""
 	_sa_from = ""
@@ -1117,18 +1288,28 @@ func _build_params() -> Dictionary:
 		"march":
 			return {"faction": _cur_faction, "moves": _pending_moves}
 		"rally":
-			return {"faction": _cur_faction, "spaces": _selected}
+			return {"faction": _cur_faction, "spaces": _selected, "choices": _rally_choice.duplicate()}
 		"attack", "terror":
 			return {"faction": _cur_faction, "spaces": _selected}
 		"assault":
 			return {"spaces": _selected}
 		"build":
-			var choices := {}
-			for sid in _selected:
-				choices[sid] = "new"
-			return {"spaces": _selected, "choices": choices}
+			return {"spaces": _selected, "choices": _build_choice.duplicate()}
 		"train":
-			return {"spaces": _selected}
+			var place := {}
+			var special := {}
+			for sid in _selected:
+				var p: Dictionary = _train_plan.get(sid, {"kind": "cubes", "n": 1})
+				match String(p["kind"]):
+					"base": special = {"type": "base", "space": sid}
+					"civic": special = {"type": "civic", "space": sid, "steps": 1}
+					_:
+						var typ := "police" if GameController.game_def.space(sid).type == CoinEnums.SpaceType.CITY else "troops"
+						place[sid] = {typ: int(p["n"])}
+			var out := {"spaces": _selected, "place": place}
+			if not special.is_empty():
+				out["special"] = special
+			return out
 		_:
 			return {"spaces": _selected, "faction": _cur_faction}
 
