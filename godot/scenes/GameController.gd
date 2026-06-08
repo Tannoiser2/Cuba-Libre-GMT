@@ -208,10 +208,10 @@ func end_turn() -> bool:
 		elif seq.is_legal(A.OPERATION_WITH_SPECIAL):
 			t = A.OPERATION_WITH_SPECIAL
 	if t == -1:
-		emit_signal("action_logged", "⚠ Nessuna azione valida da concludere (esegui un'Operazione/Evento o Passa)", "")
+		emit_signal("action_logged", "! Nessuna azione valida da concludere (esegui un'Operazione/Evento o Passa)", "")
 		return false
 	if not seq.act(t):
-		emit_signal("action_logged", "⚠ Azione non legale in questo momento", "")
+		emit_signal("action_logged", "! Azione non legale in questo momento", "")
 		return false
 	_after_decision()
 	return true
@@ -268,7 +268,7 @@ func _bot_take_pending() -> void:
 			seq.act(A.EVENT)
 			_count("event")
 			return
-		decision = "op_sa"   # Evento non più conveniente: ripiega su Operazione
+		decision = "op_sa"  # Evento non più conveniente: ripiega su Operazione
 	# PASS deciso dalla tabella
 	if decision == "pass":
 		emit_signal("bot_decision", "%s → PASSA (C8.5.2)" % fname, fid, ["C8.5.2: conviene restare Disponibile."])
@@ -566,7 +566,7 @@ func undo_last() -> bool:
 	_undo = {}
 	state.recompute_all_control()
 	module._refresh_victory_tracks(state)
-	emit_signal("action_logged", "↩ Annullata l'ultima azione", "")
+	emit_signal("action_logged", " Annullata l'ultima azione", "")
 	emit_signal("state_changed")
 	return true
 
@@ -646,7 +646,7 @@ func run_event(number: int, side: String, faction: String, params: Dictionary = 
 func run_bot_turn(faction: String) -> Dictionary:
 	var res := bot.take_turn(faction)
 	for line in res.get("log", []):
-		emit_signal("action_logged", "🤖 " + String(line), faction)
+		emit_signal("action_logged", " " + String(line), faction)
 	emit_signal("state_changed")
 	return res
 
@@ -655,11 +655,11 @@ func run_bot_turn(faction: String) -> Dictionary:
 ## gestendo conteggio (X/4), vittoria e Propaganda finale. Percorso UNICO e corretto.
 func resolve_propaganda() -> Dictionary:
 	if state.current_card != 0:
-		emit_signal("action_logged", "⚠ La carta corrente non è una Propaganda", "")
+		emit_signal("action_logged", "! La carta corrente non è una Propaganda", "")
 		return {"ok": false}
 	propaganda_played += 1
 	var is_final := propaganda_played >= 4
-	emit_signal("action_logged", "📣 Round Propaganda %d/4" % propaganda_played, "")
+	emit_signal("action_logged", " Round Propaganda %d/4" % propaganda_played, "")
 	# Fase Vittoria (l'umano vince solo all'ultima Propaganda)
 	var vp := propaganda.victory_phase(is_final)
 	if vp.get("winner", "") != "":
@@ -675,7 +675,7 @@ func resolve_propaganda() -> Dictionary:
 	plog.append_array(bot.propaganda_support())
 	plog.append_array(propaganda.redeploy_phase())
 	for line in plog:
-		emit_signal("action_logged", "📣 " + String(line), "")
+		emit_signal("action_logged", " " + String(line), "")
 	if is_final:
 		game_over = true
 		_emit_final_report("")
@@ -701,14 +701,14 @@ func _emit_final_report(forced_winner: String) -> void:
 			if m > bm or (m == bm and tb.find(fid) < tb.find(win)):
 				win = fid
 	winner = win
-	emit_signal("action_logged", "🏁 FINE PARTITA", "")
-	emit_signal("action_logged", "🏆 Vince: %s" % faction_name(win), win)
+	emit_signal("action_logged", "═══ FINE PARTITA", "")
+	emit_signal("action_logged", "» Vince: %s" % faction_name(win), win)
 	# Classifica per margine decrescente.
 	var ranking := order.duplicate()
 	ranking.sort_custom(func(a, b): return int(vs[a]["margin"]) > int(vs[b]["margin"]))
 	for fid in ranking:
 		var d: Dictionary = vs[fid]
-		var mark := "🏆 " if fid == win else "•  "
+		var mark := "» " if fid == win else "•  "
 		var extra := ""
 		if fid == "syndicate":
 			extra = " · Risorse %d/30" % int(d.get("resources", 0))
@@ -733,7 +733,7 @@ func _emit_result(res: Dictionary) -> void:
 			emit_signal("action_logged", String(line), fac)
 		emit_signal("state_changed")
 	else:
-		emit_signal("action_logged", "⚠ " + String(res.get("error", "errore")), "")
+		emit_signal("action_logged", "! " + String(res.get("error", "errore")), "")
 
 
 # --- Helper di lettura per la UI ---

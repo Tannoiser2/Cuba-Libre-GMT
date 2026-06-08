@@ -18,7 +18,7 @@ var _an_dice: Dictionary = {}
 var deck: CalixtoDeck
 var _log: Array = []
 var _rng := RandomNumberGenerator.new()
-var _af := ""   # Fazione attiva (per i predicati)
+var _af := ""  # Fazione attiva (per i predicati)
 
 const LETTERS := {
 	"government": ["U", "Y", "Z", "X", "W", "V"],
@@ -154,12 +154,12 @@ func _explain_selection(applicable: Array, scored: Array) -> void:
 		return
 	# Priorità di selezione applicate, in ordine.
 	if applicable.is_empty():
-		_trace.append("   Priorità spazio: nessun criterio applicabile → scelta casuale")
+		_trace.append("  Priorità spazio: nessun criterio applicabile → scelta casuale")
 	else:
 		var labels: Array = []
 		for c in applicable:
 			labels.append(_crit_label(String(c)))
-		_trace.append("   Priorità spazio (in ordine): " + ", ".join(labels))
+		_trace.append("  Priorità spazio (in ordine): " + ", ".join(labels))
 	var win: Dictionary = scored[0]
 	var win_name := _space_name(String(win["sid"]))
 	# Criterio decisivo: primo in cui il vincitore supera il secondo classificato.
@@ -173,13 +173,13 @@ func _explain_selection(applicable: Array, scored: Array) -> void:
 			if wv[i] != rv[i]:
 				reason = "%s (%s vs %s)" % [_crit_label(String(applicable[i])), str(wv[i]), str(rv[i])]
 				break
-	_trace.append("   → scelto «%s»: %s" % [win_name, reason])
+	_trace.append("  → scelto «%s»: %s" % [win_name, reason])
 	# Mostra la classifica dei primi spazi candidati.
 	if scored.size() > 1:
 		var rank: Array = []
 		for j in range(mini(4, scored.size())):
 			rank.append(_space_name(String(scored[j]["sid"])))
-		_trace.append("   Classifica: " + ", ".join(rank))
+		_trace.append("  Classifica: " + ", ".join(rank))
 
 
 ## Valore di un criterio per uno spazio (più alto = preferito). 0 se non applicabile.
@@ -458,11 +458,11 @@ func _is_ec(sid: String) -> bool:
 func _run(res: Dictionary) -> bool:
 	for line in res.get("log", []):
 		_log.append(String(line))
-		_trace.append("   " + String(line))
+		_trace.append("  " + String(line))
 	if not res.get("ok", false):
 		if res.has("error"):
-			_log.append("⚠ " + String(res["error"]))
-			_trace.append("   ⚠ " + String(res["error"]))
+			_log.append("! " + String(res["error"]))
+			_trace.append("  ! " + String(res["error"]))
 		return false
 	return true
 
@@ -577,7 +577,7 @@ func _do_assault(an: int) -> bool:
 	if spaces.is_empty():
 		return false
 	spaces = _ordered("government", "assault", spaces)
-	_trace.append("   Priorità eliminazione (Assalto): prima Guerriglie Attive, poi Basi nemiche (scoperte). Le Clandestine non sono colpibili.")
+	_trace.append("  Priorità eliminazione (Assalto): prima Guerriglie Attive, poi Basi nemiche (scoperte). Le Clandestine non sono colpibili.")
 	return _run(ops.assault({"spaces": spaces.slice(0, _spaces_allowed(an, spaces.size()))}))
 
 
@@ -632,9 +632,9 @@ func _do_march(faction: String) -> bool:
 			if surplus > 0:
 				moves.append({"from": adj, "to": dest, "count": surplus})
 		if not moves.is_empty():
-			_trace.append("   Movimento verso «%s» (Move Priorities: tieni in origine il minimo per non cedere Controllo e 1 Clandestina se c'è una Base):" % _space_name(dest))
+			_trace.append("  Movimento verso «%s» (Move Priorities: tieni in origine il minimo per non cedere Controllo e 1 Clandestina se c'è una Base):" % _space_name(dest))
 			for m in moves:
-				_trace.append("     • %d Guerriglie da «%s»" % [int(m["count"]), _space_name(String(m["from"]))])
+				_trace.append("    • %d Guerriglie da «%s»" % [int(m["count"]), _space_name(String(m["from"]))])
 			return _run(ops.march({"faction": faction, "moves": moves}))
 	return false
 
@@ -676,7 +676,7 @@ func _do_attack(faction: String, an: int) -> bool:
 	if spaces.is_empty():
 		return false
 	spaces = _ordered(faction, "attack", spaces)
-	_trace.append("   Priorità eliminazione (Attacco): rimuove i pezzi nemici scoperti — prima cubi/Guerriglie Attive, poi Basi se restano scoperte.")
+	_trace.append("  Priorità eliminazione (Attacco): rimuove i pezzi nemici scoperti — prima cubi/Guerriglie Attive, poi Basi se restano scoperte.")
 	return _run(ops.attack({"faction": faction, "spaces": spaces.slice(0, _spaces_allowed(an, spaces.size()))}))
 
 
