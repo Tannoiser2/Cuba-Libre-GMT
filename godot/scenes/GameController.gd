@@ -484,15 +484,24 @@ func _begin_interactive_propaganda() -> void:
 		emit_signal("action_logged", " " + String(line), "")
 	for line in propaganda.support_phase():
 		emit_signal("action_logged", " " + String(line), "")
-	_prop_stages = ["government", "m26", "directorio"]
+	# Fase di Supporto per Fazione, poi lo Spostamento del Governo (6.4).
+	_prop_stages = ["government", "m26", "directorio", "redeploy"]
 	_prop_idx = 0
 	_advance_prop_stage()
 
 
 ## Esegue i passi dei bot e si ferma al primo passo di una Fazione umana con opzioni.
+## L'ultimo passo è lo Spostamento (6.4), interattivo solo se il Governo è umano.
 func _advance_prop_stage() -> void:
 	while _prop_idx < _prop_stages.size():
 		var fid: String = _prop_stages[_prop_idx]
+		if fid == "redeploy":
+			if is_bot("government"):
+				_prop_idx += 1
+				continue
+			prop_stage = "redeploy"
+			emit_signal("state_changed")
+			return
 		if is_bot(fid):
 			for line in bot.propaganda_support([fid]):
 				emit_signal("action_logged", " " + String(line), fid)
@@ -517,6 +526,7 @@ func prop_click(sid: String) -> Dictionary:
 		"government": res = propaganda.civic_step(sid)
 		"m26": res = propaganda.demo_step(sid)
 		"directorio": res = propaganda.expat_rally(sid)
+		"redeploy": res = {"ok": false, "error": "Spostamento: trascina i cubi sulla mappa, non cliccare"}
 		_: res = {"ok": false, "error": "Passo sconosciuto"}
 	if res.get("ok", false):
 		for line in res.get("log", []):
@@ -529,21 +539,41 @@ func prop_click(sid: String) -> Dictionary:
 	return res
 
 
+## Spostamento interattivo (6.4): muove 1 cubo del Governo, validando la destinazione.
+func prop_redeploy_move(from_id: String, to_id: String, type: String) -> Dictionary:
+	if not prop_pending or prop_stage != "redeploy":
+		return {"ok": false, "error": "Nessuno Spostamento in corso"}
+	var res: Dictionary = propaganda.redeploy_move(from_id, to_id, type)
+	if res.get("ok", false):
+		for line in res.get("log", []):
+			emit_signal("action_logged", " " + String(line), "government")
+		emit_signal("state_changed")
+	return res
+
+
 ## Chiude il passo interattivo corrente ("Concludi") e prosegue col round.
-func prop_next_stage() -> void:
+## Nello Spostamento verifica prima l'obbligo 6.4.2 (Truppe fuori da EC/Province senza Base).
+func prop_next_stage() -> Dictionary:
 	if not prop_pending:
-		return
+		return {"ok": false, "error": ""}
+	if prop_stage == "redeploy":
+		var chk: Dictionary = propaganda.redeploy_can_finish()
+		if not chk.get("ok", false):
+			return chk
 	prop_stage = ""
 	_prop_idx += 1
 	_advance_prop_stage()
+	return {"ok": true, "error": ""}
 
 
 func _finish_propaganda() -> void:
 	prop_stage = ""
 	prop_pending = false
-	# Come nel percorso automatico: Spostamento del Governo, poi Sistemazione (se non finale).
-	for line in propaganda.redeploy_phase():
-		emit_signal("action_logged", " " + String(line), "")
+	# Spostamento del Governo: automatico solo se il Governo è un NP (se è umano
+	# lo ha già svolto a mano nel passo interattivo). Poi la Sistemazione.
+	if is_bot("government"):
+		for line in propaganda.redeploy_phase():
+			emit_signal("action_logged", " " + String(line), "")
 	if _prop_final:
 		game_over = true
 		_emit_final_report("")

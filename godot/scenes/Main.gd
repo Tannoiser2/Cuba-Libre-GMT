@@ -470,7 +470,13 @@ func _build_action_bar() -> VBoxContainer:
 ## Durante la Propaganda interattiva "Concludi" chiude il passo corrente.
 func _on_execute_and_end() -> void:
 	if GameController.prop_pending:
-		GameController.prop_next_stage()
+		var r: Dictionary = GameController.prop_next_stage()
+		if not r.get("ok", true):
+			# Obbligo 6.4.2 non soddisfatto: indica gli spazi da svuotare.
+			_err("✗ %s" % String(r.get("error", "")))
+			for sid in r.get("spaces", []):
+				if _space_views.has(sid):
+					_space_views[sid].flash(Color(1.0, 0.4, 0.4))
 		return
 	if _cur_action != "" and _mode != "idle":
 		if not _on_execute():
@@ -498,6 +504,17 @@ func _prop_banner(stage: String) -> void:
 	if stage == "":
 		_turn_banner.add_theme_color_override("font_color", Color("ffffff"))
 		_turn_banner.text = "» Round di Propaganda in corso..."
+		return
+	# Spostamento (6.4): si trascinano i cubi; evidenzia gli spazi che DEVONO svuotarsi.
+	if stage == "redeploy":
+		var must: Array = GameController.propaganda.redeploy_must_leave()
+		for sid in must:
+			if _space_views.has(sid):
+				_space_views[sid].set_highlight(true)
+		_turn_banner.add_theme_color_override("font_color", GameController.faction_color("government"))
+		var tail := "nessun obbligo: sposta se vuoi, poi 'Concludi'" if must.is_empty() \
+			else "le Truppe DEVONO lasciare gli spazi evidenziati (%d)" % must.size()
+		_turn_banner.text = "» Propaganda - Spostamento del Governo: trascina Truppe/Polizia - %s" % tail
 		return
 	for sid in GameController.propaganda.support_action_spaces(stage):
 		if _space_views.has(sid):
@@ -1710,6 +1727,21 @@ func _profit_instr() -> void:
 
 
 func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: String) -> void:
+	# Spostamento della Propaganda (6.4): i cubi si muovono subito, non in coda.
+	if GameController.prop_pending:
+		if GameController.prop_stage != "redeploy":
+			_err("Questo passo della Propaganda si gioca cliccando gli spazi, non trascinando")
+			return
+		if faction != "government":
+			_err("Nello Spostamento si muovono solo le forze del Governo")
+			return
+		var rr: Dictionary = GameController.prop_redeploy_move(from_id, to_id, type)
+		if rr.get("ok", false):
+			_space_views[from_id].flash(Color(0.35, 0.6, 1.0))
+			_space_views[to_id].flash(Color(0.4, 1.0, 0.5))
+		else:
+			_err("✗ %s" % String(rr.get("error", "Spostamento non valido")))
+		return
 	if _mode != "moves":
 		# Momentum "Armored Cars": Truppe trascinabili negli spazi scelti per l'Assalto.
 		if _mode == "space_list" and _cur_action == "assault" and type == "troops" \

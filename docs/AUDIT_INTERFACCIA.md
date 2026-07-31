@@ -349,3 +349,16 @@ esiste già; insieme cambierebbero sensibilmente l'esperienza quotidiana di gioc
 > premere, e l'elenco degli effetti previsti nel tooltip — il tutto simulando
 > l'Operazione su una copia dello stato, senza toccare la partita.
 > Copertura: **262 test headless**.
+
+> **Aggiornamento 4** — **Spostamento (Redeploy) interattivo** per il Governo umano,
+> ultimo pezzo di regole che restava automatico. La fase 6.4 si gioca trascinando i
+> cubi sulla mappa con le destinazioni validate dal regolamento: la Polizia può andare
+> in qualsiasi EC o spazio a Controllo del Governo (6.4.1), le Truppe solo in Città o
+> spazi con Base a Controllo del Governo (6.4.2/6.4.3). Gli spazi che le Truppe DEVONO
+> lasciare (EC e Province senza Base) sono evidenziati e "Concludi" li rifiuta finché
+> restano occupati. Con il Governo affidato al NP resta la procedura automatica di
+> Calixto. Copertura: **277 test headless**.
+>
+> Nota di regolamento emersa dai test: lo schieramento standard mette 3 Truppe a
+> Las Villas, Provincia priva di Base del Governo — vanno quindi ricollocate già al
+> primo Round di Propaganda.

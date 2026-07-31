@@ -39,6 +39,7 @@ func _initialize() -> void:
 	_test_support_actions()
 	_test_free_ops_and_momentum()
 	_test_undo_stack_and_preview()
+	_test_redeploy_interactive()
 	_test_cards_data()
 	_test_events()
 	_test_all_events()
@@ -1106,3 +1107,60 @@ func _test_undo_stack_and_preview() -> void:
 	_check("Undo 2: ripristina lo stato iniziale", JSON.stringify(gc.state.to_dict()) == snap_a)
 	_check("Undo: pila esaurita", not gc.can_undo())
 	gc.new_game()
+
+
+# ---------------------------------------------------------------------------
+# 6.4 Fase di Spostamento interattiva (Governo umano)
+# ---------------------------------------------------------------------------
+
+func _test_redeploy_interactive() -> void:
+	print("\n[Spostamento 6.4 interattivo]")
+	var a := _new_game()
+	var mod: CubaLibreModule = a[0]
+	var state: GameState = a[2]
+	var prop := CubaLibrePropaganda.new(state, mod)
+
+	# Destinazioni Truppe (6.4.2): solo Città/Basi a Controllo GOV.
+	var tdest := prop.redeploy_troop_dests()
+	_check("Truppe: L'Avana è destinazione valida", tdest.has("havana"))
+	for sid in tdest:
+		var sd: SpaceDef = state.game_def.space(sid)
+		var st: SpaceState = state.space_state(sid)
+		if st.control != "government" or not (sd.type == CoinEnums.SpaceType.CITY or st.count("government", "base") > 0):
+			_check("Truppe: destinazione %s illegale" % sid, false)
+			return
+	_check("Truppe: tutte le destinazioni sono Città/Basi a Controllo GOV", true)
+	_check("Truppe: nessun EC tra le destinazioni",
+		not tdest.any(func(s): return state.game_def.space(s).is_economic()))
+
+	# Destinazioni Polizia (6.4.1): EC oppure Controllo GOV.
+	var pdest := prop.redeploy_police_dests()
+	_check("Polizia: gli EC sono destinazioni valide",
+		pdest.any(func(s): return state.game_def.space(s).is_economic()))
+
+	# Obbligo 6.4.2: Truppe in un EC devono andarsene.
+	var ec := "ec_pinar_habana"
+	state.place_from_available("government", "troops", ec, 2)
+	state.recompute_all_control()
+	_check("Obbligo: l'EC con Truppe è segnalato", prop.redeploy_must_leave().has(ec))
+	var chk: Dictionary = prop.redeploy_can_finish()
+	_check("Obbligo: non si può concludere con Truppe nell'EC", not chk.get("ok", true))
+
+	# Spostamento illegale rifiutato, legale accettato.
+	var bad: Dictionary = prop.redeploy_move("havana", ec, "troops")
+	_check("Spostamento: Truppe verso un EC rifiutate", not bad.get("ok", true))
+	var good: Dictionary = prop.redeploy_move(ec, "havana", "troops", 2)
+	_check("Spostamento: Truppe dall'EC a L'Avana accettato", good.get("ok", false))
+	_eq("Spostamento: l'EC è stato svuotato", state.space_state(ec).count("government", "troops"), 0)
+	# Lo schieramento standard mette 3 Truppe a Las Villas, Provincia SENZA Base del
+	# Governo: anche quelle devono spostarsi (6.4.2), già al primo Round di Propaganda.
+	_check("Obbligo: Las Villas (Provincia senza Base) è segnalata", prop.redeploy_must_leave().has("las_villas"))
+	_check("Obbligo: non basta svuotare l'EC", not prop.redeploy_can_finish().get("ok", true))
+	var lv: Dictionary = prop.redeploy_move("las_villas", "havana", "troops", 3)
+	_check("Spostamento: Truppe da Las Villas a L'Avana accettato", lv.get("ok", false))
+	_check("Obbligo: ora si può concludere", prop.redeploy_can_finish().get("ok", false))
+
+	# La Polizia invece può stazionare in un EC (6.4.1).
+	var pol: Dictionary = prop.redeploy_move("havana", ec, "police")
+	_check("Spostamento: Polizia verso un EC accettata", pol.get("ok", false))
+	_check("Obbligo: la Polizia nell'EC non blocca la chiusura", prop.redeploy_can_finish().get("ok", false))

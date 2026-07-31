@@ -44,7 +44,7 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [x] Round di Propaganda (Vittoria, Risorse, Supporto, Sistemazione) + test.
 - [x] Condizioni e margini di vittoria.
 - [x] Test unitari del motore (147 test headless).
-- [ ] Spostamento (Redeploy) del Governo automatizzato.
+- [x] Spostamento (Redeploy) del Governo: automatico per il NP, interattivo per l'umano.
 
 ### Fase 2 — Carte ed Eventi
 - [x] Ordine fazioni di tutte le 48 carte (dai simboli) + testo OCR in `cards.json`.
@@ -74,7 +74,8 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [x] Annulla multi-livello (20 istantanee) e tasti distinti selezione/azione.
 - [x] Anteprima di costo ed effetti prima di "Esegui" (simulazione su copia).
 - [x] Scorciatoie da tastiera (Esc / Invio / Spazio / Ctrl+Z / +-0).
-- [ ] Spostamento (Redeploy) interattivo per il Governo umano (oggi automatico).
+- [x] Spostamento (Redeploy) interattivo per il Governo umano (6.4: trascinamento cubi,
+      destinazioni validate e obbligo 6.4.2 verificato prima di concludere).
 - [ ] Hotseat multi-giocatore locale.
 
 ### Fase 4 — Bot (Non-Giocatore)
