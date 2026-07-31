@@ -326,44 +326,49 @@ func _pass(faction: String) -> Dictionary:
 ## Azioni della Fase di Supporto della Propaganda NP (Calixto C8.5.9):
 ## GOV Azione Civica (verso Supporto Attivo), 26J Agitazione (verso Opposizione Attiva),
 ## DR Sostegno Espatriati (Rally). Restituisce il log.
-func propaganda_support() -> Array:
+## Azioni di Supporto della Propaganda per le Fazioni NP indicate (default: tutte).
+## Il filtro permette al livello superiore di mescolare Fazioni umane (interattive) e bot.
+func propaganda_support(factions: Array = ["government", "m26", "directorio"]) -> Array:
 	_log = []
-	# GOV: shift verso Supporto Attivo, max 1d3 + EC senza Sabotaggio
-	var gbudget := _rng.randi_range(1, 3) + _ecs_without_sabotage()
-	var gd := 0
-	while gd < gbudget:
-		var t := _best_civic_space()
-		if t == "":
-			break
-		var st: SpaceState = state.space_state(t)
-		if st.marker("terror") > 0:
-			st.add_marker("terror", -1)
-		elif st.support < CoinEnums.Support.ACTIVE_SUPPORT:
-			st.support = (st.support + 1) as CoinEnums.Support
-		else:
-			break
-		gd += 1
-	if gd > 0:
-		_log.append("Propaganda GOV: %d verso Supporto Attivo" % gd)
-	# 26J: shift verso Opposizione Attiva, max 1d3 + Basi 26J sulla mappa
-	var mbudget := _rng.randi_range(1, 3) + state.count_on_map("m26", "base")
-	var md := 0
-	while md < mbudget:
-		var t2 := _best_agitation_space()
-		if t2 == "":
-			break
-		var st2: SpaceState = state.space_state(t2)
-		if st2.marker("terror") > 0:
-			st2.add_marker("terror", -1)
-		elif st2.support > CoinEnums.Support.ACTIVE_OPPOSITION:
-			st2.support = (st2.support - 1) as CoinEnums.Support
-		else:
-			break
-		md += 1
-	if md > 0:
-		_log.append("Propaganda 26J: %d verso Opposizione Attiva" % md)
-	# DR: Sostegno Espatriati (Rally)
-	_do_rally("directorio", 3)
+	if factions.has("government"):
+		# GOV: shift verso Supporto Attivo, max 1d3 + EC senza Sabotaggio
+		var gbudget := _rng.randi_range(1, 3) + _ecs_without_sabotage()
+		var gd := 0
+		while gd < gbudget:
+			var t := _best_civic_space()
+			if t == "":
+				break
+			var st: SpaceState = state.space_state(t)
+			if st.marker("terror") > 0:
+				st.add_marker("terror", -1)
+			elif st.support < CoinEnums.Support.ACTIVE_SUPPORT:
+				st.support = (st.support + 1) as CoinEnums.Support
+			else:
+				break
+			gd += 1
+		if gd > 0:
+			_log.append("Propaganda GOV: %d verso Supporto Attivo" % gd)
+	if factions.has("m26"):
+		# 26J: shift verso Opposizione Attiva, max 1d3 + Basi 26J sulla mappa
+		var mbudget := _rng.randi_range(1, 3) + state.count_on_map("m26", "base")
+		var md := 0
+		while md < mbudget:
+			var t2 := _best_agitation_space()
+			if t2 == "":
+				break
+			var st2: SpaceState = state.space_state(t2)
+			if st2.marker("terror") > 0:
+				st2.add_marker("terror", -1)
+			elif st2.support > CoinEnums.Support.ACTIVE_OPPOSITION:
+				st2.support = (st2.support - 1) as CoinEnums.Support
+			else:
+				break
+			md += 1
+		if md > 0:
+			_log.append("Propaganda 26J: %d verso Opposizione Attiva" % md)
+	if factions.has("directorio"):
+		# DR: Sostegno Espatriati (Rally)
+		_do_rally("directorio", 3)
 	state.recompute_all_control()
 	mod._refresh_victory_tracks(state)
 	return _log

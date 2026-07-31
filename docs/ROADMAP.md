@@ -40,11 +40,11 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [x] Operazioni (Train/Garrison/Sweep/Assault, Rally/March/Attack/Terror/Build) + test.
 - [x] Attività Speciali (tutte le 12) + test.
 - [x] Sistema Denaro (Cash) — segnalini, proprietà, trasferimento, limite 4.
-- [ ] Riciclaggio (Launder) collegato alla sequenza di gioco.
+- [x] Riciclaggio (Launder) collegato alla sequenza di gioco (2.3.6: Denaro -> LimOp extra gratuita, UI inclusa).
 - [x] Round di Propaganda (Vittoria, Risorse, Supporto, Sistemazione) + test.
 - [x] Condizioni e margini di vittoria.
 - [x] Test unitari del motore (147 test headless).
-- [ ] Spostamento (Redeploy) del Governo automatizzato.
+- [x] Spostamento (Redeploy) del Governo: automatico per il NP, interattivo per l'umano.
 
 ### Fase 2 — Carte ed Eventi
 - [x] Ordine fazioni di tutte le 48 carte (dai simboli) + testo OCR in `cards.json`.
@@ -52,7 +52,10 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [x] Framework Eventi (`Events.gd`): gestori per carta + fallback "manuale".
 - [x] Registrazione Capacità Insorgenti / Momentum del Governo.
 - [x] Effetti automatizzati per TUTTE le 48 carte (entrambi i lati), smoke test 96/96.
-- [ ] Applicare nelle Operazioni i modificatori duraturi di Capacità/Momentum (ora solo registrati).
+- [x] Applicare nelle Operazioni i modificatori duraturi di Capacità/Momentum: tutte le 7
+      Capacità (Guantánamo Bay, El Che, Pact of Caracas, Morgan, Guerrilla Life, Mafia
+      Offensive, Santo Trafficante) e i Momentum (S.I.M., Sánchez Mosquera, Armored Cars,
+      Rolando Masferrer, MAP, Raúl) hanno effetto operativo, con test.
 
 ### Fase 3 — Interfaccia utente
 - [x] Mappa interattiva (schematica) con pezzi trascinabili e stato leggibile.
@@ -62,6 +65,25 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
       marcatori come sprite (Controllo/Supporto/Terrore/Denaro), drag-and-drop con anteprima.
 - [ ] Rifinire le coordinate degli spazi e le dimensioni dei pezzi.
 - [x] Flussi guidati per Attività Speciali (menu per fazione) ed Eventi (lato chiaro/ombreggiato) nella UI.
+- [x] Salva/Carica partita dalla UI (menu Partita) con autosalvataggio a ogni azione.
+- [x] Conferma su Nuova Partita; zoom della carta Evento; pannello Vittoria/Risorse;
+      errori in rosso nella riga istruzioni (tooltip a testo pieno).
+- [x] Round di Propaganda interattivo per le Fazioni umane: Azione Civica (6.3.2),
+      Dimostrazioni (6.3.3), Supporto Espatriati (6.3.4) guidati sulla mappa.
+- [x] Zoom con rotellina/pinch centrato sul puntatore; scala UI maggiorata su touch (iPad).
+- [x] Annulla multi-livello (20 istantanee) e tasti distinti selezione/azione.
+- [x] Anteprima di costo ed effetti prima di "Esegui" (simulazione su copia).
+- [x] Scorciatoie da tastiera (Esc / Invio / Spazio / Ctrl+Z / +-0).
+- [x] Spostamento (Redeploy) interattivo per il Governo umano (6.4: trascinamento cubi,
+      destinazioni validate e obbligo 6.4.2 verificato prima di concludere).
+- [x] Refactor UI (1/n): estratta `ActionFlow` (pianificazione senza dipendenze dalla
+      scena, 27 test) e `CLNames` (nomi italiani condivisi).
+- [x] Refactor UI (2/n): estratta `SpecialFlow` (Att.Speciali, 30 test); rimosso il
+      codice morto (`SpaceView.gd`, costante `LAYOUT`).
+- [x] Refactor UI (3/n): estratti `LogView`, `MapAnimator` e `CLTheme` (aspetto unificato);
+      il log segnala le righe omesse invece di troncare in silenzio.
+- [x] Refactor UI (4/4): estratto `SidePanel`; aggiunto `tests/scene_smoke.gd` che
+      istanzia la scena reale in headless (anche in CI).
 - [ ] Hotseat multi-giocatore locale.
 
 ### Fase 4 — Bot (Non-Giocatore)
@@ -76,8 +98,11 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [ ] Affinare l'ordine 1ª/2ª Disponibile e la scelta Evento/Operazione dei bot nel loop.
 
 ### Fase 5 — Rifinitura
-- [ ] Scenari (Standard / Variabile / gioco breve), opzioni (Inganno, ecc.).
-- [ ] Online/multiplayer (opzionale).
+- [x] Scenari: Standard e Schieramento Variabile (p.30, con vincoli verificati) + partita breve.
+- [x] Schermata iniziale: scelta scenario/ruoli, ripresa dell'autosalvataggio, ritorno al
+      menu a fine partita; voce "Gioca online" predisposta (disattivata).
+- [ ] Partita online (multigiocatore in rete).
+- [ ] Altre opzioni di partita (Inganno, ecc.).
 - [ ] Tutorial / esempio guidato interattivo.
 
 ## Note legali

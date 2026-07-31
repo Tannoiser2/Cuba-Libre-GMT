@@ -93,6 +93,10 @@ func _register_piece_types(gd: GameDef) -> void:
 # Setup
 # ---------------------------------------------------------------------------
 
+## Schieramento iniziale. `scenario_id`:
+##   "standard" — posizioni fisse da setup_standard.json (regolamento p.29);
+##   "variable" — Schieramento Variabile: marcatori e tracciati come nello Standard,
+##                forze piazzate rispettando i vincoli del regolamento (p.30).
 func apply_setup(state: GameState, scenario_id: String = "standard") -> void:
 	var setup: Dictionary = _load_json(DATA_DIR + "setup_standard.json")
 
@@ -113,7 +117,14 @@ func apply_setup(state: GameState, scenario_id: String = "standard") -> void:
 			if state.spaces.has(sid):
 				state.spaces[sid].support = SUPPORT_KEY_MAP[key]
 
-	# Forze
+	# Forze: fisse nello Standard, sorteggiate (entro i vincoli) nel Variabile.
+	if scenario_id == "variable":
+		_apply_variable_forces(state)
+		for f in state.game_def.factions:
+			state.eligibility[f.id] = CoinEnums.Eligibility.ELIGIBLE
+		state.recompute_all_control()
+		_refresh_victory_tracks(state)
+		return
 	var forces: Dictionary = setup.get("forces", {})
 	for fid in forces.keys():
 		for sid in forces[fid].keys():
@@ -134,6 +145,88 @@ func apply_setup(state: GameState, scenario_id: String = "standard") -> void:
 
 	# Tracciati di vittoria iniziali
 	_refresh_victory_tracks(state)
+
+
+## Schieramento Variabile (regolamento p.30). Le forze si piazzano in quest'ordine,
+## ciascuna coi propri vincoli:
+##   Sindacato  3 Casinò, 1 per spazio, ovunque;
+##   Directorio 3 Guerriglie ovunque;
+##   26 Luglio  4 Guerriglie + 1 Base in spazi liberi da forze del Directorio,
+##              al massimo 1 Guerriglia per Città;
+##   Governo    9 Truppe e 8 Polizia tra le Città, più 3 Truppe in 1 Provincia.
+## Il Controllo si calcola alla fine. Qui la scelta è casuale (il regolamento la lascia
+## ai giocatori): serve a variare l'apertura rispetto allo Standard.
+func _apply_variable_forces(state: GameState) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var ids: Array = Array(state.game_def.space_ids())
+	var cities: Array = ids.filter(func(s): return state.game_def.space(s).type == CoinEnums.SpaceType.CITY)
+	var provinces: Array = ids.filter(func(s): return state.game_def.space(s).type == CoinEnums.SpaceType.PROVINCE)
+	# Casinò e Basi non possono stare negli EC (Raggruppamento, 1.4.2).
+	var placeable: Array = ids.filter(func(s): return not state.game_def.space(s).is_economic())
+
+	# Sindacato: 3 Casinò, uno per spazio.
+	var casino_spots := placeable.duplicate()
+	_shuffle(casino_spots, rng)
+	var placed := 0
+	for sid in casino_spots:
+		if placed >= 3:
+			break
+		if can_place_base(state, sid, true):
+			state.spaces[sid].add_piece("syndicate", "casino", 1, "open")
+			placed += 1
+
+	# Directorio: 3 Guerriglie, ovunque (anche più d'una nello stesso spazio).
+	for i in range(3):
+		var sid: String = ids[rng.randi_range(0, ids.size() - 1)]
+		state.spaces[sid].add_piece("directorio", "guerrilla", 1, "underground")
+
+	# 26 Luglio: solo dove non c'è il Directorio; al massimo 1 Guerriglia per Città.
+	var free_of_dr: Array = ids.filter(func(s): return state.spaces[s].count("directorio") == 0)
+	if free_of_dr.is_empty():
+		free_of_dr = ids.duplicate()
+	var m26_spots := free_of_dr.duplicate()
+	_shuffle(m26_spots, rng)
+	var g_placed := 0
+	var guard := 0
+	while g_placed < 4 and guard < 200:
+		guard += 1
+		var sid: String = m26_spots[rng.randi_range(0, m26_spots.size() - 1)]
+		var is_city := state.game_def.space(sid).type == CoinEnums.SpaceType.CITY
+		if is_city and state.spaces[sid].count("m26", "guerrilla") >= 1:
+			continue
+		state.spaces[sid].add_piece("m26", "guerrilla", 1, "underground")
+		g_placed += 1
+	for sid in m26_spots:
+		if not state.game_def.space(sid).is_economic() and can_place_base(state, sid, false):
+			state.spaces[sid].add_piece("m26", "base", 1, "")
+			break
+
+	# Governo: 9 Truppe e 8 Polizia distribuite tra le Città...
+	_spread(state, "government", "troops", 9, cities, rng)
+	_spread(state, "government", "police", 8, cities, rng)
+	# ...più 3 Truppe in una sola Provincia.
+	if not provinces.is_empty():
+		var prov: String = provinces[rng.randi_range(0, provinces.size() - 1)]
+		state.spaces[prov].add_piece("government", "troops", 3, "")
+
+
+## Distribuisce `count` pezzi tra gli spazi indicati, uno alla volta a giro.
+func _spread(state: GameState, faction: String, type: String, count: int,
+		spots: Array, rng: RandomNumberGenerator) -> void:
+	if spots.is_empty():
+		return
+	var order := spots.duplicate()
+	_shuffle(order, rng)
+	for i in range(count):
+		var sid: String = order[i % order.size()]
+		state.spaces[sid].add_piece(faction, type, 1, "")
+
+
+func _shuffle(arr: Array, rng: RandomNumberGenerator) -> void:
+	for i in range(arr.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp
 
 
 func _alliance_index(s: String) -> int:

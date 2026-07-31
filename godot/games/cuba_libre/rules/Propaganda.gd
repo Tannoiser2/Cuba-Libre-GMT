@@ -163,6 +163,217 @@ func support_phase() -> Array:
 
 
 # ---------------------------------------------------------------------------
+# 6.3.2-6.3.4 Azioni della Fase di Supporto (interattive, per le Fazioni umane)
+# ---------------------------------------------------------------------------
+
+const CIVIC_STEP_COST := 4   ## 6.3.2: ogni 4 Risorse un passo di Azione Civica
+const DEMO_STEP_COST := 1    ## 6.3.3: ogni 1 Risorsa un passo di Dimostrazioni
+
+
+func _can_afford(fid: String, amount: int) -> bool:
+	return not state.tracks_resources(fid) or state.get_resources(fid) >= amount
+
+
+## Spazi dove la Fazione può svolgere la sua azione di Supporto (per l'evidenziazione UI).
+func support_action_spaces(fid: String) -> Array:
+	var out: Array = []
+	for sid in state.game_def.space_ids():
+		var ok := false
+		match fid:
+			"government": ok = _civic_ok(sid)
+			"m26": ok = _demo_ok(sid)
+			"directorio": ok = _expat_ok(sid)
+		if ok:
+			out.append(sid)
+	return out
+
+
+## 6.3.2 Azione Civica: Controllo GOV con Truppe E Polizia; 4 Risorse per passo.
+func _civic_ok(sid: String) -> bool:
+	var sd: SpaceDef = state.game_def.space(sid)
+	var st: SpaceState = state.space_state(sid)
+	if sd == null or not sd.has_population() or st.control != "government":
+		return false
+	if st.count("government", "troops") == 0 or st.count("government", "police") == 0:
+		return false
+	if st.marker("terror") == 0 and st.support >= CoinEnums.Support.ACTIVE_SUPPORT:
+		return false
+	return _can_afford("government", CIVIC_STEP_COST)
+
+
+func civic_step(sid: String) -> Dictionary:
+	if not _civic_ok(sid):
+		return _step_err("Azione Civica: serve Controllo GOV con Truppe e Polizia, 4 Risorse, e Terrore da togliere o Supporto da alzare")
+	var st: SpaceState = state.space_state(sid)
+	state.add_resources("government", -CIVIC_STEP_COST)
+	var msg: String
+	if st.marker("terror") > 0:
+		st.add_marker("terror", -1)
+		msg = "Azione Civica: -1 Terrore a %s (4 Risorse)" % sid
+	else:
+		st.support = (st.support + 1) as CoinEnums.Support
+		msg = "Azione Civica: Supporto +1 a %s (4 Risorse)" % sid
+	return _step_ok([msg])
+
+
+## 6.3.3 Dimostrazioni: Città/Province a Controllo 26J; 1 Risorsa per passo.
+func _demo_ok(sid: String) -> bool:
+	var sd: SpaceDef = state.game_def.space(sid)
+	var st: SpaceState = state.space_state(sid)
+	if sd == null or not sd.has_population() or st.control != "m26":
+		return false
+	if st.marker("terror") == 0 and st.support <= CoinEnums.Support.ACTIVE_OPPOSITION:
+		return false
+	return _can_afford("m26", DEMO_STEP_COST)
+
+
+func demo_step(sid: String) -> Dictionary:
+	if not _demo_ok(sid):
+		return _step_err("Dimostrazioni: serve Controllo del 26 Luglio, 1 Risorsa, e Terrore da togliere o Opposizione da aumentare")
+	var st: SpaceState = state.space_state(sid)
+	state.add_resources("m26", -DEMO_STEP_COST)
+	var msg: String
+	if st.marker("terror") > 0:
+		st.add_marker("terror", -1)
+		msg = "Dimostrazioni: -1 Terrore a %s (1 Risorsa)" % sid
+	else:
+		st.support = (st.support - 1) as CoinEnums.Support
+		msg = "Dimostrazioni: Opposizione +1 a %s (1 Risorsa)" % sid
+	return _step_ok([msg])
+
+
+## 6.3.4 Supporto degli Espatriati: Riorganizzazione gratuita DR in 1 spazio senza
+## Supporto/Opposizione Attivi né Controllo di altre Fazioni (piazza 1 Guerriglia).
+func _expat_ok(sid: String) -> bool:
+	var sd: SpaceDef = state.game_def.space(sid)
+	var st: SpaceState = state.space_state(sid)
+	if sd == null or not sd.has_population():
+		return false
+	if absi(int(st.support)) == 2:
+		return false
+	if st.control != "" and st.control != "directorio":
+		return false
+	return state.available("directorio", "guerrilla") > 0
+
+
+func expat_rally(sid: String) -> Dictionary:
+	if not _expat_ok(sid):
+		return _step_err("Supporto Espatriati: serve uno spazio senza Supporto/Opposizione Attivi né Controllo altrui, e una Guerriglia DR disponibile")
+	var placed := state.place_from_available("directorio", "guerrilla", sid, 1)
+	return _step_ok(["Supporto Espatriati: +%d Guerriglia DR a %s" % [placed, sid]])
+
+
+func _step_ok(log: Array) -> Dictionary:
+	state.recompute_all_control()
+	mod._refresh_victory_tracks(state)
+	return {"ok": true, "error": "", "log": log}
+
+
+func _step_err(msg: String) -> Dictionary:
+	return {"ok": false, "error": msg, "log": []}
+
+
+# ---------------------------------------------------------------------------
+# 6.4 Fase di Spostamento (Redeploy) INTERATTIVA, per un Governo umano
+#
+#  6.4.1 La Polizia PUÒ muoversi in qualsiasi EC o spazio a Controllo del Governo.
+#  6.4.2 Le Truppe DEVONO lasciare gli EC e le Province prive di Base del Governo,
+#        per spazi a Controllo del Governo che siano Città o abbiano una Base
+#        (se non ne esistono, a L'Avana).
+#  6.4.3 Le altre Truppe POSSONO muoversi verso quegli stessi spazi.
+#  I cubi si spostano DA spazi senza Controllo del Governo, mai VERSO di essi.
+# ---------------------------------------------------------------------------
+
+## Destinazioni legali per la Polizia (6.4.1).
+func redeploy_police_dests() -> Array:
+	var out: Array = []
+	for sid in state.game_def.space_ids():
+		if state.game_def.space(sid).is_economic() or state.space_state(sid).control == "government":
+			out.append(sid)
+	return out
+
+
+## Destinazioni legali per le Truppe (6.4.2/6.4.3); se non ne esiste nessuna, L'Avana.
+func redeploy_troop_dests() -> Array:
+	var out: Array = []
+	for sid in state.game_def.space_ids():
+		var sd: SpaceDef = state.game_def.space(sid)
+		var st: SpaceState = state.space_state(sid)
+		if st.control != "government":
+			continue
+		if sd.type == CoinEnums.SpaceType.CITY or st.count("government", "base") > 0:
+			out.append(sid)
+	if out.is_empty() and state.space_state("havana") != null:
+		out.append("havana")   # ripiego previsto dalla regola
+	return out
+
+
+## Spazi da cui le Truppe DEVONO andarsene (6.4.2): EC e Province senza Base GOV.
+func redeploy_must_leave() -> Array:
+	var out: Array = []
+	for sid in state.game_def.space_ids():
+		var sd: SpaceDef = state.game_def.space(sid)
+		var st: SpaceState = state.space_state(sid)
+		if st.count("government", "troops") == 0:
+			continue
+		if sd.is_economic() or (sd.type == CoinEnums.SpaceType.PROVINCE and st.count("government", "base") == 0):
+			out.append(sid)
+	return out
+
+
+## Spazi di partenza con cubi spostabili (per l'evidenziazione).
+func redeploy_sources() -> Array:
+	var out: Array = []
+	for sid in state.game_def.space_ids():
+		var st: SpaceState = state.space_state(sid)
+		if st.count("government", "troops") > 0 or st.count("government", "police") > 0:
+			out.append(sid)
+	return out
+
+
+## Sposta 1 cubo nel Redeploy, validando la destinazione secondo 6.4.
+func redeploy_move(from_id: String, to_id: String, type: String, count: int = 1) -> Dictionary:
+	if from_id == to_id:
+		return _step_err("Origine e destinazione coincidono")
+	if type != "troops" and type != "police":
+		return _step_err("Nel Redeploy si spostano solo Truppe e Polizia")
+	var from_st: SpaceState = state.space_state(from_id)
+	if from_st == null or from_st.count("government", type) < count:
+		return _step_err("Non ci sono abbastanza cubi a %s" % from_id)
+	var dests := redeploy_police_dests() if type == "police" else redeploy_troop_dests()
+	if not dests.has(to_id):
+		var why := "La Polizia può andare solo in un EC o in uno spazio a Controllo del Governo (6.4.1)" \
+			if type == "police" \
+			else "Le Truppe possono andare solo in Città o spazi con Base a Controllo del Governo (6.4.2)"
+		return _step_err(why)
+	var moved := state.move_pieces("government", type, from_id, to_id, count, "")
+	if moved <= 0:
+		return _step_err("Spostamento non riuscito")
+	var label := "Truppe" if type == "troops" else "Polizia"
+	return _step_ok(["Spostamento: %d %s da %s a %s" % [moved, label, from_id, to_id]])
+
+
+## Verifica che l'obbligo 6.4.2 sia soddisfatto (nessuna Truppa in EC/Province senza Base).
+## Se non ci sono destinazioni legali diverse dagli spazi stessi, l'obbligo decade.
+func redeploy_can_finish() -> Dictionary:
+	var stuck := redeploy_must_leave()
+	if stuck.is_empty():
+		return {"ok": true, "error": "", "spaces": []}
+	var dests := redeploy_troop_dests()
+	var reachable: Array = []
+	for sid in stuck:
+		if not dests.has(sid):
+			reachable.append(sid)
+	if reachable.is_empty():
+		return {"ok": true, "error": "", "spaces": []}
+	var names: Array = []
+	for sid in reachable:
+		names.append(state.game_def.space(sid).name)
+	return {"ok": false, "spaces": reachable,
+		"error": "Le Truppe devono lasciare EC e Province senza Base del Governo (6.4.2): %s" % ", ".join(names)}
+
+
+# ---------------------------------------------------------------------------
 # Redeploy del Governo (C8.5.9): consolida le forze
 # ---------------------------------------------------------------------------
 

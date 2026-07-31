@@ -36,6 +36,13 @@ func _initialize() -> void:
 	_test_propaganda_resources()
 	_test_propaganda_support_reset()
 	_test_propaganda_victory()
+	_test_support_actions()
+	_test_free_ops_and_momentum()
+	_test_undo_stack_and_preview()
+	_test_redeploy_interactive()
+	_test_action_flow()
+	_test_special_flow()
+	_test_scenarios()
 	_test_cards_data()
 	_test_events()
 	_test_all_events()
@@ -953,3 +960,451 @@ func _test_calixto_bot() -> void:
 	var ec := bot.event_choice("m26", 5)
 	_check("Calixto event_choice valido", ec.has("play"))
 	_check("Calixto event_choice non muta lo stato", state.to_dict().hash() == before.hash())
+
+
+# ---------------------------------------------------------------------------
+# Azioni di Supporto della Propaganda (6.3.2-6.3.4, interattive)
+# ---------------------------------------------------------------------------
+
+func _test_support_actions() -> void:
+	print("\n[Propaganda - Azioni di Supporto umane]")
+	var a := _new_game()
+	var mod: CubaLibreModule = a[0]
+	var state: GameState = a[2]
+	var prop := CubaLibrePropaganda.new(state, mod)
+	# 6.3.2 Azione Civica: Havana a Controllo GOV con Truppe e Polizia, 4 Risorse per passo.
+	state.place_from_available("government", "troops", "havana", 2)
+	state.place_from_available("government", "police", "havana", 2)
+	state.recompute_all_control()
+	state.resources["government"] = 10
+	state.space_state("havana").support = CoinEnums.Support.NEUTRAL
+	var r := prop.civic_step("havana")
+	_check("Civica: passo eseguito", r.ok)
+	_eq("Civica: Supporto +1", int(state.space_state("havana").support), 1)
+	_eq("Civica: -4 Risorse", state.get_resources("government"), 6)
+	state.space_state("havana").add_marker("terror", 1)
+	r = prop.civic_step("havana")
+	_check("Civica: prima il Terrore", r.ok and state.space_state("havana").marker("terror") == 0)
+	_eq("Civica: Supporto invariato col Terrore", int(state.space_state("havana").support), 1)
+	state.resources["government"] = 3
+	r = prop.civic_step("havana")
+	_check("Civica: rifiutata sotto 4 Risorse", not r.ok)
+	# 6.3.3 Dimostrazioni: Las Villas a Controllo 26J, 1 Risorsa per passo.
+	for f in ["government", "directorio", "syndicate"]:
+		for t in ["troops", "police", "guerrilla", "base", "casino"]:
+			state.remove_to_available(f, t, "las_villas", 99)
+	state.place_from_available("m26", "guerrilla", "las_villas", 3)
+	state.recompute_all_control()
+	_eq("Dimostrazioni: Controllo 26J", state.space_state("las_villas").control, "m26")
+	state.space_state("las_villas").support = CoinEnums.Support.NEUTRAL
+	state.resources["m26"] = 2
+	r = prop.demo_step("las_villas")
+	_check("Dimostrazioni: passo eseguito", r.ok)
+	_eq("Dimostrazioni: verso Opp. Attiva", int(state.space_state("las_villas").support), -1)
+	_eq("Dimostrazioni: -1 Risorsa", state.get_resources("m26"), 1)
+	# 6.3.4 Supporto Espatriati: spazio senza Attivi e senza Controllo altrui.
+	for f in ["government", "m26", "directorio", "syndicate"]:
+		for t in ["troops", "police", "guerrilla", "base", "casino"]:
+			state.remove_to_available(f, t, "matanzas", 99)
+	state.recompute_all_control()
+	state.space_state("matanzas").support = CoinEnums.Support.NEUTRAL
+	var g0 := state.space_state("matanzas").count("directorio", "guerrilla")
+	r = prop.expat_rally("matanzas")
+	_check("Espatriati: Rally gratuito eseguito", r.ok)
+	_eq("Espatriati: +1 Guerriglia DR", state.space_state("matanzas").count("directorio", "guerrilla"), g0 + 1)
+	_check("Espatriati: spazi validi elencati", not prop.support_action_spaces("directorio").is_empty() or state.available("directorio", "guerrilla") == 0)
+
+
+# ---------------------------------------------------------------------------
+# Operazioni gratuite (2.3.6) e Momentum operativi
+# ---------------------------------------------------------------------------
+
+func _test_free_ops_and_momentum() -> void:
+	print("\n[Op gratuite e Momentum]")
+	var a := _new_game()
+	var mod: CubaLibreModule = a[0]
+	var state: GameState = a[2]
+	var ops := CubaLibreOperations.new(state, mod)
+	var sp := CubaLibreSpecials.new(state, mod)
+	# Operazione gratuita: il Rally con free=true non spende Risorse.
+	state.resources["m26"] = 5
+	state.space_state("matanzas").support = CoinEnums.Support.NEUTRAL
+	var r := ops.rally({"faction": "m26", "spaces": ["matanzas"], "choices": {}, "free": true})
+	_check("Rally gratuito eseguito", r.ok)
+	_eq("Rally gratuito: Risorse invariate", state.get_resources("m26"), 5)
+	# Momentum "Armored Cars": pre-spostamento Truppe negli spazi d'Assalto.
+	state.resources["government"] = 30
+	state.place_from_available("government", "troops", "havana", 2)
+	var res := ops.assault({"spaces": ["la_habana"], "moves": [{"from": "havana", "to": "la_habana", "count": 1}]})
+	_check("Armored Cars: richiede il Momentum", not res.ok)
+	state.active_momentum.append("Armored Cars")
+	var before_t := state.space_state("la_habana").count("government", "troops")
+	res = ops.assault({"spaces": ["la_habana"], "moves": [{"from": "havana", "to": "la_habana", "count": 1}]})
+	_check("Armored Cars: Assalto con pre-moves ok", res.ok)
+	_eq("Armored Cars: Truppa spostata", state.space_state("la_habana").count("government", "troops"), before_t + 1)
+	# Momentum "Rolando Masferrer": Assalto gratuito nella Perlustrazione.
+	var res2 := ops.sweep({"spaces": ["havana"], "moves": [], "assault_space": "havana"})
+	_check("Masferrer: richiede il Momentum", not res2.ok)
+	state.active_momentum.append("Rolando Masferrer")
+	res2 = ops.sweep({"spaces": ["havana"], "moves": [], "assault_space": "havana"})
+	_check("Masferrer: Sweep con Assalto gratuito ok", res2.ok)
+	# Momentum "Raúl": le Risorse dal Sequestro raddoppiate sugli Aiuti.
+	state.active_momentum.append("Raúl")
+	state.remove_to_available("government", "police", "camaguey_city", 99)
+	state.place_from_available("m26", "guerrilla", "camaguey_city", 2)
+	state.resources["government"] = 10
+	var aid0 := int(state.tracks.get("aid", 0))
+	var kr := sp.kidnap({"space": "camaguey_city", "target": "government", "die": 3})
+	_check("Raúl: Sequestro eseguito", kr.ok)
+	_eq("Raúl: Aiuti +6 (2x3)", int(state.tracks.get("aid", 0)), aid0 + 6)
+
+
+# ---------------------------------------------------------------------------
+# Annulla multi-livello e anteprima delle Operazioni (simulazione su copia)
+# ---------------------------------------------------------------------------
+
+func _test_undo_stack_and_preview() -> void:
+	print("\n[Annulla multi-livello e anteprima]")
+	var gc = Engine.get_main_loop().root.get_node_or_null("GameController")
+	if gc == null:
+		_check("GameController disponibile (autoload)", false)
+		return
+	gc.new_game()
+	var fid: String = gc.seq.pending_faction()
+	gc.set_role(fid, "player")
+	var state: GameState = gc.state
+	state.space_state("matanzas").support = CoinEnums.Support.NEUTRAL
+	state.space_state("la_habana").support = CoinEnums.Support.NEUTRAL
+	# I tracciati di vittoria sono una cache: dopo una modifica manuale vanno ricalcolati.
+	state.recompute_all_control()
+	gc.module._refresh_victory_tracks(state)
+	var op := "train" if fid == "government" else "rally"
+	var p1: Dictionary = {"spaces": ["havana"], "place": {"havana": {"police": 2}}} if fid == "government" \
+		else {"faction": fid, "spaces": ["matanzas"], "choices": {}}
+	var p2: Dictionary = {"spaces": ["santiago_de_cuba"], "place": {"santiago_de_cuba": {"police": 1}}} if fid == "government" \
+		else {"faction": fid, "spaces": ["la_habana"], "choices": {}}
+
+	# Anteprima: costo/effetti senza toccare la partita.
+	var snap_a := JSON.stringify(state.to_dict())
+	var pv: Dictionary = gc.preview_operation(op, p1)
+	_check("Anteprima: non modifica lo stato reale", JSON.stringify(state.to_dict()) == snap_a)
+	_check("Anteprima: esito positivo con costo", pv.get("ok", false) and int(pv.get("cost", -1)) >= 0)
+	_check("Anteprima: elenca gli effetti previsti", not (pv.get("log", []) as Array).is_empty())
+	var bad: Dictionary = gc.preview_operation(op, {"faction": fid, "spaces": []})
+	_check("Anteprima: segnala in anticipo l'operazione impossibile", not bad.get("ok", true))
+
+	# Un'azione fallita non deve lasciare voci nella pila.
+	var d0: int = gc.undo_depth()
+	gc.run_operation(op, {"faction": fid, "spaces": []})
+	_eq("Undo: azione fallita non impila", gc.undo_depth(), d0)
+
+	# Due azioni, due Annulla: si torna indietro passo per passo.
+	_check("Op1 eseguita", gc.run_operation(op, p1).get("ok", false))
+	var snap_b := JSON.stringify(state.to_dict())
+	_check("Op2 eseguita", gc.run_operation(op, p2).get("ok", false))
+	_eq("Undo: pila a 2 livelli", gc.undo_depth(), d0 + 2)
+	_check("Undo: etichetta dell'azione da annullare", gc.undo_label() != "")
+	gc.undo_last()
+	_check("Undo 1: ripristina lo stato intermedio", JSON.stringify(gc.state.to_dict()) == snap_b)
+	gc.undo_last()
+	_check("Undo 2: ripristina lo stato iniziale", JSON.stringify(gc.state.to_dict()) == snap_a)
+	_check("Undo: pila esaurita", not gc.can_undo())
+	gc.new_game()
+
+
+# ---------------------------------------------------------------------------
+# 6.4 Fase di Spostamento interattiva (Governo umano)
+# ---------------------------------------------------------------------------
+
+func _test_redeploy_interactive() -> void:
+	print("\n[Spostamento 6.4 interattivo]")
+	var a := _new_game()
+	var mod: CubaLibreModule = a[0]
+	var state: GameState = a[2]
+	var prop := CubaLibrePropaganda.new(state, mod)
+
+	# Destinazioni Truppe (6.4.2): solo Città/Basi a Controllo GOV.
+	var tdest := prop.redeploy_troop_dests()
+	_check("Truppe: L'Avana è destinazione valida", tdest.has("havana"))
+	for sid in tdest:
+		var sd: SpaceDef = state.game_def.space(sid)
+		var st: SpaceState = state.space_state(sid)
+		if st.control != "government" or not (sd.type == CoinEnums.SpaceType.CITY or st.count("government", "base") > 0):
+			_check("Truppe: destinazione %s illegale" % sid, false)
+			return
+	_check("Truppe: tutte le destinazioni sono Città/Basi a Controllo GOV", true)
+	_check("Truppe: nessun EC tra le destinazioni",
+		not tdest.any(func(s): return state.game_def.space(s).is_economic()))
+
+	# Destinazioni Polizia (6.4.1): EC oppure Controllo GOV.
+	var pdest := prop.redeploy_police_dests()
+	_check("Polizia: gli EC sono destinazioni valide",
+		pdest.any(func(s): return state.game_def.space(s).is_economic()))
+
+	# Obbligo 6.4.2: Truppe in un EC devono andarsene.
+	var ec := "ec_pinar_habana"
+	state.place_from_available("government", "troops", ec, 2)
+	state.recompute_all_control()
+	_check("Obbligo: l'EC con Truppe è segnalato", prop.redeploy_must_leave().has(ec))
+	var chk: Dictionary = prop.redeploy_can_finish()
+	_check("Obbligo: non si può concludere con Truppe nell'EC", not chk.get("ok", true))
+
+	# Spostamento illegale rifiutato, legale accettato.
+	var bad: Dictionary = prop.redeploy_move("havana", ec, "troops")
+	_check("Spostamento: Truppe verso un EC rifiutate", not bad.get("ok", true))
+	var good: Dictionary = prop.redeploy_move(ec, "havana", "troops", 2)
+	_check("Spostamento: Truppe dall'EC a L'Avana accettato", good.get("ok", false))
+	_eq("Spostamento: l'EC è stato svuotato", state.space_state(ec).count("government", "troops"), 0)
+	# Lo schieramento standard mette 3 Truppe a Las Villas, Provincia SENZA Base del
+	# Governo: anche quelle devono spostarsi (6.4.2), già al primo Round di Propaganda.
+	_check("Obbligo: Las Villas (Provincia senza Base) è segnalata", prop.redeploy_must_leave().has("las_villas"))
+	_check("Obbligo: non basta svuotare l'EC", not prop.redeploy_can_finish().get("ok", true))
+	var lv: Dictionary = prop.redeploy_move("las_villas", "havana", "troops", 3)
+	_check("Spostamento: Truppe da Las Villas a L'Avana accettato", lv.get("ok", false))
+	_check("Obbligo: ora si può concludere", prop.redeploy_can_finish().get("ok", false))
+
+	# La Polizia invece può stazionare in un EC (6.4.1).
+	var pol: Dictionary = prop.redeploy_move("havana", ec, "police")
+	_check("Spostamento: Polizia verso un EC accettata", pol.get("ok", false))
+	_check("Obbligo: la Polizia nell'EC non blocca la chiusura", prop.redeploy_can_finish().get("ok", false))
+
+
+# ---------------------------------------------------------------------------
+# ActionFlow: pianificazione dell'Operazione (estratta dalla scena, quindi
+# collaudabile headless: selezione, ciclo delle varianti, parametri per il motore)
+# ---------------------------------------------------------------------------
+
+func _test_action_flow() -> void:
+	print("\n[ActionFlow - pianificazione]")
+	var gc = Engine.get_main_loop().root.get_node_or_null("GameController")
+	if gc == null:
+		_check("GameController disponibile (autoload)", false)
+		return
+	gc.new_game()
+	var flow := ActionFlow.new(gc)
+
+	# Avvio: un'Operazione senza spazi efficaci non parte e spiega perché.
+	_check("Avvio: Costruzione del Governo non è efficace", not flow.start("build", "government", false))
+	_check("Avvio: il rifiuto è motivato", flow.error != "")
+	_check("Avvio: Addestramento parte", flow.start("train", "government", false))
+	_eq("Avvio: modalità a spazi", flow.kind, "space_list")
+
+	# Addestramento: il ri-clic accumula cubi fino a 4.
+	_check("Train: clic su L'Avana accettato", flow.click("havana"))
+	_eq("Train: 1 cubo dopo il primo clic", int(flow.train_plan["havana"]["n"]), 1)
+	flow.click("havana"); flow.click("havana"); flow.click("havana")
+	_eq("Train: 4 cubi dopo quattro clic", int(flow.train_plan["havana"]["n"]), 4)
+	var p := flow.build_params()
+	_check("Train: i parametri contengono lo spazio", (p.get("spaces", []) as Array).has("havana"))
+	_eq("Train: L'Avana è Città, quindi Polizia", int((p["place"]["havana"] as Dictionary).get("police", 0)), 4)
+	# Il 5° clic passa alla variante Base/Civica (una sola per Addestramento).
+	flow.click("havana")
+	_check("Train: il 5° clic cambia variante", String(flow.train_plan["havana"]["kind"]) != "cubes")
+	var kind_after := String(flow.train_plan["havana"]["kind"])
+	var p2 := flow.build_params()
+	_check("Train: la variante finisce in 'special'", p2.has("special"))
+	_eq("Train: tipo della variante", String(p2["special"]["type"]), kind_after)
+
+	# Uno spazio non valido viene rifiutato con messaggio.
+	_check("Train: spazio non valido rifiutato", not flow.click("sierra_maestra"))
+	_check("Train: rifiuto motivato", flow.error != "")
+
+	# Riorganizzazione del 26 Luglio: vietata dove c'è Supporto.
+	gc.new_game()
+	var f2 := ActionFlow.new(gc)
+	_check("Rally: parte per il 26 Luglio", f2.start("rally", "m26", false))
+	var rvalid := f2.valid_spaces("m26", "rally")
+	var sup_ok := true
+	for sid in rvalid:
+		if gc.state.space_state(sid).support > 0:
+			sup_ok = false
+	_check("Rally 26J: nessuno spazio con Supporto tra i validi", sup_ok)
+	# Ciclo delle varianti: dalla prima all'ultima, poi deseleziona.
+	var target: String = rvalid[0]
+	f2.click(target)
+	var opts := f2.rally_options(target)
+	_eq("Rally: prima variante = default", String(f2.rally_choice[target]), String(opts[0]))
+	for i in range(opts.size()):
+		f2.click(target)
+	_check("Rally: dopo l'ultimo giro lo spazio è deselezionato", not f2.selected.has(target))
+
+	# Operazione Limitata: un solo spazio alla volta.
+	var f3 := ActionFlow.new(gc)
+	f3.start("terror", "m26", true)
+	var tvalid := f3.valid_spaces("m26", "terror")
+	if tvalid.size() >= 2:
+		f3.click(tvalid[0])
+		f3.click(tvalid[1])
+		_eq("Op Limitata: resta 1 solo spazio", f3.selected.size(), 1)
+		_eq("Op Limitata: è l'ultimo scelto", String(f3.selected[0]), String(tvalid[1]))
+	else:
+		_check("Op Limitata: spazi insufficienti per il test", true)
+
+	# Marcia: gli spostamenti si accodano e finiscono nei parametri.
+	var f4 := ActionFlow.new(gc)
+	_check("March: parte", f4.start("march", "m26", false))
+	_eq("March: modalità a trascinamento", f4.kind, "moves")
+	_check("March: spostamento accodato", f4.queue_move("sierra_maestra", "oriente", "guerrilla"))
+	var mp := f4.build_params()
+	_eq("March: 1 spostamento nei parametri", (mp.get("moves", []) as Array).size(), 1)
+	_eq("March: la Fazione è nei parametri", String(mp.get("faction", "")), "m26")
+	# In modalità trascinamento il clic generico non seleziona spazi.
+	_eq("March: nessuno spazio selezionato col trascinamento", f4.selected.size(), 0)
+
+	# clear() riporta tutto a zero.
+	f4.clear()
+	_check("clear: pianificazione azzerata", f4.is_idle() and not f4.has_plan())
+	gc.new_game()
+
+
+# ---------------------------------------------------------------------------
+# SpecialFlow: macchina a stati delle Attività Speciali (estratta dalla scena)
+# ---------------------------------------------------------------------------
+
+func _test_special_flow() -> void:
+	print("\n[SpecialFlow - Attività Speciali]")
+	var gc = Engine.get_main_loop().root.get_node_or_null("GameController")
+	if gc == null:
+		_check("GameController disponibile (autoload)", false)
+		return
+	gc.new_game()
+
+	# Identità delle varianti (funzioni statiche, indipendenti dallo stato).
+	_eq("Variante: base di 'bribe:cubes'", SpecialFlow.base_of("bribe:cubes"), "bribe")
+	_eq("Variante: base di 'transport'", SpecialFlow.base_of("transport"), "transport")
+	_eq("Variante: parametri di 'kidnap:syndicate'",
+		String(SpecialFlow.variant_params("kidnap:syndicate").get("target", "")), "syndicate")
+	_check("Variante: etichetta del Profitto", SpecialFlow.label_of("profit:convert").find("converti") >= 0)
+	_eq("Nome base senza varianti", SpecialFlow.label_of("air_strike"), "Attacco Aereo")
+
+	# Imboscata: l'id per il motore dipende dalla Fazione attiva.
+	var f26 := SpecialFlow.new(gc)
+	f26.faction = "m26"
+	_eq("Imboscata 26J -> ambush_m26", f26.target_id("ambush"), "ambush_m26")
+	var fdr := SpecialFlow.new(gc)
+	fdr.faction = "directorio"
+	_eq("Imboscata DR -> ambush_dr", fdr.target_id("ambush"), "ambush_dr")
+
+	# Trasporto: origine -> destinazione -> numero di cubi -> conferma.
+	var flow := SpecialFlow.new(gc)
+	_check("Trasporto: avvio", flow.start("transport", "government"))
+	_eq("Trasporto: primo passo = origine", flow.stage, SpecialFlow.STAGE_MOVE_FROM)
+	_check("Trasporto: L'Avana è un'origine valida", flow.highlights().has("havana"))
+	var bad: Dictionary = flow.click("sierra_maestra")
+	_check("Trasporto: origine non valida rifiutata", not bad.get("ok", true))
+	var r1: Dictionary = flow.click("havana")
+	_check("Trasporto: origine accettata", r1.get("ok", false))
+	_eq("Trasporto: passo destinazione", flow.stage, SpecialFlow.STAGE_MOVE_TO)
+	_check("Trasporto: nessuna esecuzione a metà flusso", (r1["run"] as Dictionary).is_empty())
+	var dest: String = flow.highlights()[0]
+	flow.click(dest)
+	_eq("Trasporto: passo numero cubi", flow.stage, SpecialFlow.STAGE_MOVE_N)
+	var n0 := flow.move_count
+	_check("Trasporto: parte dal massimo", n0 > 0)
+	flow.click(dest)   # ri-clic: cicla il numero
+	_check("Trasporto: il ri-clic cambia il numero", flow.move_count != n0 or n0 == 1)
+	var conf: Dictionary = flow.confirm()
+	_check("Trasporto: conferma produce l'esecuzione", not (conf["run"] as Dictionary).is_empty())
+	_eq("Trasporto: id per il motore", String(conf["run"]["id"]), "transport")
+	var cp: Dictionary = conf["run"]["params"]
+	_eq("Trasporto: origine nei parametri", String(cp["from"]), "havana")
+	_eq("Trasporto: destinazione nei parametri", String(cp["to"]), dest)
+	_check("Trasporto: conteggio nei parametri", int(cp["count"]) >= 1)
+
+	# clear() riporta il flusso a riposo.
+	flow.clear()
+	_check("clear: flusso non più attivo", not flow.is_active())
+
+	# Attività a bersaglio singolo: il clic valido produce subito l'esecuzione.
+	var f2 := SpecialFlow.new(gc)
+	if f2.start("air_strike", "government"):
+		_eq("Attacco Aereo: passo a bersaglio singolo", f2.stage, SpecialFlow.STAGE_POINT)
+		var target: String = f2.highlights()[0]
+		var r2: Dictionary = f2.click(target)
+		_check("Attacco Aereo: il clic esegue", not (r2["run"] as Dictionary).is_empty())
+		_eq("Attacco Aereo: spazio nei parametri", String(r2["run"]["params"]["space"]), target)
+	else:
+		_check("Attacco Aereo: nessun bersaglio nello schieramento iniziale (accettabile)", true)
+
+	# Avvio impossibile: messaggio d'errore e flusso non attivo.
+	var f3 := SpecialFlow.new(gc)
+	var ok3 := f3.start("profit:cash", "syndicate")
+	if not ok3:
+		_check("Profitto: rifiuto motivato", f3.error != "")
+		_check("Profitto: flusso non attivo dopo il rifiuto", not f3.is_active())
+	else:
+		_eq("Profitto: passo di selezione Casinò", f3.stage, SpecialFlow.STAGE_PROFIT)
+		var casino: String = f3.highlights()[0]
+		f3.click(casino)
+		_check("Profitto: Casinò selezionato", f3.spaces.has(casino))
+		f3.click(casino)
+		_check("Profitto: ri-clic deseleziona", not f3.spaces.has(casino))
+		var empty_confirm: Dictionary = f3.confirm()
+		_check("Profitto: conferma senza Casinò rifiutata", not empty_confirm.get("ok", true))
+	gc.new_game()
+
+
+# ---------------------------------------------------------------------------
+# Scenari: Schieramento Standard, Variabile (p.30) e partita breve
+# ---------------------------------------------------------------------------
+
+func _test_scenarios() -> void:
+	print("\n[Scenari]")
+	# Lo Standard resta identico a se stesso a ogni avvio.
+	var m1 := CubaLibreModule.new()
+	var gd1 := m1.build_game_def()
+	var s1 := GameState.new(gd1)
+	m1.apply_setup(s1, "standard")
+	var s1b := GameState.new(gd1)
+	m1.apply_setup(s1b, "standard")
+	_check("Standard: schieramento riproducibile",
+		JSON.stringify(s1.to_dict()) == JSON.stringify(s1b.to_dict()))
+
+	# Variabile: stesse forze totali dello Standard, ma disposte diversamente.
+	var mod := CubaLibreModule.new()
+	var gd := mod.build_game_def()
+	var different := 0
+	for attempt in range(5):
+		var st := GameState.new(gd)
+		mod.apply_setup(st, "variable")
+		# Conteggi previsti dal regolamento (p.30).
+		_eq("Variabile: 3 Casinò del Sindacato", st.count_on_map("syndicate", "casino"), 3)
+		_eq("Variabile: 3 Guerriglie DR", st.count_on_map("directorio", "guerrilla"), 3)
+		_eq("Variabile: 4 Guerriglie 26J", st.count_on_map("m26", "guerrilla"), 4)
+		_eq("Variabile: 1 Base 26J", st.count_on_map("m26", "base"), 1)
+		_eq("Variabile: 12 Truppe del Governo", st.count_on_map("government", "troops"), 12)
+		_eq("Variabile: 8 Polizia", st.count_on_map("government", "police"), 8)
+		# Vincoli: niente Casinò/Basi negli EC; al massimo 1 Guerriglia 26J per Città;
+		# le Truppe del Governo stanno in Città più una sola Provincia.
+		var ok_ec := true
+		var ok_city := true
+		var provinces_with_troops := 0
+		for sid in gd.space_ids():
+			var sd: SpaceDef = gd.space(sid)
+			var sp: SpaceState = st.space_state(sid)
+			if sd.is_economic() and (sp.count("syndicate", "casino") > 0 or sp.count("m26", "base") > 0):
+				ok_ec = false
+			if sd.type == CoinEnums.SpaceType.CITY and sp.count("m26", "guerrilla") > 1:
+				ok_city = false
+			if sd.type == CoinEnums.SpaceType.PROVINCE and sp.count("government", "troops") > 0:
+				provinces_with_troops += 1
+		_check("Variabile: nessun Casinò/Base negli EC", ok_ec)
+		_check("Variabile: max 1 Guerriglia 26J per Città", ok_city)
+		_check("Variabile: Truppe del Governo in 1 sola Provincia", provinces_with_troops <= 1)
+		# I marcatori restano quelli dello Standard.
+		_eq("Variabile: Aiuti come nello Standard", int(st.tracks.get("aid", -1)), 15)
+		_eq("Variabile: Risorse del Governo", st.get_resources("government"), 15)
+		if JSON.stringify(st.to_dict()) != JSON.stringify(s1.to_dict()):
+			different += 1
+		break   # i conteggi bastano una volta; la varietà si verifica sotto
+	# Su più tentativi almeno due schieramenti devono differire fra loro.
+	var seen: Array = []
+	for attempt2 in range(6):
+		var stx := GameState.new(gd)
+		mod.apply_setup(stx, "variable")
+		seen.append(JSON.stringify(stx.to_dict()))
+	var uniq := {}
+	for x in seen:
+		uniq[x] = true
+	_check("Variabile: schieramenti diversi fra loro", uniq.size() > 1)
+	_check("Variabile: diverso dallo Standard", different > 0)

@@ -23,16 +23,28 @@ var _turn_did_op := false
 var _turn_did_special := false
 var _turn_did_event := false
 
-## Annulla (undo) a un livello: istantanea catturata prima dell'ultima azione eseguita.
-var _undo: Dictionary = {}
+## Annulla (undo) multi-livello: pila di istantanee, la più recente in fondo.
+## Le istantanee non attraversano il confine tra le carte (la pila si svuota).
+const UNDO_DEPTH := 20
+var _undo: Array = []
 
 
 func _ready() -> void:
 	new_game()
 
 
-## Avvia una nuova partita con lo schieramento standard.
-func new_game(scenario: String = "standard") -> void:
+## Opzioni della partita in corso (scelte nel menu iniziale).
+var scenario := "standard"     ## "standard" | "variable"
+var short_game := false        ## gioco breve: 8 carte Evento da parte
+
+signal game_finished(winner: String)
+
+
+## Avvia una nuova partita. `p_scenario`: "standard" (posizioni fisse) o "variable"
+## (Schieramento Variabile); `p_short`: partita breve (mazzo ridotto).
+func new_game(p_scenario: String = "standard", p_short: bool = false) -> void:
+	scenario = p_scenario
+	short_game = p_short
 	module = CubaLibreModule.new()
 	game_def = module.build_game_def()
 	state = GameState.new(game_def)
@@ -44,7 +56,10 @@ func new_game(scenario: String = "standard") -> void:
 	events = CubaLibreEvents.new(state, module)
 	bot = CLCalixto.new(state, module)
 	stats = {}
-	build_deck()
+	prop_pending = false
+	prop_stage = ""
+	force_auto_propaganda = false
+	build_deck(short_game)
 	advance_card()
 	emit_signal("state_changed")
 
@@ -117,7 +132,9 @@ func draw_next() -> int:
 ## Costruisce la Sequenza di Gioco per la carta Evento corrente (per il turno guidato).
 func _start_card_sequence() -> void:
 	seq = null
-	_undo = {}   # l'Annulla non attraversa il confine tra le carte
+	_undo.clear()   # l'Annulla non attraversa il confine tra le carte
+	_laundered = {}   # il beneficio del Riciclaggio è 1 per Fazione per carta (2.3.6)
+	_free_limop = ""
 	_reset_turn_flags()
 	if state.current_card > 0:
 		var card: CardDef = game_def.card(state.current_card)
@@ -226,13 +243,6 @@ func bot_act_pending() -> bool:
 	return true
 
 
-const _OP_IT := {"train": "Addestramento", "garrison": "Guarnigione", "sweep": "Perlustrazione",
-	"assault": "Assalto", "rally": "Riorganizzazione", "march": "Marcia", "attack": "Attacco",
-	"terror": "Terrorismo", "construct": "Costruzione", "build": "Costruzione"}
-const _SA_IT := {"transport": "Trasporto", "air_strike": "Attacco Aereo", "reprisal": "Rappresaglia",
-	"infiltrate": "Infiltrazione", "ambush": "Imboscata", "kidnap": "Sequestro",
-	"subvert": "Sovversione", "assassinate": "Assassinio", "profit": "Profitto",
-	"muscle": "Muscle", "bribe": "Corruzione"}
 
 ## Conteggio azioni (per statistiche/simulazioni).
 var stats: Dictionary = {}
@@ -306,9 +316,9 @@ func _bot_take_pending() -> void:
 		atype = "Op+Att.Speciale"
 	elif t == A.LIMITED_OPERATION:
 		atype = "Op Limitata"
-	var label := "%s: %s" % [atype, _OP_IT.get(optype, optype)]
+	var label := "%s: %s" % [atype, CLNames.op(optype)]
 	if t == A.OPERATION_WITH_SPECIAL:
-		label += " + " + String(_SA_IT.get(String(br.get("special_type", "")), br.get("special_type", "")))
+		label += " + " + CLNames.sa(String(br.get("special_type", "")))
 	emit_signal("bot_decision", "%s -> %s" % [fname, label], fid, trace)
 	seq.act(t)
 	_count("act#" + fid)
@@ -406,19 +416,239 @@ func _after_decision() -> void:
 		seq.finish()
 		emit_signal("action_logged", "- Carta conclusa -", "")
 		advance_card()
+		autosave()
 		return
+	autosave()
 	emit_signal("state_changed")
 
 
-## Pesca la carta successiva e risolve in automatico le eventuali Propaganda incontrate.
+## Vero durante le partite completamente automatiche: la Propaganda non si ferma mai.
+var force_auto_propaganda := false
+
+
+## Pesca la carta successiva. Le Propaganda incontrate si risolvono in automatico se
+## tutte le Fazioni con azioni di Supporto sono bot (o in modalità auto); altrimenti
+## il round diventa INTERATTIVO e attende i click del giocatore (fase Supporto).
 func advance_card() -> void:
+	if prop_pending:
+		return
 	draw_next()
 	var guard := 0
 	while state.current_card == 0 and not game_over and guard < 6:
 		guard += 1
-		resolve_propaganda()
-		if not game_over:
-			draw_next()
+		if force_auto_propaganda or _prop_humans().is_empty():
+			resolve_propaganda()
+			if not game_over:
+				draw_next()
+		else:
+			_begin_interactive_propaganda()
+			return
+
+
+# ---------------------------------------------------------------------------
+# Round di Propaganda interattivo (fase Supporto per le Fazioni umane, 6.3.2-6.3.4)
+# ---------------------------------------------------------------------------
+
+var prop_pending := false          ## round di Propaganda in attesa di input umano
+var prop_stage := ""               ## Fazione del passo interattivo corrente ("" = nessuno)
+var _prop_stages: Array = []
+var _prop_idx := 0
+var _prop_final := false
+
+
+func prop_status() -> Dictionary:
+	return {"active": prop_pending, "stage": prop_stage, "final": _prop_final}
+
+
+## Fazioni umane con azioni nella fase di Supporto (il Sindacato non ne ha).
+func _prop_humans() -> Array:
+	var out: Array = []
+	for fid in ["government", "m26", "directorio"]:
+		if is_player(fid):
+			out.append(fid)
+	return out
+
+
+func _begin_interactive_propaganda() -> void:
+	propaganda_played += 1
+	_prop_final = propaganda_played >= 4
+	prop_pending = true
+	prop_stage = ""
+	emit_signal("action_logged", " Round Propaganda %d/4" % propaganda_played, "")
+	var vp := propaganda.victory_phase(_prop_final)
+	if vp.get("winner", "") != "":
+		prop_pending = false
+		game_over = true
+		winner = vp.winner
+		_emit_final_report(winner)
+		emit_signal("state_changed")
+		return
+	for line in propaganda.resources_phase():
+		emit_signal("action_logged", " " + String(line), "")
+	for line in propaganda.support_phase():
+		emit_signal("action_logged", " " + String(line), "")
+	# Fase di Supporto per Fazione, poi lo Spostamento del Governo (6.4).
+	_prop_stages = ["government", "m26", "directorio", "redeploy"]
+	_prop_idx = 0
+	_advance_prop_stage()
+
+
+## Esegue i passi dei bot e si ferma al primo passo di una Fazione umana con opzioni.
+## L'ultimo passo è lo Spostamento (6.4), interattivo solo se il Governo è umano.
+func _advance_prop_stage() -> void:
+	while _prop_idx < _prop_stages.size():
+		var fid: String = _prop_stages[_prop_idx]
+		if fid == "redeploy":
+			if is_bot("government"):
+				_prop_idx += 1
+				continue
+			prop_stage = "redeploy"
+			emit_signal("state_changed")
+			return
+		if is_bot(fid):
+			for line in bot.propaganda_support([fid]):
+				emit_signal("action_logged", " " + String(line), fid)
+			_prop_idx += 1
+			continue
+		if propaganda.support_action_spaces(fid).is_empty():
+			emit_signal("action_logged", " Propaganda: %s non ha azioni di Supporto possibili" % faction_name(fid), fid)
+			_prop_idx += 1
+			continue
+		prop_stage = fid
+		emit_signal("state_changed")
+		return
+	_finish_propaganda()
+
+
+## Click su uno spazio durante il passo interattivo (Azione Civica/Dimostrazioni/Espatriati).
+func prop_click(sid: String) -> Dictionary:
+	if not prop_pending or prop_stage == "":
+		return {"ok": false, "error": "Nessun passo di Propaganda in corso"}
+	var res: Dictionary
+	match prop_stage:
+		"government": res = propaganda.civic_step(sid)
+		"m26": res = propaganda.demo_step(sid)
+		"directorio": res = propaganda.expat_rally(sid)
+		"redeploy": res = {"ok": false, "error": "Spostamento: trascina i cubi sulla mappa, non cliccare"}
+		_: res = {"ok": false, "error": "Passo sconosciuto"}
+	if res.get("ok", false):
+		for line in res.get("log", []):
+			emit_signal("action_logged", " " + String(line), prop_stage)
+		# Il Supporto Espatriati è 1 solo spazio; altrimenti avanza se non resta nulla da fare.
+		if prop_stage == "directorio" or propaganda.support_action_spaces(prop_stage).is_empty():
+			prop_next_stage()
+		else:
+			emit_signal("state_changed")
+	return res
+
+
+## Spostamento interattivo (6.4): muove 1 cubo del Governo, validando la destinazione.
+func prop_redeploy_move(from_id: String, to_id: String, type: String) -> Dictionary:
+	if not prop_pending or prop_stage != "redeploy":
+		return {"ok": false, "error": "Nessuno Spostamento in corso"}
+	var res: Dictionary = propaganda.redeploy_move(from_id, to_id, type)
+	if res.get("ok", false):
+		for line in res.get("log", []):
+			emit_signal("action_logged", " " + String(line), "government")
+		emit_signal("state_changed")
+	return res
+
+
+## Chiude il passo interattivo corrente ("Concludi") e prosegue col round.
+## Nello Spostamento verifica prima l'obbligo 6.4.2 (Truppe fuori da EC/Province senza Base).
+func prop_next_stage() -> Dictionary:
+	if not prop_pending:
+		return {"ok": false, "error": ""}
+	if prop_stage == "redeploy":
+		var chk: Dictionary = propaganda.redeploy_can_finish()
+		if not chk.get("ok", false):
+			return chk
+	prop_stage = ""
+	_prop_idx += 1
+	_advance_prop_stage()
+	return {"ok": true, "error": ""}
+
+
+func _finish_propaganda() -> void:
+	prop_stage = ""
+	prop_pending = false
+	# Spostamento del Governo: automatico solo se il Governo è un NP (se è umano
+	# lo ha già svolto a mano nel passo interattivo). Poi la Sistemazione.
+	if is_bot("government"):
+		for line in propaganda.redeploy_phase():
+			emit_signal("action_logged", " " + String(line), "")
+	if _prop_final:
+		game_over = true
+		_emit_final_report("")
+		emit_signal("state_changed")
+		autosave()
+		return
+	for line in propaganda.reset_phase():
+		emit_signal("action_logged", " " + String(line), "")
+	advance_card()
+	autosave()
+	emit_signal("state_changed")
+
+
+# ---------------------------------------------------------------------------
+# Riciclaggio (2.3.6): rimuovi 1 Denaro per un'Op Limitata extra gratuita
+# ---------------------------------------------------------------------------
+
+var _laundered: Dictionary = {}   ## fid -> true: ha già beneficiato su questa carta
+var _free_limop := ""             ## Fazione con la LimOp gratuita armata ("" = nessuna)
+
+
+func free_limop_armed() -> bool:
+	return _free_limop != "" and seq != null and seq.pending_faction() == _free_limop
+
+
+## Spazi con Denaro della Fazione di turno (bersagli del Riciclaggio).
+func launder_spaces() -> Array:
+	if seq == null or seq.pending_faction() == "":
+		return []
+	var fid := seq.pending_faction()
+	var out: Array = []
+	for sid in game_def.space_ids():
+		if state.space_state(sid).cash_for(fid) > 0:
+			out.append(sid)
+	return out
+
+
+## Riciclaggio possibile: Op pagata, nessuna Att.Speciale, Denaro proprio, non già usato.
+func can_launder() -> bool:
+	if seq == null or seq.pending_faction() == "":
+		return false
+	var fid := seq.pending_faction()
+	return _turn_did_op and not _turn_did_special and _free_limop == "" \
+		and not bool(_laundered.get(fid, false)) and not launder_spaces().is_empty()
+
+
+func do_launder(space: String) -> Dictionary:
+	if not can_launder():
+		return {"ok": false, "error": "Riciclaggio non disponibile ora (serve un'Operazione pagata senza Attività Speciale)"}
+	var fid := seq.pending_faction()
+	if state.space_state(space).cash_for(fid) <= 0:
+		return {"ok": false, "error": "Nessun Denaro di %s a %s" % [faction_name(fid), space]}
+	state.remove_cash(space, fid, 1)
+	_laundered[fid] = true
+	_free_limop = fid
+	emit_signal("action_logged", "Riciclaggio: %s rimuove 1 Denaro (%s) - Op Limitata extra gratuita (non Costruzione)" % [faction_name(fid), space], fid)
+	emit_signal("state_changed")
+	return {"ok": true, "error": ""}
+
+
+## Numero di spazi/destinazioni distinti coinvolti (vincolo LimOp = 1 spazio).
+func _limop_scope(params: Dictionary) -> int:
+	var n := (params.get("spaces", []) as Array).size()
+	var dests := {}
+	for m in params.get("moves", []):
+		dests[m["to"]] = true
+	return maxi(n, dests.size())
+
+
+## Momentum "MAP": il Governo può accompagnare una Op Limitata con un'Att.Speciale gratuita.
+func limited_special_ok(fid: String) -> bool:
+	return fid == "government" and module.has_momentum(state, "MAP")
 
 
 func cards_left() -> int:
@@ -456,6 +686,7 @@ func auto_resolve_current() -> Dictionary:
 
 ## Gioca automaticamente l'intera partita (tutti i bot) fino a fine mazzo o vittoria.
 func run_full_game(max_steps: int = 200) -> void:
+	force_auto_propaganda = true
 	if state.current_card == -1:
 		draw_next()
 	var steps := 0
@@ -465,6 +696,7 @@ func run_full_game(max_steps: int = 200) -> void:
 			break
 		draw_next()
 		steps += 1
+	force_auto_propaganda = false
 
 
 ## Avanza: risolve la carta corrente e ne pesca una nuova.
@@ -483,7 +715,7 @@ var pace_delay := 1.1   ## Pausa (s) tra le mosse dei bot; regolabile dalla UI (
 func run_card_paced(delay: float = -1.0) -> void:
 	if delay < 0.0:
 		delay = pace_delay
-	if _busy or game_over or state.current_card == -1:
+	if _busy or game_over or state.current_card == -1 or prop_pending:
 		return
 	_busy = true
 	if seq == null:
@@ -510,6 +742,7 @@ func run_full_game_paced(delay: float = -1.0) -> void:
 		delay = pace_delay
 	if _busy:
 		return
+	force_auto_propaganda = true
 	if state.current_card == -1:
 		draw_next()
 	var steps := 0
@@ -517,6 +750,7 @@ func run_full_game_paced(delay: float = -1.0) -> void:
 		await run_card_paced(delay)
 		await get_tree().create_timer(delay * 0.5).timeout
 		steps += 1
+	force_auto_propaganda = false
 
 
 func current_card_text() -> String:
@@ -537,58 +771,134 @@ func current_card_text() -> String:
 	return "[b]#%d %s[/b]%s\n%sCarte rimaste: %d" % [c.number, c.title, tag, tr, cards_left()]
 
 
-## Esegue un'Operazione per id e ne propaga il risultato/log.
-## Cattura un'istantanea dello stato per consentire l'Annulla dell'ultima azione.
-func _capture_undo() -> void:
-	_undo = {
+## Impila un'istantanea dello stato prima di un'azione, per l'Annulla multi-livello.
+func _capture_undo(label: String = "azione") -> void:
+	_undo.append({
+		"label": label,
 		"state": state.to_dict(),
 		"seq": seq.snapshot() if seq != null else {},
 		"did_op": _turn_did_op,
 		"did_special": _turn_did_special,
 		"did_event": _turn_did_event,
-	}
+		"laundered": _laundered.duplicate(true),
+		"free_limop": _free_limop,
+	})
+	if _undo.size() > UNDO_DEPTH:
+		_undo.pop_front()
+
+
+## Scarta l'ultima istantanea (azione fallita: non c'è nulla da annullare).
+func _drop_undo() -> void:
+	if not _undo.is_empty():
+		_undo.pop_back()
 
 
 func can_undo() -> bool:
 	return not _undo.is_empty()
 
 
-## Annulla l'ultima Operazione/Att.Speciale/Evento eseguito (un solo livello).
+func undo_depth() -> int:
+	return _undo.size()
+
+
+## Descrizione dell'azione che verrà annullata ("" se la pila è vuota).
+func undo_label() -> String:
+	return String(_undo[-1].get("label", "azione")) if not _undo.is_empty() else ""
+
+
+## Annulla l'ultima Operazione/Att.Speciale/Evento eseguito (ripetibile fino a UNDO_DEPTH).
 func undo_last() -> bool:
 	if _undo.is_empty():
 		return false
-	state.load_dict(_undo["state"])
-	if seq != null and not (_undo["seq"] as Dictionary).is_empty():
-		seq.restore_snapshot(_undo["seq"])
-	_turn_did_op = bool(_undo["did_op"])
-	_turn_did_special = bool(_undo["did_special"])
-	_turn_did_event = bool(_undo["did_event"])
-	_undo = {}
+	var u: Dictionary = _undo.pop_back()
+	state.load_dict(u["state"])
+	if seq != null and not (u["seq"] as Dictionary).is_empty():
+		seq.restore_snapshot(u["seq"])
+	_turn_did_op = bool(u["did_op"])
+	_turn_did_special = bool(u["did_special"])
+	_turn_did_event = bool(u["did_event"])
+	_laundered = (u.get("laundered", {}) as Dictionary).duplicate(true)
+	_free_limop = String(u.get("free_limop", ""))
 	state.recompute_all_control()
 	module._refresh_victory_tracks(state)
-	emit_signal("action_logged", " Annullata l'ultima azione", "")
+	emit_signal("action_logged", " Annullato: %s" % String(u.get("label", "azione")), "")
 	emit_signal("state_changed")
 	return true
 
 
-func run_operation(op_id: String, params: Dictionary) -> Dictionary:
-	_capture_undo()
-	var res: Dictionary
+# ---------------------------------------------------------------------------
+# Anteprima delle azioni (simulazione su copia: costo ed effetti prima di eseguire)
+# ---------------------------------------------------------------------------
+
+## Smista un'Operazione verso il metodo corretto dell'oggetto ops dato.
+func _dispatch_operation(o: CubaLibreOperations, op_id: String, params: Dictionary) -> Dictionary:
 	match op_id:
-		"train": res = ops.train(params)
-		"garrison": res = ops.garrison(params)
-		"sweep": res = ops.sweep(params)
-		"assault": res = ops.assault(params)
-		"rally": res = ops.rally(params)
-		"march": res = ops.march(params)
-		"attack": res = ops.attack(params)
-		"terror": res = ops.terror(params)
-		"build": res = ops.build(params)
-		_: res = {"ok": false, "error": "Operazione sconosciuta: %s" % op_id, "log": []}
+		"train": return o.train(params)
+		"garrison": return o.garrison(params)
+		"sweep": return o.sweep(params)
+		"assault": return o.assault(params)
+		"rally": return o.rally(params)
+		"march": return o.march(params)
+		"attack": return o.attack(params)
+		"terror": return o.terror(params)
+		"build": return o.build(params)
+	return {"ok": false, "error": "Operazione sconosciuta: %s" % op_id, "log": []}
+
+
+## Simula un'Operazione su una COPIA dello stato: restituisce { ok, error, cost, log,
+## resources (Risorse della Fazione prima), affordable }. Non modifica la partita.
+func preview_operation(op_id: String, params: Dictionary) -> Dictionary:
+	var fid := _op_faction(op_id, params)
+	var copy := GameState.from_dict(game_def, state.to_dict())
+	copy.roles = roles
+	var o := CubaLibreOperations.new(copy, module)
+	var p := params.duplicate(true)
+	if free_limop_armed():
+		p["free"] = true
+	var res := _dispatch_operation(o, op_id, p)
+	var cost := int(res.get("cost", 0))
+	# Le Fazioni che non tracciano Risorse (NP) pagano sempre.
+	var have := state.get_resources(fid)
+	res["cost"] = cost
+	res["faction"] = fid
+	res["resources"] = have
+	res["tracks_resources"] = state.tracks_resources(fid)
+	res["affordable"] = not state.tracks_resources(fid) or have >= cost
+	return res
+
+
+## Fazione che paga un'Operazione (il Governo per le Op COIN).
+func _op_faction(op_id: String, params: Dictionary) -> String:
+	if params.has("faction"):
+		return String(params["faction"])
+	match op_id:
+		"train", "garrison", "sweep", "assault": return "government"
+		"build": return "syndicate"
+	return seq.pending_faction() if seq != null else ""
+
+
+func run_operation(op_id: String, params: Dictionary) -> Dictionary:
+	# Riciclaggio armato: questa è la LimOp extra gratuita (1 spazio, non Costruzione).
+	var free := free_limop_armed()
+	if free:
+		if op_id == "build":
+			var eb := {"ok": false, "error": "La Costruzione non è mai gratuita (2.3.6)", "log": []}
+			_emit_result(eb)
+			return eb
+		if _limop_scope(params) > 1:
+			var es := {"ok": false, "error": "Op Limitata gratuita: 1 solo spazio", "log": []}
+			_emit_result(es)
+			return es
+		params = params.duplicate(true)
+		params["free"] = true
+	_capture_undo(CLNames.op(op_id))
+	var res := _dispatch_operation(ops, op_id, params)
 	if res.get("ok", false):
 		_turn_did_op = true
+		if free:
+			_free_limop = ""   # LimOp gratuita consumata
 	else:
-		_undo = {}   # azione fallita: niente da annullare
+		_drop_undo()   # azione fallita: niente da annullare
 	_emit_result(res)
 	return res
 
@@ -620,23 +930,23 @@ func can_special(sa_id: String, params: Dictionary) -> bool:
 
 
 func run_special(sa_id: String, params: Dictionary) -> Dictionary:
-	_capture_undo()
+	_capture_undo(CLNames.sa(sa_id))
 	var res := _dispatch_special(specials, sa_id, params)
 	if res.get("ok", false):
 		_turn_did_special = true
 	else:
-		_undo = {}   # azione fallita: niente da annullare
+		_drop_undo()   # azione fallita: niente da annullare
 	_emit_result(res)
 	return res
 
 
 func run_event(number: int, side: String, faction: String, params: Dictionary = {}) -> Dictionary:
-	_capture_undo()
+	_capture_undo("Evento #%d (%s)" % [number, "chiaro" if side == "unshaded" else "ombreggiato"])
 	var res := events.apply(number, side, faction, params)
 	if res.get("ok", true):
 		_turn_did_event = true
 	else:
-		_undo = {}   # azione fallita: niente da annullare
+		_drop_undo()   # azione fallita: niente da annullare
 	for line in res.get("log", []):
 		emit_signal("action_logged", String(line), faction)
 	emit_signal("state_changed")
@@ -702,6 +1012,7 @@ func _emit_final_report(forced_winner: String) -> void:
 				win = fid
 	winner = win
 	emit_signal("action_logged", "=== FINE PARTITA", "")
+	emit_signal("game_finished", win)
 	emit_signal("action_logged", "» Vince: %s" % faction_name(win), win)
 	# Classifica per margine decrescente.
 	var ranking := order.duplicate()
@@ -734,6 +1045,102 @@ func _emit_result(res: Dictionary) -> void:
 		emit_signal("state_changed")
 	else:
 		emit_signal("action_logged", "! " + String(res.get("error", "errore")), "")
+
+
+# ---------------------------------------------------------------------------
+# Salvataggio / caricamento partita
+# ---------------------------------------------------------------------------
+
+const SAVE_PATH := "user://savegame.json"
+const AUTOSAVE_PATH := "user://autosave.json"
+
+
+## Istantanea completa della partita: stato del motore, Sequenza di Gioco della carta
+## corrente, ruoli, contatori di partita e ordine del mazzo Calixto dei bot.
+func save_to_dict() -> Dictionary:
+	return {
+		"version": 1,
+		"state": state.to_dict(),
+		"seq": seq.snapshot() if seq != null else {},
+		"roles": roles.duplicate(true),
+		"scenario": scenario,
+		"short_game": short_game,
+		"propaganda_played": propaganda_played,
+		"game_over": game_over,
+		"winner": winner,
+		"calixto_deck": bot.deck.snapshot() if bot != null and bot.deck != null else [],
+		"did_op": _turn_did_op,
+		"did_special": _turn_did_special,
+		"did_event": _turn_did_event,
+	}
+
+
+func save_game(path: String = SAVE_PATH) -> bool:
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f == null:
+		return false
+	f.store_string(JSON.stringify(save_to_dict()))
+	f.close()
+	return true
+
+
+func has_save(path: String = SAVE_PATH) -> bool:
+	return FileAccess.file_exists(path)
+
+
+## Ricarica una partita salvata: ricrea le classi di regole sul nuovo stato e
+## ripristina la Sequenza di Gioco della carta corrente. Restituisce true se ok.
+func load_game(path: String = SAVE_PATH) -> bool:
+	if not FileAccess.file_exists(path):
+		return false
+	var d = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if typeof(d) != TYPE_DICTIONARY or typeof(d.get("state")) != TYPE_DICTIONARY:
+		return false
+	state = GameState.from_dict(game_def, d["state"])
+	var r: Dictionary = d.get("roles", {})
+	for k in r.keys():
+		roles[k] = String(r[k])
+	state.roles = roles   # stessa referenza: i cambi di ruolo restano sincronizzati
+	ops = CubaLibreOperations.new(state, module)
+	specials = CubaLibreSpecials.new(state, module)
+	propaganda = CubaLibrePropaganda.new(state, module)
+	events = CubaLibreEvents.new(state, module)
+	bot = CLCalixto.new(state, module)
+	bot.deck.restore(d.get("calixto_deck", []))
+	scenario = String(d.get("scenario", "standard"))
+	short_game = bool(d.get("short_game", false))
+	propaganda_played = int(d.get("propaganda_played", 0))
+	game_over = bool(d.get("game_over", false))
+	winner = String(d.get("winner", ""))
+	stats = {}
+	_undo.clear()
+	prop_pending = false
+	prop_stage = ""
+	_laundered = {}
+	_free_limop = ""
+	_turn_did_op = bool(d.get("did_op", false))
+	_turn_did_special = bool(d.get("did_special", false))
+	_turn_did_event = bool(d.get("did_event", false))
+	seq = null
+	var snap: Dictionary = d.get("seq", {})
+	if state.current_card > 0 and game_def.card(state.current_card) != null:
+		seq = SequenceOfPlay.new(state, module, game_def.card(state.current_card))
+		seq.final_event_card = cards_left() == 0
+		if not snap.is_empty():
+			seq.restore_snapshot(snap)
+	state.recompute_all_control()
+	module._refresh_victory_tracks(state)
+	emit_signal("state_changed")
+	return true
+
+
+## Autosalvataggio silenzioso (dopo ogni azione conclusa). Mai a metà di un round di
+## Propaganda interattivo: lo stato intermedio non è serializzato e il caricamento
+## lascerebbe la partita bloccata sulla carta Propaganda.
+func autosave() -> void:
+	if prop_pending:
+		return
+	save_game(AUTOSAVE_PATH)
 
 
 # --- Helper di lettura per la UI ---

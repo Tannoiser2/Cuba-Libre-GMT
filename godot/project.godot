@@ -7,7 +7,7 @@ config_version=5
 
 config/name="COIN Engine — Cuba Libre"
 config/description="Motore generico per la serie COIN di GMT, con Cuba Libre come primo modulo."
-run/main_scene="res://scenes/Main.tscn"
+run/main_scene="res://scenes/MainMenu.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
 
 [autoload]

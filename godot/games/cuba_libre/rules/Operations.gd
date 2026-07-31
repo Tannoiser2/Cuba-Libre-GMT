@@ -73,6 +73,8 @@ func train(params: Dictionary) -> Dictionary:
 	if spaces.is_empty():
 		return _err("Nessuno spazio selezionato")
 	var cost := mod.coin_op_cost(state) * spaces.size()
+	if bool(params.get("free", false)):
+		cost = 0   # Operazione gratuita (2.3.6, 3.1.2)
 	if not _can_pay("government", cost):
 		return _err("Risorse insufficienti (servono %d)" % cost)
 	# Valida spazi
@@ -157,6 +159,8 @@ func sweep(params: Dictionary) -> Dictionary:
 	if spaces.is_empty():
 		return _err("Nessuno spazio selezionato")
 	var cost := mod.coin_op_cost(state) * spaces.size()
+	if bool(params.get("free", false)):
+		cost = 0   # Operazione gratuita (2.3.6, 3.1.2)
 	if not _can_pay("government", cost):
 		return _err("Risorse insufficienti (servono %d)" % cost)
 	state.add_resources("government", -cost)
@@ -175,6 +179,13 @@ func sweep(params: Dictionary) -> Dictionary:
 		var n := mod.activate_guerrillas(state, sid, act)
 		if n > 0:
 			log.append("Sweep: attivate %d Guerriglie a %s" % [n, sid])
+	# Momentum "Rolando Masferrer": la Perlustrazione può Assaltare gratis in 1 spazio.
+	var asp: String = params.get("assault_space", "")
+	if asp != "":
+		if not mod.has_momentum(state, "Rolando Masferrer"):
+			return _err("L'Assalto gratuito in Sweep richiede il Momentum Rolando Masferrer")
+		var rm := _assault_in_space(asp)
+		log.append("Masferrer: Assalto gratuito a %s, rimossi %d pezzi" % [asp, rm])
 	return _ok(cost, log)
 
 
@@ -184,10 +195,22 @@ func assault(params: Dictionary) -> Dictionary:
 	if spaces.is_empty():
 		return _err("Nessuno spazio selezionato")
 	var cost := 3 * spaces.size()
+	if bool(params.get("free", false)):
+		cost = 0   # Operazione gratuita (2.3.6, 3.1.2)
 	if not _can_pay("government", cost):
 		return _err("Risorse insufficienti (servono %d)" % cost)
 	state.add_resources("government", -cost)
 	var log: Array = []
+	# Momentum "Armored Cars": prima dell'Assalto, sposta Truppe negli spazi d'Assalto.
+	var pre_moves: Array = params.get("moves", [])
+	if not pre_moves.is_empty():
+		if not mod.has_momentum(state, "Armored Cars"):
+			return _err("Spostare Truppe nell'Assalto richiede il Momentum Armored Cars")
+		for m in pre_moves:
+			if not spaces.has(m["to"]):
+				return _err("Armored Cars: destinazione %s non scelta per l'Assalto" % str(m["to"]))
+			state.move_pieces("government", "troops", m["from"], m["to"], int(m["count"]), "")
+		log.append("Armored Cars: Truppe spostate negli spazi d'Assalto")
 	for sid in spaces:
 		var removed := _assault_in_space(sid)
 		log.append("Assalto a %s: rimossi %d pezzi" % [sid, removed])
@@ -219,6 +242,8 @@ func _assault_in_space(space_id: String) -> int:
 ## Garrison / Guarnigione (3.2.2). params: { moves:[{type,from,to,count}], assault_ec? }
 func garrison(params: Dictionary) -> Dictionary:
 	var cost := mod.coin_op_cost(state)  # costo totale, non per spazio
+	if bool(params.get("free", false)):
+		cost = 0   # Operazione gratuita (2.3.6, 3.1.2)
 	if not _can_pay("government", cost):
 		return _err("Risorse insufficienti (servono %d)" % cost)
 	state.add_resources("government", -cost)
@@ -261,6 +286,8 @@ func rally(params: Dictionary) -> Dictionary:
 	if spaces.is_empty():
 		return _err("Nessuno spazio selezionato")
 	var cost := spaces.size()  # 1 Risorsa per spazio
+	if bool(params.get("free", false)):
+		cost = 0   # Operazione gratuita (2.3.6, 3.1.2)
 	if not _can_pay(f, cost):
 		return _err("Risorse insufficienti (servono %d)" % cost)
 	# Vincoli di Supporto
@@ -326,6 +353,8 @@ func march(params: Dictionary) -> Dictionary:
 	for d in dests.keys():
 		if not state.game_def.space(d).is_economic():
 			cost += 1
+	if bool(params.get("free", false)):
+		cost = 0   # Operazione gratuita (2.3.6, 3.1.2)
 	if not _can_pay(f, cost):
 		return _err("Risorse insufficienti (servono %d)" % cost)
 	# Valida adiacenza (Capacità "Morgan": il DR può Marciare entro 2 spazi)
@@ -376,6 +405,8 @@ func attack(params: Dictionary) -> Dictionary:
 	if spaces.is_empty():
 		return _err("Nessuno spazio selezionato")
 	var cost := spaces.size()
+	if bool(params.get("free", false)):
+		cost = 0   # Operazione gratuita (2.3.6, 3.1.2)
 	if not _can_pay(f, cost):
 		return _err("Risorse insufficienti (servono %d)" % cost)
 	# Valida: >=1 Guerriglia propria e >=1 pezzo nemico
@@ -416,6 +447,8 @@ func terror(params: Dictionary) -> Dictionary:
 	for sid in spaces:
 		if not state.game_def.space(sid).is_economic():
 			cost += 1
+	if bool(params.get("free", false)):
+		cost = 0   # Operazione gratuita (2.3.6, 3.1.2)
 	if not _can_pay(f, cost):
 		return _err("Risorse insufficienti (servono %d)" % cost)
 	for sid in spaces:
