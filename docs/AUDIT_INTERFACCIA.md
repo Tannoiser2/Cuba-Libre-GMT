@@ -411,3 +411,20 @@ esiste già; insieme cambierebbero sensibilmente l'esperienza quotidiana di gioc
 > `CLTheme`, `CLNames` e la rimozione del codice morto. Resta `SidePanel` (carte +
 > pannello Vittoria), l'ultima estrazione prevista.
 
+> **Aggiornamento 8** — refactor completato: estratto **`SidePanel`** (carte corrente e
+> prossima, sintesi dell'Evento, pannello Vittoria e registro). Si aggiorna da sé con
+> `refresh()` ed emette `card_zoom_requested` invece di costruire l'overlay, che è a
+> schermo intero e non gli appartiene. Le sigle delle Fazioni finiscono in `CLNames`,
+> ultimo dizionario che era duplicato.
+>
+> Aggiunto `tests/scene_smoke.gd`, che **istanzia davvero la scena principale** in
+> headless e la esercita (montaggio dei componenti, segnali del log, aggiornamento
+> completo, tre turni bot, salva/carica con la UI viva): è la rete che mancava, perché
+> i test unitari non catturano gli errori di montaggio. Ora gira anche in CI a ogni push.
+>
+> **Bilancio del refactor**: `Main.gd` da **2.214 a 1.212 righe** (−45%), con la logica
+> distribuita in `ActionFlow` (487), `SpecialFlow` (388), `MapAnimator` (181),
+> `SidePanel` (137), `LogView` (111), `CLTheme` (72) e `CLNames`. La logica di flusso,
+> che all'inizio non aveva un solo test, ne ha 57. Totale: **334 test headless**
+> più lo smoke test di scena.
+

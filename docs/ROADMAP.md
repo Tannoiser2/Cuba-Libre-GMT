@@ -82,7 +82,8 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
       codice morto (`SpaceView.gd`, costante `LAYOUT`).
 - [x] Refactor UI (3/n): estratti `LogView`, `MapAnimator` e `CLTheme` (aspetto unificato);
       il log segnala le righe omesse invece di troncare in silenzio.
-- [ ] Refactor UI (4/n): `SidePanel` (carte + pannello Vittoria).
+- [x] Refactor UI (4/4): estratto `SidePanel`; aggiunto `tests/scene_smoke.gd` che
+      istanzia la scena reale in headless (anche in CI).
 - [ ] Hotseat multi-giocatore locale.
 
 ### Fase 4 — Bot (Non-Giocatore)

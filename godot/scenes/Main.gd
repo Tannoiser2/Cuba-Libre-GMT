@@ -39,15 +39,12 @@ var _board: ScrollContainer
 var _map_wrap: Control
 var _map: TextureRect
 var _bar: VBoxContainer
-var _side: PanelContainer
+var _side: SidePanel
+var _log: LogView                     # registro (vive dentro il pannello laterale)
 var _track_overlay: TrackOverlay
-var _card_img: TextureRect
-var _next_card_img: TextureRect
 var _zoom := 1.0
-var _card_label: RichTextLabel
-var _vic: RichTextLabel                # pannello Vittoria/Risorse (numerico)
 var _confirm_new: ConfirmationDialog   # conferma per "Nuova Partita"
-var _log: LogView
+
 var _instr: Label
 var _turn_banner: Label
 var _btn_end: Button
@@ -171,8 +168,10 @@ func _build_ui() -> void:
 	_anim_layer.setup(_space_views)   # le viste degli spazi esistono già: ne userà i centri
 	_map.add_child(_anim_layer)
 
-	# Pannello laterale (destra)
-	_side = _build_side_panel()
+	# Pannello laterale (destra): carte, Vittoria e log si aggiornano da soli.
+	_side = SidePanel.new()
+	_side.card_zoom_requested.connect(_show_card_zoom)
+	_log = _side.log_view
 	add_child(_side)
 
 	# Conferma per "Nuova Partita" (evita di azzerare la partita per un click di troppo).
@@ -436,81 +435,6 @@ const PROP_MSG := {
 }
 
 
-func _build_side_panel() -> PanelContainer:
-	var pc := PanelContainer.new()
-	pc.clip_contents = true
-	# Contenuto scrollabile: niente più nulla che esce dal riquadro.
-	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	pc.add_child(scroll)
-	var vb := VBoxContainer.new()
-	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(vb)
-
-	# Carte: corrente e prossima (Upcoming), affiancate
-	var cards_row := HBoxContainer.new()
-	cards_row.add_theme_constant_override("separation", 6)
-	vb.add_child(cards_row)
-	var col_cur := VBoxContainer.new()
-	var lbl_cur := Label.new()
-	lbl_cur.text = "Corrente"
-	lbl_cur.add_theme_color_override("font_color", Color("f1c40f"))
-	col_cur.add_child(lbl_cur)
-	_card_img = TextureRect.new()
-	_card_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_card_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
-	_card_img.custom_minimum_size = Vector2(150, 200)
-	_make_card_zoomable(_card_img)
-	col_cur.add_child(_card_img)
-	cards_row.add_child(col_cur)
-	var col_next := VBoxContainer.new()
-	var lbl_next := Label.new()
-	lbl_next.text = "Prossima"
-	lbl_next.add_theme_color_override("font_color", Color("9fb3c8"))
-	col_next.add_child(lbl_next)
-	_next_card_img = TextureRect.new()
-	_next_card_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_next_card_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
-	_next_card_img.custom_minimum_size = Vector2(150, 200)
-	_next_card_img.modulate = Color(1, 1, 1, 0.75)
-	_make_card_zoomable(_next_card_img)
-	col_next.add_child(_next_card_img)
-	cards_row.add_child(col_next)
-
-	_card_label = RichTextLabel.new()
-	_card_label.bbcode_enabled = true
-	_card_label.fit_content = true
-	_card_label.add_theme_font_size_override("normal_font_size", 12)
-	_card_label.custom_minimum_size = Vector2(330, 48)
-	vb.add_child(_card_label)
-	vb.add_child(HSeparator.new())
-
-	# Pannello Vittoria: valore/soglia/margine di ogni Fazione + Risorse, sempre visibile.
-	var vic_title := Label.new()
-	vic_title.text = "Vittoria"
-	vb.add_child(vic_title)
-	_vic = RichTextLabel.new()
-	_vic.bbcode_enabled = true
-	_vic.fit_content = true
-	_vic.scroll_active = false
-	for fs in ["normal_font_size", "bold_font_size", "italics_font_size", "bold_italics_font_size", "mono_font_size"]:
-		_vic.add_theme_font_size_override(fs, 11)
-	_vic.add_theme_constant_override("line_separation", 3)
-	vb.add_child(_vic)
-	vb.add_child(HSeparator.new())
-
-	var log_title := Label.new()
-	log_title.text = "Log"
-	vb.add_child(log_title)
-
-	# Log con altezza fissa, sempre visibile e scrollabile; righe "[+] logica" espandibili.
-	_log = LogView.new()
-	_log.custom_minimum_size = Vector2(340, 260)
-	vb.add_child(_log)
-
-	pc.custom_minimum_size = Vector2(380, 0)
-	return pc
-
 
 func _set_zoom(z: float) -> void:
 	_zoom = clampf(z, 0.5, 4.0)
@@ -685,7 +609,7 @@ func _refresh() -> void:
 	if _track_overlay != null:
 		_track_overlay.queue_redraw()
 	_refresh_turn_banner()
-	_refresh_side()
+	_side.refresh()
 	if not _role_btns.is_empty():
 		_update_role_btns()
 
@@ -864,59 +788,16 @@ func _mk_menu_btn(text: String) -> MenuButton:
 	return b
 
 
-func _refresh_side() -> void:
-	var s: GameState = GameController.state
-	var cc: int = s.current_card
-	_card_img.texture = CLAssets.card(cc) if cc >= 0 else null
-	var nc: int = GameController.next_card()
-	_next_card_img.texture = CLAssets.card(nc) if nc >= 0 else null
-	_card_label.text = GameController.current_card_text()
-	_refresh_victory()
 
-
-# Metrica di vittoria di ogni Fazione (nome breve mostrato nel pannello).
 const _VIC_LABEL := {
 	"government": "Supporto", "m26": "Opp.+Basi",
 	"directorio": "Pop.+Basi", "syndicate": "Casinò",
 }
 
 
-## Pannello Vittoria: per ogni Fazione valore/soglia (margine) e Risorse; sotto, Aiuti
-## e stato dell'Alleanza USA. I numeri altrimenti si leggono solo dai segnalini sul tracciato.
-func _refresh_victory() -> void:
-	if _vic == null:
-		return
-	var vs: Dictionary = GameController.victory()
-	var s: GameState = GameController.state
-	var txt := ""
-	for fid in ["government", "m26", "directorio", "syndicate"]:
-		var d: Dictionary = vs.get(fid, {})
-		var m := int(d.get("margin", 0))
-		var mcol := "57c97e" if m >= 0 else "ff8080"
-		var res_txt := str(s.get_resources(fid)) if s.tracks_resources(fid) else "—"
-		txt += "%s %s [b]%d[/b]/%d [color=#%s](%+d)[/color] · Risorse %s\n" % [
-			CLTheme.faction_chip(String(_ROLE_SHORT.get(fid, fid)), fid), _VIC_LABEL.get(fid, ""),
-			int(d.get("value", 0)), int(d.get("threshold", 0)), mcol, m, res_txt]
-	var alliance: int = clampi(int(s.tracks.get("us_alliance", 0)), 0, 2)
-	txt += "[color=#9fb3c8]Aiuti %d · Alleanza USA: %s[/color]" % [
-		int(s.tracks.get("aid", 0)), ["Salda", "Riluttante", "Embargo"][alliance]]
-	_vic.text = txt
 
 
-## Rende cliccabile l'anteprima di una carta: click = ingrandimento a schermo intero.
-func _make_card_zoomable(tr: TextureRect) -> void:
-	tr.mouse_filter = Control.MOUSE_FILTER_STOP
-	tr.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	tr.tooltip_text = "Clicca per ingrandire"
-	tr.gui_input.connect(_on_card_gui_input.bind(tr))
 
-
-func _on_card_gui_input(event: InputEvent, tr: TextureRect) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		_show_card_zoom(tr.texture)
-
-
-## Overlay a schermo intero con la carta ingrandita; un click qualsiasi lo chiude.
 func _show_card_zoom(tex: Texture2D) -> void:
 	if tex == null:
 		return
@@ -1280,7 +1161,6 @@ func _on_all_bots() -> void:
 	GameController.run_card_paced()
 
 
-const _ROLE_SHORT := {"government": "Gov", "m26": "26J", "directorio": "DR", "syndicate": "SYN"}
 
 
 func _toggle_role(fid: String) -> void:
@@ -1292,7 +1172,7 @@ func _update_role_btns() -> void:
 	for fid in _role_btns:
 		var player := GameController.is_player(fid)
 		var b: Button = _role_btns[fid]
-		b.text = "%s: %s" % [_ROLE_SHORT.get(fid, fid), "Giocatore" if player else "Bot"]
+		b.text = "%s: %s" % [CLNames.faction_short(fid), "Giocatore" if player else "Bot"]
 		b.add_theme_color_override("font_color", GameController.faction_color(fid) if player else Color("8aa0b3"))
 
 

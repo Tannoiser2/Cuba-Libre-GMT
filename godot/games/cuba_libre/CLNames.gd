@@ -28,6 +28,9 @@ const PIECE := {
 ## Etichette delle scelte di Riorganizzazione (Rally) per spazio.
 const RALLY := {"place": "Guerriglie", "extra": "Guerriglie", "base": "Base", "flip": "Clandestine"}
 
+## Sigle delle Fazioni (tasti dei Ruoli, pannello Vittoria).
+const FACTION_SHORT := {"government": "Gov", "m26": "26J", "directorio": "DR", "syndicate": "SYN"}
+
 
 static func op(id: String) -> String:
 	return String(OP.get(id, id))
@@ -39,3 +42,8 @@ static func sa(id: String) -> String:
 
 static func piece(id: String) -> String:
 	return String(PIECE.get(id, id))
+
+
+static func faction_short(id: String) -> String:
+	return String(FACTION_SHORT.get(id, id))
+

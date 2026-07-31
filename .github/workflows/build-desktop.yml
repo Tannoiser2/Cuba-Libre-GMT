@@ -46,6 +46,9 @@ jobs:
       - name: Test (headless)
         run: godot --headless --path godot -s res://tests/test_runner.gd
 
+      - name: Smoke test della scena (montaggio UI)
+        run: godot --headless --path godot -s res://tests/scene_smoke.gd
+
       - name: Export desktop (Windows, Linux, macOS)
         run: |
           mkdir -p dist/windows dist/linux dist/macos
