@@ -334,3 +334,18 @@ esiste già; insieme cambierebbero sensibilmente l'esperienza quotidiana di gioc
 > extra gratuita; completati i Momentum operativi mancanti (Armored Cars, Rolando
 > Masferrer, MAP, Raúl) — le 7 Capacità Insorgenti risultavano già applicate nelle
 > Operazioni. Tutto coperto da test (250 headless).
+
+> **Aggiornamento 3** — implementate le voci **9–12**:
+> **(9)** Annulla **multi-livello** (pila di 20 istantanee, ripetibile fino all'inizio
+> della carta; il tasto mostra quante azioni restano e quale sarà disfatta; un'azione
+> fallita non sporca la pila; lo stato del Riciclaggio viene ripristinato con essa).
+> **(11)** I due significati di "Annulla" sono ora **due tasti distinti**: *Annulla sel.*
+> (scarta la preparazione, mai distruttivo) e *Annulla azione* (disfa l'eseguito),
+> ciascuno attivo solo quando ha senso. **(10)** Scorciatoie da tastiera: `Esc` annulla
+> la selezione, `Invio` esegue, `Spazio` conclude il turno, `Ctrl+Z` disfa, `+`/`-`/`0`
+> regolano la vista (i tasti non trattengono più il focus). **(12)** **Anteprima**
+> accanto a "Esegui": costo in Risorse rapportato a quelle disponibili (verde/rosso),
+> `GRATIS` per la LimOp del Riciclaggio, `⚠ non eseguibile` con il motivo *prima* di
+> premere, e l'elenco degli effetti previsti nel tooltip — il tutto simulando
+> l'Operazione su una copia dello stato, senza toccare la partita.
+> Copertura: **262 test headless**.

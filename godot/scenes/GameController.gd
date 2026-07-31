@@ -23,8 +23,10 @@ var _turn_did_op := false
 var _turn_did_special := false
 var _turn_did_event := false
 
-## Annulla (undo) a un livello: istantanea catturata prima dell'ultima azione eseguita.
-var _undo: Dictionary = {}
+## Annulla (undo) multi-livello: pila di istantanee, la più recente in fondo.
+## Le istantanee non attraversano il confine tra le carte (la pila si svuota).
+const UNDO_DEPTH := 20
+var _undo: Array = []
 
 
 func _ready() -> void:
@@ -120,7 +122,7 @@ func draw_next() -> int:
 ## Costruisce la Sequenza di Gioco per la carta Evento corrente (per il turno guidato).
 func _start_card_sequence() -> void:
 	seq = null
-	_undo = {}   # l'Annulla non attraversa il confine tra le carte
+	_undo.clear()   # l'Annulla non attraversa il confine tra le carte
 	_laundered = {}   # il beneficio del Riciclaggio è 1 per Fazione per carta (2.3.6)
 	_free_limop = ""
 	_reset_turn_flags()
@@ -736,38 +738,110 @@ func current_card_text() -> String:
 	return "[b]#%d %s[/b]%s\n%sCarte rimaste: %d" % [c.number, c.title, tag, tr, cards_left()]
 
 
-## Esegue un'Operazione per id e ne propaga il risultato/log.
-## Cattura un'istantanea dello stato per consentire l'Annulla dell'ultima azione.
-func _capture_undo() -> void:
-	_undo = {
+## Impila un'istantanea dello stato prima di un'azione, per l'Annulla multi-livello.
+func _capture_undo(label: String = "azione") -> void:
+	_undo.append({
+		"label": label,
 		"state": state.to_dict(),
 		"seq": seq.snapshot() if seq != null else {},
 		"did_op": _turn_did_op,
 		"did_special": _turn_did_special,
 		"did_event": _turn_did_event,
-	}
+		"laundered": _laundered.duplicate(true),
+		"free_limop": _free_limop,
+	})
+	if _undo.size() > UNDO_DEPTH:
+		_undo.pop_front()
+
+
+## Scarta l'ultima istantanea (azione fallita: non c'è nulla da annullare).
+func _drop_undo() -> void:
+	if not _undo.is_empty():
+		_undo.pop_back()
 
 
 func can_undo() -> bool:
 	return not _undo.is_empty()
 
 
-## Annulla l'ultima Operazione/Att.Speciale/Evento eseguito (un solo livello).
+func undo_depth() -> int:
+	return _undo.size()
+
+
+## Descrizione dell'azione che verrà annullata ("" se la pila è vuota).
+func undo_label() -> String:
+	return String(_undo[-1].get("label", "azione")) if not _undo.is_empty() else ""
+
+
+## Annulla l'ultima Operazione/Att.Speciale/Evento eseguito (ripetibile fino a UNDO_DEPTH).
 func undo_last() -> bool:
 	if _undo.is_empty():
 		return false
-	state.load_dict(_undo["state"])
-	if seq != null and not (_undo["seq"] as Dictionary).is_empty():
-		seq.restore_snapshot(_undo["seq"])
-	_turn_did_op = bool(_undo["did_op"])
-	_turn_did_special = bool(_undo["did_special"])
-	_turn_did_event = bool(_undo["did_event"])
-	_undo = {}
+	var u: Dictionary = _undo.pop_back()
+	state.load_dict(u["state"])
+	if seq != null and not (u["seq"] as Dictionary).is_empty():
+		seq.restore_snapshot(u["seq"])
+	_turn_did_op = bool(u["did_op"])
+	_turn_did_special = bool(u["did_special"])
+	_turn_did_event = bool(u["did_event"])
+	_laundered = (u.get("laundered", {}) as Dictionary).duplicate(true)
+	_free_limop = String(u.get("free_limop", ""))
 	state.recompute_all_control()
 	module._refresh_victory_tracks(state)
-	emit_signal("action_logged", " Annullata l'ultima azione", "")
+	emit_signal("action_logged", " Annullato: %s" % String(u.get("label", "azione")), "")
 	emit_signal("state_changed")
 	return true
+
+
+# ---------------------------------------------------------------------------
+# Anteprima delle azioni (simulazione su copia: costo ed effetti prima di eseguire)
+# ---------------------------------------------------------------------------
+
+## Smista un'Operazione verso il metodo corretto dell'oggetto ops dato.
+func _dispatch_operation(o: CubaLibreOperations, op_id: String, params: Dictionary) -> Dictionary:
+	match op_id:
+		"train": return o.train(params)
+		"garrison": return o.garrison(params)
+		"sweep": return o.sweep(params)
+		"assault": return o.assault(params)
+		"rally": return o.rally(params)
+		"march": return o.march(params)
+		"attack": return o.attack(params)
+		"terror": return o.terror(params)
+		"build": return o.build(params)
+	return {"ok": false, "error": "Operazione sconosciuta: %s" % op_id, "log": []}
+
+
+## Simula un'Operazione su una COPIA dello stato: restituisce { ok, error, cost, log,
+## resources (Risorse della Fazione prima), affordable }. Non modifica la partita.
+func preview_operation(op_id: String, params: Dictionary) -> Dictionary:
+	var fid := _op_faction(op_id, params)
+	var copy := GameState.from_dict(game_def, state.to_dict())
+	copy.roles = roles
+	var o := CubaLibreOperations.new(copy, module)
+	var p := params.duplicate(true)
+	if free_limop_armed():
+		p["free"] = true
+	var res := _dispatch_operation(o, op_id, p)
+	var cost := int(res.get("cost", 0))
+	# Le Fazioni che non tracciano Risorse (NP) pagano sempre.
+	var have := state.get_resources(fid)
+	res["cost"] = cost
+	res["faction"] = fid
+	res["resources"] = have
+	res["tracks_resources"] = state.tracks_resources(fid)
+	res["affordable"] = not state.tracks_resources(fid) or have >= cost
+	return res
+
+
+## Fazione che paga un'Operazione (il Governo per le Op COIN).
+func _op_faction(op_id: String, params: Dictionary) -> String:
+	if params.has("faction"):
+		return String(params["faction"])
+	match op_id:
+		"train", "garrison", "sweep", "assault": return "government"
+		"build": return "syndicate"
+	return seq.pending_faction() if seq != null else ""
 
 
 func run_operation(op_id: String, params: Dictionary) -> Dictionary:
@@ -784,25 +858,14 @@ func run_operation(op_id: String, params: Dictionary) -> Dictionary:
 			return es
 		params = params.duplicate(true)
 		params["free"] = true
-	_capture_undo()
-	var res: Dictionary
-	match op_id:
-		"train": res = ops.train(params)
-		"garrison": res = ops.garrison(params)
-		"sweep": res = ops.sweep(params)
-		"assault": res = ops.assault(params)
-		"rally": res = ops.rally(params)
-		"march": res = ops.march(params)
-		"attack": res = ops.attack(params)
-		"terror": res = ops.terror(params)
-		"build": res = ops.build(params)
-		_: res = {"ok": false, "error": "Operazione sconosciuta: %s" % op_id, "log": []}
+	_capture_undo(_OP_IT.get(op_id, op_id))
+	var res := _dispatch_operation(ops, op_id, params)
 	if res.get("ok", false):
 		_turn_did_op = true
 		if free:
 			_free_limop = ""   # LimOp gratuita consumata
 	else:
-		_undo = {}   # azione fallita: niente da annullare
+		_drop_undo()   # azione fallita: niente da annullare
 	_emit_result(res)
 	return res
 
@@ -834,23 +897,23 @@ func can_special(sa_id: String, params: Dictionary) -> bool:
 
 
 func run_special(sa_id: String, params: Dictionary) -> Dictionary:
-	_capture_undo()
+	_capture_undo(_SA_IT.get(sa_id, sa_id))
 	var res := _dispatch_special(specials, sa_id, params)
 	if res.get("ok", false):
 		_turn_did_special = true
 	else:
-		_undo = {}   # azione fallita: niente da annullare
+		_drop_undo()   # azione fallita: niente da annullare
 	_emit_result(res)
 	return res
 
 
 func run_event(number: int, side: String, faction: String, params: Dictionary = {}) -> Dictionary:
-	_capture_undo()
+	_capture_undo("Evento #%d (%s)" % [number, "chiaro" if side == "unshaded" else "ombreggiato"])
 	var res := events.apply(number, side, faction, params)
 	if res.get("ok", true):
 		_turn_did_event = true
 	else:
-		_undo = {}   # azione fallita: niente da annullare
+		_drop_undo()   # azione fallita: niente da annullare
 	for line in res.get("log", []):
 		emit_signal("action_logged", String(line), faction)
 	emit_signal("state_changed")
@@ -1012,7 +1075,7 @@ func load_game(path: String = SAVE_PATH) -> bool:
 	game_over = bool(d.get("game_over", false))
 	winner = String(d.get("winner", ""))
 	stats = {}
-	_undo = {}
+	_undo.clear()
 	prop_pending = false
 	prop_stage = ""
 	_laundered = {}

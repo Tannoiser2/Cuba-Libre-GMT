@@ -71,6 +71,9 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [x] Round di Propaganda interattivo per le Fazioni umane: Azione Civica (6.3.2),
       Dimostrazioni (6.3.3), Supporto Espatriati (6.3.4) guidati sulla mappa.
 - [x] Zoom con rotellina/pinch centrato sul puntatore; scala UI maggiorata su touch (iPad).
+- [x] Annulla multi-livello (20 istantanee) e tasti distinti selezione/azione.
+- [x] Anteprima di costo ed effetti prima di "Esegui" (simulazione su copia).
+- [x] Scorciatoie da tastiera (Esc / Invio / Spazio / Ctrl+Z / +-0).
 - [ ] Spostamento (Redeploy) interattivo per il Governo umano (oggi automatico).
 - [ ] Hotseat multi-giocatore locale.
 

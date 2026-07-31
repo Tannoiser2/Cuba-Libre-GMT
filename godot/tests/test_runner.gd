@@ -38,6 +38,7 @@ func _initialize() -> void:
 	_test_propaganda_victory()
 	_test_support_actions()
 	_test_free_ops_and_momentum()
+	_test_undo_stack_and_preview()
 	_test_cards_data()
 	_test_events()
 	_test_all_events()
@@ -1052,3 +1053,56 @@ func _test_free_ops_and_momentum() -> void:
 	var kr := sp.kidnap({"space": "camaguey_city", "target": "government", "die": 3})
 	_check("Raúl: Sequestro eseguito", kr.ok)
 	_eq("Raúl: Aiuti +6 (2x3)", int(state.tracks.get("aid", 0)), aid0 + 6)
+
+
+# ---------------------------------------------------------------------------
+# Annulla multi-livello e anteprima delle Operazioni (simulazione su copia)
+# ---------------------------------------------------------------------------
+
+func _test_undo_stack_and_preview() -> void:
+	print("\n[Annulla multi-livello e anteprima]")
+	var gc = Engine.get_main_loop().root.get_node_or_null("GameController")
+	if gc == null:
+		_check("GameController disponibile (autoload)", false)
+		return
+	gc.new_game()
+	var fid: String = gc.seq.pending_faction()
+	gc.set_role(fid, "player")
+	var state: GameState = gc.state
+	state.space_state("matanzas").support = CoinEnums.Support.NEUTRAL
+	state.space_state("la_habana").support = CoinEnums.Support.NEUTRAL
+	# I tracciati di vittoria sono una cache: dopo una modifica manuale vanno ricalcolati.
+	state.recompute_all_control()
+	gc.module._refresh_victory_tracks(state)
+	var op := "train" if fid == "government" else "rally"
+	var p1: Dictionary = {"spaces": ["havana"], "place": {"havana": {"police": 2}}} if fid == "government" \
+		else {"faction": fid, "spaces": ["matanzas"], "choices": {}}
+	var p2: Dictionary = {"spaces": ["santiago_de_cuba"], "place": {"santiago_de_cuba": {"police": 1}}} if fid == "government" \
+		else {"faction": fid, "spaces": ["la_habana"], "choices": {}}
+
+	# Anteprima: costo/effetti senza toccare la partita.
+	var snap_a := JSON.stringify(state.to_dict())
+	var pv: Dictionary = gc.preview_operation(op, p1)
+	_check("Anteprima: non modifica lo stato reale", JSON.stringify(state.to_dict()) == snap_a)
+	_check("Anteprima: esito positivo con costo", pv.get("ok", false) and int(pv.get("cost", -1)) >= 0)
+	_check("Anteprima: elenca gli effetti previsti", not (pv.get("log", []) as Array).is_empty())
+	var bad: Dictionary = gc.preview_operation(op, {"faction": fid, "spaces": []})
+	_check("Anteprima: segnala in anticipo l'operazione impossibile", not bad.get("ok", true))
+
+	# Un'azione fallita non deve lasciare voci nella pila.
+	var d0: int = gc.undo_depth()
+	gc.run_operation(op, {"faction": fid, "spaces": []})
+	_eq("Undo: azione fallita non impila", gc.undo_depth(), d0)
+
+	# Due azioni, due Annulla: si torna indietro passo per passo.
+	_check("Op1 eseguita", gc.run_operation(op, p1).get("ok", false))
+	var snap_b := JSON.stringify(state.to_dict())
+	_check("Op2 eseguita", gc.run_operation(op, p2).get("ok", false))
+	_eq("Undo: pila a 2 livelli", gc.undo_depth(), d0 + 2)
+	_check("Undo: etichetta dell'azione da annullare", gc.undo_label() != "")
+	gc.undo_last()
+	_check("Undo 1: ripristina lo stato intermedio", JSON.stringify(gc.state.to_dict()) == snap_b)
+	gc.undo_last()
+	_check("Undo 2: ripristina lo stato iniziale", JSON.stringify(gc.state.to_dict()) == snap_a)
+	_check("Undo: pila esaurita", not gc.can_undo())
+	gc.new_game()

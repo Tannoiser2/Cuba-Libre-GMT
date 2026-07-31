@@ -126,6 +126,9 @@ var _build_choice: Dictionary = {}     # sid -> "new"/"open" (Costruzione Sindac
 var _garrison_ec := ""                # EC scelto per l'Assalto gratuito della Guarnigione
 var _sweep_assault := ""              # spazio dell'Assalto gratuito in Sweep (Momentum Masferrer)
 var _btn_launder: Button              # Riciclaggio (2.3.6)
+var _btn_clear: Button                # scarta la selezione in preparazione
+var _btn_undo: Button                 # annulla l'ultima azione eseguita
+var _preview: TipLabel                # anteprima costo/effetti dell'Operazione in preparazione
 var _reprisal_from := ""              # spazio Rappresaglia in attesa dello spostamento opzionale
 var _attack_target: Dictionary = {}    # sid -> fazione bersaglio preferita (Attacco)
 var _sa_move_to := ""                 # destinazione Trasporto/Muscle in attesa del numero
@@ -287,6 +290,9 @@ func _mk_btn(text: String, cb: Callable) -> Button:
 	b.add_theme_color_override("font_hover_color", Color("ffffff"))
 	b.add_theme_color_override("font_disabled_color", Color("5b6571"))
 	b.add_theme_font_size_override("font_size", 12)
+	# Niente focus persistente: altrimenti Invio/Spazio ri-attivano l'ultimo tasto premuto
+	# invece di eseguire le scorciatoie di turno.
+	b.focus_mode = Control.FOCUS_NONE
 	return b
 
 
@@ -344,8 +350,14 @@ func _build_action_bar() -> VBoxContainer:
 	op_box.add_theme_constant_override("separation", 3)
 	op_box.add_child(_op_btns)
 	var btn_exec := _mk_btn("Esegui", _on_execute)
+	btn_exec.tooltip_text = "Applica l'Operazione preparata (Invio)"
 	_accent_btn(btn_exec, Color("2e7d46"), Color("57c97e"))   # sfondo verde, risalta
 	op_box.add_child(btn_exec)
+	# Anteprima: costo in Risorse ed esito previsto, calcolati simulando su una copia.
+	_preview = TipLabel.new()
+	_preview.add_theme_font_size_override("font_size", 11)
+	_preview.mouse_filter = Control.MOUSE_FILTER_STOP
+	op_box.add_child(_preview)
 	row1.add_child(_labeled_group("Operazione", op_box))
 
 	row1.add_child(VSeparator.new())
@@ -369,6 +381,7 @@ func _build_action_bar() -> VBoxContainer:
 	var turn_box := HBoxContainer.new()
 	turn_box.add_theme_constant_override("separation", 3)
 	_btn_end = _mk_btn("Concludi", func(): _on_execute_and_end())
+	_btn_end.tooltip_text = "Esegui (se serve) e chiudi il turno della Fazione (Spazio)"
 	_btn_end.add_theme_color_override("font_color", Color("a3e635"))
 	turn_box.add_child(_btn_end)
 	_btn_pass = _mk_btn("Passa", func(): GameController.seq_pass())
@@ -376,7 +389,12 @@ func _build_action_bar() -> VBoxContainer:
 	_btn_launder = _mk_btn("Riciclaggio", _on_launder)
 	_btn_launder.tooltip_text = "Rimuovi 1 tuo segnalino Denaro per un'Operazione Limitata extra GRATUITA (non Costruzione). Possibile dopo un'Operazione pagata senza Attività Speciale (max 1 per carta)."
 	turn_box.add_child(_btn_launder)
-	turn_box.add_child(_mk_btn("Annulla", _on_cancel))
+	# Due Annulla distinti: scartare la selezione ≠ disfare un'azione già eseguita.
+	_btn_clear = _mk_btn("Annulla sel.", _on_cancel_selection)
+	_btn_clear.tooltip_text = "Scarta la selezione/coda in preparazione, senza toccare le azioni già eseguite. (Esc)"
+	turn_box.add_child(_btn_clear)
+	_btn_undo = _mk_btn("Annulla azione", _on_undo_action)
+	turn_box.add_child(_btn_undo)
 	row1.add_child(_labeled_group("Turno", turn_box))
 
 	# Gruppo Ruoli (Giocatore/Bot) in griglia 2x2, subito dopo il Turno.
@@ -467,6 +485,10 @@ func _prop_banner(stage: String) -> void:
 	_set_btn(_btn_ev_u, false)
 	_set_btn(_btn_ev_s, false)
 	_set_btn(_btn_launder, false)
+	_set_btn(_btn_clear, false)
+	_set_btn(_btn_undo, false)
+	if _preview != null:
+		_preview.text = ""
 	for b in _op_btns.get_children():
 		b.disabled = true
 	for b in _sa_btns.get_children():
@@ -601,6 +623,36 @@ func _zoom_at(factor: float, screen_pos: Vector2 = Vector2(-1, -1)) -> void:
 	_layout_board()
 	_board.scroll_horizontal = int(map_pt.x * _zoom - local.x)
 	_board.scroll_vertical = int(map_pt.y * _zoom - local.y)
+
+
+## Scorciatoie da tastiera (desktop): Esc annulla la selezione, Invio esegue,
+## Spazio conclude il turno, Ctrl+Z disfa, +/-/0 regolano la vista.
+func _unhandled_input(event: InputEvent) -> void:
+	if not (event is InputEventKey) or not event.pressed or event.echo:
+		return
+	match event.keycode:
+		KEY_ESCAPE:
+			_on_cancel_selection()
+		KEY_ENTER, KEY_KP_ENTER:
+			if GameController.prop_pending:
+				return
+			_on_execute()
+		KEY_SPACE:
+			_on_execute_and_end()
+		KEY_Z:
+			if event.ctrl_pressed or event.meta_pressed:
+				_on_undo_action()
+			else:
+				return
+		KEY_PLUS, KEY_EQUAL, KEY_KP_ADD:
+			_zoom_at(1.25)
+		KEY_MINUS, KEY_KP_SUBTRACT:
+			_zoom_at(1.0 / 1.25)
+		KEY_0, KEY_KP_0:
+			_set_zoom(1.0)
+		_:
+			return
+	get_viewport().set_input_as_handled()
 
 
 var _touch_pts: Dictionary = {}   # index -> posizione (pinch-zoom a due dita)
@@ -880,6 +932,9 @@ func _refresh_turn_banner() -> void:
 	_set_btn(_btn_pass, turn_active)
 	_set_btn(_btn_bot, turn_active)
 	_set_btn(_btn_launder, turn_active and GameController.can_launder())
+	_set_btn(_btn_clear, _mode != "idle" or not _selected.is_empty() or not _pending_moves.is_empty())
+	_refresh_undo_btn()
+	_refresh_preview()
 	var legal: Array = st.get("legal", [])
 	var event_ok := turn_active and (legal.has(4))  # EVENT
 	_set_btn(_btn_ev_u, event_ok)
@@ -930,6 +985,56 @@ func _refresh_turn_banner() -> void:
 func _set_btn(b: Button, on: bool) -> void:
 	if b != null:
 		b.disabled = not on
+
+
+## Tasto Annulla-azione: attivo solo se c'è qualcosa da disfare, e dice cosa.
+func _refresh_undo_btn() -> void:
+	if _btn_undo == null:
+		return
+	var n := GameController.undo_depth()
+	_set_btn(_btn_undo, n > 0)
+	_btn_undo.text = "Annulla azione" if n == 0 else "Annulla azione (%d)" % n
+	_btn_undo.tooltip_text = "Disfa l'ultima azione eseguita su questa carta (Ctrl+Z)." if n == 0 \
+		else "Disfa: %s  —  %d azioni annullabili (Ctrl+Z)" % [GameController.undo_label(), n]
+
+
+## Anteprima dell'Operazione in preparazione: costo in Risorse ed effetti previsti,
+## calcolati simulando l'azione su una copia dello stato (non tocca la partita).
+func _refresh_preview() -> void:
+	if _preview == null:
+		return
+	var sst := GameController.seq_status()
+	if _cur_action == "" or _mode not in ["space_list", "select_spaces", "moves"] \
+			or String(sst.get("pending", "")) == "":
+		_preview.text = ""
+		_preview.tooltip_text = ""
+		return
+	var res: Dictionary = GameController.preview_operation(_cur_action, _build_params())
+	if not res.get("ok", false):
+		# Errore atteso: si vede PRIMA di premere Esegui.
+		_preview.text = "⚠ non eseguibile"
+		_preview.add_theme_color_override("font_color", Color("ff9f6b"))
+		_preview.tooltip_text = String(res.get("error", ""))
+		return
+	var cost := int(res.get("cost", 0))
+	var free := GameController.free_limop_armed()
+	if not bool(res.get("tracks_resources", true)):
+		_preview.text = "costo — (NP)"
+		_preview.add_theme_color_override("font_color", Color("9fb3c8"))
+	elif free or cost == 0:
+		_preview.text = "GRATIS" if free else "costo 0"
+		_preview.add_theme_color_override("font_color", Color("57c97e"))
+	else:
+		var have := int(res.get("resources", 0))
+		_preview.text = "costo %d / %d" % [cost, have]
+		_preview.add_theme_color_override("font_color",
+			Color("57c97e") if res.get("affordable", false) else Color("ff6b6b"))
+	# Nel tooltip: cosa succederà (l'Attacco dipende dal tiro, quindi è indicativo).
+	var lines: Array = res.get("log", [])
+	var tip := "Effetti previsti:\n- " + "\n- ".join(lines) if not lines.is_empty() else "Nessun effetto previsto"
+	if _cur_action == "attack":
+		tip += "\n\n(L'Attacco dipende dal tiro del dado: anteprima indicativa.)"
+	_preview.tooltip_text = tip
 
 
 func _select_faction(fid: String) -> void:
@@ -1991,17 +2096,25 @@ func _clear_pending() -> void:
 	_instr.text = ""
 
 
-## Tasto "Annulla": scarta l'azione in preparazione oppure annulla (undo) l'ultima eseguita.
-func _on_cancel() -> void:
+## "Annulla sel.": scarta soltanto la selezione/coda in preparazione (mai distruttivo).
+func _on_cancel_selection() -> void:
 	var had_pending := _mode != "idle" or not _selected.is_empty() or not _pending_moves.is_empty() or _pending_sa != ""
 	_clear_pending()
-	if had_pending:
-		_instr.text = "Azione in preparazione annullata"
-		return
+	_instr.text = "Selezione annullata" if had_pending else "Niente da annullare in preparazione"
+	_refresh_turn_banner()
+
+
+## "Annulla azione": disfa l'ultima azione già eseguita (ripetibile, fino a 20 livelli).
+func _on_undo_action() -> void:
+	# L'undo riporta indietro tutta la mappa: niente animazioni di massa.
+	_prev_pc.clear()
 	if GameController.undo_last():
-		_instr.text = " Ultima azione annullata"
+		_clear_pending()
+		var n := GameController.undo_depth()
+		_instr.text = "Azione annullata" + ("" if n == 0 else " (%d ancora annullabili)" % n)
 	else:
-		_instr.text = "Niente da annullare"
+		_err("Nessuna azione da annullare su questa carta")
+	_refresh_turn_banner()
 
 
 func _clear_highlights() -> void:
