@@ -382,3 +382,18 @@ esiste già; insieme cambierebbero sensibilmente l'esperienza quotidiana di gioc
 > `SidePanel`, `MapAnimator` e il `Theme` come risorsa unica; poi la rimozione del
 > codice morto (`SpaceView.gd`, costante `LAYOUT`).
 
+> **Aggiornamento 6** — refactor, seconda fetta: estratta **`SpecialFlow`**
+> (`godot/scenes/SpecialFlow.gd`), la macchina a stati delle Attività Speciali —
+> la parte più intrecciata della scena, con cinque passi diversi (bersaglio singolo,
+> spostamento del secondo passo della Rappresaglia, origine → destinazione → numero
+> di cubi per Trasporto/Muscle, selezione dei Casinò per il Profitto) e le varianti
+> di Sequestro/Profitto/Corruzione. Come `ActionFlow` non conosce la scena e **non
+> tocca la partita**: `click()`/`confirm()` restituiscono `{ok, error, run}` dove
+> `run` dice al chiamante *quale* Attività eseguire e con quali parametri, così la
+> scena resta un disegnatore e il flusso è collaudabile headless (30 test nuovi).
+> Rimosso il codice morto segnalato dall'audit: `SpaceView.gd` (128 righe mai
+> referenziate) e la costante `LAYOUT`, superata da `regions.json`.
+> `Main.gd` scende da 2.214 a **1.624 righe**; copertura **334 test headless**.
+>
+> Restano da estrarre: `LogView`, `SidePanel`, `MapAnimator` e il `Theme` unico.
+

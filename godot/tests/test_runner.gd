@@ -41,6 +41,7 @@ func _initialize() -> void:
 	_test_undo_stack_and_preview()
 	_test_redeploy_interactive()
 	_test_action_flow()
+	_test_special_flow()
 	_test_cards_data()
 	_test_events()
 	_test_all_events()
@@ -1252,4 +1253,91 @@ func _test_action_flow() -> void:
 	# clear() riporta tutto a zero.
 	f4.clear()
 	_check("clear: pianificazione azzerata", f4.is_idle() and not f4.has_plan())
+	gc.new_game()
+
+
+# ---------------------------------------------------------------------------
+# SpecialFlow: macchina a stati delle Attività Speciali (estratta dalla scena)
+# ---------------------------------------------------------------------------
+
+func _test_special_flow() -> void:
+	print("\n[SpecialFlow - Attività Speciali]")
+	var gc = Engine.get_main_loop().root.get_node_or_null("GameController")
+	if gc == null:
+		_check("GameController disponibile (autoload)", false)
+		return
+	gc.new_game()
+
+	# Identità delle varianti (funzioni statiche, indipendenti dallo stato).
+	_eq("Variante: base di 'bribe:cubes'", SpecialFlow.base_of("bribe:cubes"), "bribe")
+	_eq("Variante: base di 'transport'", SpecialFlow.base_of("transport"), "transport")
+	_eq("Variante: parametri di 'kidnap:syndicate'",
+		String(SpecialFlow.variant_params("kidnap:syndicate").get("target", "")), "syndicate")
+	_check("Variante: etichetta del Profitto", SpecialFlow.label_of("profit:convert").find("converti") >= 0)
+	_eq("Nome base senza varianti", SpecialFlow.label_of("air_strike"), "Attacco Aereo")
+
+	# Imboscata: l'id per il motore dipende dalla Fazione attiva.
+	var f26 := SpecialFlow.new(gc)
+	f26.faction = "m26"
+	_eq("Imboscata 26J -> ambush_m26", f26.target_id("ambush"), "ambush_m26")
+	var fdr := SpecialFlow.new(gc)
+	fdr.faction = "directorio"
+	_eq("Imboscata DR -> ambush_dr", fdr.target_id("ambush"), "ambush_dr")
+
+	# Trasporto: origine -> destinazione -> numero di cubi -> conferma.
+	var flow := SpecialFlow.new(gc)
+	_check("Trasporto: avvio", flow.start("transport", "government"))
+	_eq("Trasporto: primo passo = origine", flow.stage, SpecialFlow.STAGE_MOVE_FROM)
+	_check("Trasporto: L'Avana è un'origine valida", flow.highlights().has("havana"))
+	var bad: Dictionary = flow.click("sierra_maestra")
+	_check("Trasporto: origine non valida rifiutata", not bad.get("ok", true))
+	var r1: Dictionary = flow.click("havana")
+	_check("Trasporto: origine accettata", r1.get("ok", false))
+	_eq("Trasporto: passo destinazione", flow.stage, SpecialFlow.STAGE_MOVE_TO)
+	_check("Trasporto: nessuna esecuzione a metà flusso", (r1["run"] as Dictionary).is_empty())
+	var dest: String = flow.highlights()[0]
+	flow.click(dest)
+	_eq("Trasporto: passo numero cubi", flow.stage, SpecialFlow.STAGE_MOVE_N)
+	var n0 := flow.move_count
+	_check("Trasporto: parte dal massimo", n0 > 0)
+	flow.click(dest)   # ri-clic: cicla il numero
+	_check("Trasporto: il ri-clic cambia il numero", flow.move_count != n0 or n0 == 1)
+	var conf: Dictionary = flow.confirm()
+	_check("Trasporto: conferma produce l'esecuzione", not (conf["run"] as Dictionary).is_empty())
+	_eq("Trasporto: id per il motore", String(conf["run"]["id"]), "transport")
+	var cp: Dictionary = conf["run"]["params"]
+	_eq("Trasporto: origine nei parametri", String(cp["from"]), "havana")
+	_eq("Trasporto: destinazione nei parametri", String(cp["to"]), dest)
+	_check("Trasporto: conteggio nei parametri", int(cp["count"]) >= 1)
+
+	# clear() riporta il flusso a riposo.
+	flow.clear()
+	_check("clear: flusso non più attivo", not flow.is_active())
+
+	# Attività a bersaglio singolo: il clic valido produce subito l'esecuzione.
+	var f2 := SpecialFlow.new(gc)
+	if f2.start("air_strike", "government"):
+		_eq("Attacco Aereo: passo a bersaglio singolo", f2.stage, SpecialFlow.STAGE_POINT)
+		var target: String = f2.highlights()[0]
+		var r2: Dictionary = f2.click(target)
+		_check("Attacco Aereo: il clic esegue", not (r2["run"] as Dictionary).is_empty())
+		_eq("Attacco Aereo: spazio nei parametri", String(r2["run"]["params"]["space"]), target)
+	else:
+		_check("Attacco Aereo: nessun bersaglio nello schieramento iniziale (accettabile)", true)
+
+	# Avvio impossibile: messaggio d'errore e flusso non attivo.
+	var f3 := SpecialFlow.new(gc)
+	var ok3 := f3.start("profit:cash", "syndicate")
+	if not ok3:
+		_check("Profitto: rifiuto motivato", f3.error != "")
+		_check("Profitto: flusso non attivo dopo il rifiuto", not f3.is_active())
+	else:
+		_eq("Profitto: passo di selezione Casinò", f3.stage, SpecialFlow.STAGE_PROFIT)
+		var casino: String = f3.highlights()[0]
+		f3.click(casino)
+		_check("Profitto: Casinò selezionato", f3.spaces.has(casino))
+		f3.click(casino)
+		_check("Profitto: ri-clic deseleziona", not f3.spaces.has(casino))
+		var empty_confirm: Dictionary = f3.confirm()
+		_check("Profitto: conferma senza Casinò rifiutata", not empty_confirm.get("ok", true))
 	gc.new_game()

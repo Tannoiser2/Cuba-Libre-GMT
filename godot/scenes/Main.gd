@@ -3,24 +3,6 @@ extends Control
 ## Scena principale: mappa interattiva + pannelli (fazioni, tracciati, log) + barra azioni
 ## con flusso guidato (selezione spazi / drag-and-drop dei pezzi).
 
-# Centri normalizzati (0..1) degli spazi sull'immagine della mappa reale.
-# Stimati dalla mappa; facilmente ritoccabili.
-const LAYOUT := {
-	"pinar_del_rio": Vector2(0.085, 0.47),
-	"ec_pinar_habana": Vector2(0.15, 0.33),
-	"havana": Vector2(0.225, 0.30),
-	"la_habana": Vector2(0.205, 0.43),
-	"matanzas": Vector2(0.305, 0.44),
-	"ec_lasvillas_camaguey": Vector2(0.40, 0.40),
-	"las_villas": Vector2(0.46, 0.46),
-	"camaguey_province": Vector2(0.565, 0.41),
-	"camaguey_city": Vector2(0.545, 0.66),
-	"oriente": Vector2(0.715, 0.51),
-	"ec_oriente_sierra": Vector2(0.77, 0.57),
-	"sierra_maestra": Vector2(0.80, 0.61),
-	"santiago_de_cuba": Vector2(0.875, 0.74),
-}
-
 # Cosa permette di fare ogni Operazione (sintesi mostrata nel banner).
 const OP_DESC := {
 	"train": "Clicca uno spazio per piazzare cubi (riclicca per +1, fino a 4); un altro click cicla a Base (da 2 cubi) o Azione Civica (1 sola Att. speciale per Addestramento).",
@@ -47,27 +29,12 @@ const SA_DESC := {
 	"muscle": "Sposta 1-2 Polizia (verso Città) o Truppe (verso Provincia/EC) in uno spazio con Casinò aperto o EC.",
 	"bribe": "Spendi 3 Risorse del Sindacato per rimuovere fino a 2 cubi/Guerriglie nemici (o 1 Base) in uno spazio.",
 }
-# Att.Speciali con scelte multiple: ogni variante è un tasto distinto col suo bersaglio valido.
-const SA_VARIANTS := {
-	"kidnap": [
-		{"id": "kidnap:government", "label": "Sequestro (Governo)", "p": {"target": "government"}},
-		{"id": "kidnap:syndicate", "label": "Sequestro (Sindacato)", "p": {"target": "syndicate"}},
-	],
-	"profit": [
-		{"id": "profit:cash", "label": "Profitto (incassa Denaro)", "p": {"mode": "cash"}},
-		{"id": "profit:convert", "label": "Profitto (converti in Risorse)", "p": {"mode": "convert"}},
-	],
-	"bribe": [
-		{"id": "bribe:cubes", "label": "Corruzione (cubi)", "p": {"action": "cubes"}},
-		{"id": "bribe:guerrillas_remove", "label": "Corruzione (rimuovi Guerriglie)", "p": {"action": "guerrillas_remove"}},
-		{"id": "bribe:guerrillas_flip", "label": "Corruzione (gira Guerriglie)", "p": {"action": "guerrillas_flip"}},
-		{"id": "bribe:base", "label": "Corruzione (rimuovi Base)", "p": {"action": "base"}},
-	],
-}
 
 ## Pianificazione dell'Operazione in corso (stato + regole, senza dipendenze dalla scena).
 var _flow: ActionFlow
-var _space_views: Dictionary = {}     # space_id -> SpaceView
+## Macchina a stati dell'Attività Speciale in corso (anch'essa senza dipendenze dalla scena).
+var _sflow: SpecialFlow
+var _space_views: Dictionary = {}     # space_id -> RegionView
 var _board: ScrollContainer
 var _map_wrap: Control
 var _map: TextureRect
@@ -102,20 +69,13 @@ var _btn_launder: Button              # Riciclaggio (2.3.6)
 var _btn_clear: Button                # scarta la selezione in preparazione
 var _btn_undo: Button                 # annulla l'ultima azione eseguita
 var _preview: TipLabel                # anteprima costo/effetti dell'Operazione in preparazione
-var _reprisal_from := ""              # spazio Rappresaglia in attesa dello spostamento opzionale
-var _sa_move_to := ""                 # destinazione Trasporto/Muscle in attesa del numero
-var _sa_move_count := 0                # numero di cubi da spostare (Trasporto/Muscle)
-var _sa_spaces: Array = []             # Casinò scelti per il Profitto (multi-selezione)
-var _profit_mode := "cash"            # "cash" | "convert"
-var _pending_sa := ""                 # Att.Speciale in attesa di bersaglio
-var _sa_from := ""                    # origine (per Trasporto/Muscle)
 var _resume_mode := "idle"            # modalità Operazione da riprendere dopo l'Att.Speciale
-var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Speciale corrente
 
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_flow = ActionFlow.new(GameController)
+	_sflow = SpecialFlow.new(GameController)
 	# Su schermi touch (iPad): canvas logico più piccolo = testi e bersagli ~25% più grandi.
 	if DisplayServer.is_touchscreen_available():
 		get_window().content_scale_size = Vector2i(1180, 650)
@@ -956,8 +916,8 @@ func _refresh_turn_banner() -> void:
 	var slot := "1ª" if st.get("first_slot", true) else "2ª"
 	# Guida passo-passo in base allo stato del flusso.
 	var step := ""
-	if _mode == "sa_point" or _mode == "sa_move":
-		step = "Att.Speciale %s: clicca lo spazio bersaglio" % _sa_label(_pending_sa)
+	if _sflow.is_active():
+		step = "Att.Speciale %s: %s" % [SpecialFlow.label_of(_sflow.pending), _sflow.message]
 	elif _mode == "idle":
 		var acts: Array = []
 		for a in legal:
@@ -1043,13 +1003,13 @@ func _rebuild_action_buttons(fid: String) -> void:
 	for c in _sa_btns.get_children():
 		c.queue_free()
 	for sa in GameController.game_def.faction(fid).special_activities:
-		if SA_VARIANTS.has(sa):
+		if SpecialFlow.VARIANTS.has(sa):
 			# Un solo tasto a tendina che "esplode" le varianti (niente barra che va a capo).
 			var mb := _mk_menu_btn("%s..." % CLNames.sa(sa))
 			mb.tooltip_text = SA_DESC.get(sa, "")
 			var pop := mb.get_popup()
 			var ids: Array = []
-			for v in SA_VARIANTS[sa]:
+			for v in SpecialFlow.VARIANTS[sa]:
 				pop.add_item(_variant_short(String(v["label"])))
 				ids.append(String(v["id"]))
 			pop.id_pressed.connect(func(i): _do_special(String(ids[i])))
@@ -1357,91 +1317,19 @@ func _on_space_clicked(sid: String) -> void:
 	if _mode == "launder_pick":
 		_do_launder(sid)
 		return
-	# Bersaglio Attività Speciale
-	if _mode == "sa_point":
-		if not _sa_valid.has(sid):
-			_err("%s: spazio non valido, scegline uno evidenziato" % _sa_label(_pending_sa))
+	# Attività Speciale in corso: decide SpecialFlow, la scena disegna ed esegue.
+	if _sflow.is_active():
+		var r: Dictionary = _sflow.click(sid)
+		if not r.get("ok", false):
+			if String(r.get("error", "")) != "":
+				_err(_sflow.error)
 			return
-		# Rappresaglia: dopo il bersaglio, scelta opzionale dello spostamento di 1 Guerriglia.
-		if _sa_base(_pending_sa) == "reprisal" and _reprisal_movable(sid) != "" and not _reprisal_dests(sid).is_empty():
-			_reprisal_from = sid
-			_sa_valid = _reprisal_dests(sid)
-			_mode = "sa_reprisal"
-			_clear_highlights()
-			_space_views[sid].set_highlight(true)
-			for d in _sa_valid:
-				_space_views[d].set_highlight(true)
-			_instr.text = "Rappresaglia a %s - clicca uno spazio ADIACENTE per spostarci 1 Guerriglia, oppure riclicca %s per non spostare" % [GameController.game_def.space(sid).name, GameController.game_def.space(sid).name]
-			return
-		var sres := _run_sa(_pending_sa, sid)
-		if not sres.get("ok", false):
-			_err("✗ %s" % String(sres.get("error", "Attività non eseguibile")))
-		_end_sa()
-		return
-	# Rappresaglia: 2° passo (spostamento opzionale).
-	if _mode == "sa_reprisal":
-		if sid == _reprisal_from:
-			GameController.run_special("reprisal", {"space": _reprisal_from, "move": {}})
-			_reprisal_from = ""
-			_end_sa()
-			return
-		if not _sa_valid.has(sid):
-			_err("Spostamento non valido: scegli uno spazio adiacente evidenziato")
-			return
-		GameController.run_special("reprisal", {"space": _reprisal_from, "move": {"faction": _reprisal_movable(_reprisal_from), "to": sid}})
-		_reprisal_from = ""
-		_end_sa()
-		return
-	if _mode == "sa_move":
-		if _sa_from == "":
-			if not _sa_valid.has(sid):
-				_err("Origine non valida: scegline una evidenziata")
-				return
-			_sa_from = sid
-			# Mostra solo le destinazioni valide per questa origine.
-			_sa_valid = _sa_valid_dests(_pending_sa, sid)
-			_clear_highlights()
-			for d in _sa_valid:
-				_space_views[d].set_highlight(true)
-			if _sa_valid.is_empty():
-				_err("Nessuna destinazione valida da %s - Annulla per cambiare" % GameController.game_def.space(sid).name)
-			else:
-				_instr.text = "Origine: %s - clicca una DESTINAZIONE evidenziata" % GameController.game_def.space(sid).name
+		_instr.text = _sflow.message
+		if not (r["run"] as Dictionary).is_empty():
+			_execute_special(r["run"])
 		else:
-			if not _sa_valid.has(sid):
-				_err("Destinazione non valida: scegline una evidenziata")
-				return
-			# Passo numero cubi: scegli quanti spostarne (riclicca la destinazione per ciclare).
-			_sa_move_to = sid
-			_sa_move_count = _sa_move_max(_pending_sa, _sa_from, sid)
-			_mode = "sa_move_confirm"
-			_clear_highlights()
-			_space_views[sid].set_highlight(true)
-			_sa_move_instr()
-		return
-	# Trasporto/Muscle: scelta del numero di cubi.
-	if _mode == "sa_move_confirm":
-		if sid == _sa_move_to:
-			var mx := _sa_move_max(_pending_sa, _sa_from, _sa_move_to)
-			_sa_move_count = (_sa_move_count % mx) + 1 if mx > 0 else 0
-			_sa_move_instr()
-		return
-	# Profitto: selezione di 1-2 Casinò (cash) o dei Casinò da chiudere (convert).
-	if _mode == "sa_profit":
-		if not _sa_valid.has(sid):
-			_err("Profitto: scegli uno spazio con Casinò aperto evidenziato")
-			return
-		if _sa_spaces.has(sid):
-			_sa_spaces.erase(sid)
-		elif _profit_mode == "cash" and _sa_spaces.size() >= 2:
-			_err("Profitto (incassa): massimo 2 spazi")
-			return
-		else:
-			_sa_spaces.append(sid)
-		_space_views[sid].flash(Color(0.4, 1.0, 0.5))
-		_profit_instr()
-		return
-	if _mode != "select_spaces" and _mode != "space_list":
+			_render_special()
+			_refresh_turn_banner()
 		return
 	# Da qui in poi decide la pianificazione (ActionFlow): selezione degli spazi,
 	# ciclo delle varianti (cubi/Base/Civica, bersaglio dell'Attacco, ...) e
@@ -1475,27 +1363,7 @@ func _on_space_clicked(sid: String) -> void:
 
 
 
-func _sa_move_max(sa: String, from_id: String, to_id: String) -> int:
-	var from_st: SpaceState = GameController.state.space_state(from_id)
-	if sa == "muscle":
-		var dest: SpaceDef = GameController.game_def.space(to_id)
-		var typ := "police" if dest.type == CoinEnums.SpaceType.CITY else "troops"
-		return mini(2, from_st.count("government", typ))
-	return mini(3, from_st.count("government", "troops"))
 
-func _sa_move_instr() -> void:
-	_instr.text = "%s: sposta %d da %s a %s - riclicca la destinazione per cambiare numero, poi 'Esegui'" % [
-		_sa_label(_pending_sa), _sa_move_count,
-		GameController.game_def.space(_sa_from).name, GameController.game_def.space(_sa_move_to).name]
-	_refresh_turn_banner()
-
-func _profit_instr() -> void:
-	var names: Array = []
-	for s in _sa_spaces:
-		names.append(GameController.game_def.space(s).name)
-	var verb := "incassa Denaro in" if _profit_mode == "cash" else "converti (chiudi)"
-	_instr.text = "Profitto: %s %s - poi 'Esegui'" % [verb, ", ".join(names) if not names.is_empty() else "(scegli i Casinò)"]
-	_refresh_turn_banner()
 
 
 func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: String) -> void:
@@ -1556,33 +1424,18 @@ func _update_moves_overlay() -> void:
 
 
 func _on_execute() -> bool:
-	# Conferma del numero di cubi (Trasporto/Muscle).
-	if _mode == "sa_move_confirm":
-		if _sa_move_count <= 0:
-			_err("Nessun cubo da spostare")
+	# Passi dell'Attività Speciale che si confermano con "Esegui"
+	# (numero di cubi del Trasporto/Muscle, Casinò del Profitto).
+	if _sflow.is_active():
+		var r: Dictionary = _sflow.confirm()
+		if not r.get("ok", false):
+			if _sflow.error != "":
+				_err(_sflow.error)
 			return false
-		var mres := _run_sa_move(_pending_sa, _sa_from, _sa_move_to, _sa_move_count)
-		if not mres.get("ok", false):
-			_err("✗ %s" % String(mres.get("error", "Spostamento non eseguibile")))
-		_sa_move_to = ""
-		_end_sa()
-		return bool(mres.get("ok", false))
-	# Conferma del Profitto (1-2 Casinò).
-	if _mode == "sa_profit":
-		if _sa_spaces.is_empty():
-			_err("Profitto: scegli almeno 1 Casinò")
+		if (r["run"] as Dictionary).is_empty():
 			return false
-		var pp := {"mode": _profit_mode}
-		if _profit_mode == "cash":
-			pp["spaces"] = _sa_spaces.duplicate()
-		else:
-			pp["close"] = _sa_spaces.duplicate()
-		var pres := GameController.run_special("profit", pp)
-		if not pres.get("ok", false):
-			_err("✗ %s" % String(pres.get("error", "Profitto non eseguibile")))
-		_sa_spaces = []
-		_end_sa()
-		return bool(pres.get("ok", false))
+		_execute_special(r["run"])
+		return true
 	if _flow.op == "":
 		return false
 	var params := _flow.build_params()
@@ -1601,192 +1454,49 @@ func _do_special(sa: String) -> void:
 	if _flow.limited and not GameController.limited_special_ok(_cur_faction):
 		_err("Operazione Limitata: niente Attività Speciale")
 		return
-	var sa_name: String = _sa_label(sa)
-	var sa_desc: String = SA_DESC.get(_sa_base(sa), "")
-	# Avvia la selezione del BERSAGLIO dell'Attività Speciale (prima/durante/dopo l'Operazione).
-	var resume := _mode if _mode in ["space_list", "select_spaces", "moves"] else "idle"
-	if _sa_base(sa) == "profit":
-		var pvalid := _sa_valid_spaces(sa)
-		if pvalid.is_empty():
-			_err("%s: nessun Casinò aperto al momento" % sa_name)
-			return
-		_resume_mode = resume
-		_pending_sa = sa
-		_profit_mode = String(_sa_variant_p(sa).get("mode", "cash"))
-		_sa_spaces = []
-		_sa_valid = pvalid
-		_clear_highlights()
-		for s in pvalid:
-			_space_views[s].set_highlight(true)
-		_mode = "sa_profit"
-		_profit_instr()
+	# L'Att.Speciale può avvenire prima/durante/dopo l'Operazione: ricorda dove riprendere.
+	_resume_mode = _mode if _mode in ["space_list", "select_spaces", "moves"] else "idle"
+	if not _sflow.start(sa, _cur_faction):
+		_err(_sflow.error)
+		_resume_mode = "idle"
 		return
-	if sa == "transport" or sa == "muscle":
-		var origins := _sa_valid_origins(sa)
-		if origins.is_empty():
-			_err("%s: nessuna origine valida al momento" % sa_name)
-			return
-		_resume_mode = resume
-		_pending_sa = sa
-		_sa_from = ""
-		_sa_valid = origins
-		_clear_highlights()
-		for s in origins:
-			_space_views[s].set_highlight(true)
-		_mode = "sa_move"
-		_instr.text = "%s - %s\n> clicca un'ORIGINE evidenziata, poi la destinazione" % [sa_name, sa_desc]
-	else:
-		var valid := _sa_valid_spaces(sa)
-		if valid.is_empty():
-			_err("%s: nessuno spazio valido al momento" % sa_name)
-			return
-		_resume_mode = resume
-		_pending_sa = sa
-		_sa_from = ""
-		_sa_valid = valid
-		_clear_highlights()
-		for s in valid:
-			_space_views[s].set_highlight(true)
-		_mode = "sa_point"
-		_instr.text = "%s - %s\n> clicca uno spazio bersaglio evidenziato" % [sa_name, sa_desc]
+	_mode = "special"
+	_render_special()
+	_instr.text = "%s - %s\n> %s" % [SpecialFlow.label_of(sa),
+		SA_DESC.get(SpecialFlow.base_of(sa), ""), _sflow.message]
 	_refresh_turn_banner()
 
 
-## Fazione Insorgente con una Guerriglia da spostare nella Rappresaglia (o "").
-func _reprisal_movable(sid: String) -> String:
-	var st: SpaceState = GameController.state.space_state(sid)
-	for f in ["m26", "directorio", "syndicate"]:
-		if st.count(f, "guerrilla") > 0:
-			return f
-	return ""
+## Disegna gli spazi cliccabili del passo corrente dell'Attività Speciale.
+func _render_special() -> void:
+	_clear_highlights()
+	for sid in _sflow.highlights():
+		if _space_views.has(sid):
+			_space_views[sid].set_highlight(true)
 
 
-## Spazi adiacenti dove spostare la Guerriglia nella Rappresaglia.
-func _reprisal_dests(sid: String) -> Array:
-	return Array(GameController.game_def.space(sid).adjacent)
+## Esegue l'Attività Speciale che il flusso ha preparato, poi chiude il passo.
+func _execute_special(run: Dictionary) -> void:
+	var res: Dictionary = GameController.run_special(String(run["id"]), run["params"])
+	if not res.get("ok", false):
+		_err("✗ %s" % String(res.get("error", "Attività non eseguibile")))
+	_end_sa()
 
 
-## Att.Speciale di base dietro a un id-variante ("bribe:cubes" -> "bribe").
-func _sa_base(sa: String) -> String:
-	var i := sa.find(":")
-	return sa.substr(0, i) if i >= 0 else sa
 
 
-## Parametri extra di una variante (azione/modo/bersaglio), o {} se non è una variante.
-func _sa_variant_p(sa: String) -> Dictionary:
-	var base := _sa_base(sa)
-	for v in SA_VARIANTS.get(base, []):
-		if v["id"] == sa:
-			return v["p"]
-	return {}
 
 
-## Etichetta da mostrare (variante o nome base).
-func _sa_label(sa: String) -> String:
-	var base := _sa_base(sa)
-	for v in SA_VARIANTS.get(base, []):
-		if v["id"] == sa:
-			return v["label"]
-	return CLNames.sa(sa)
 
 
-## sa_id effettivo (Imboscata dipende dalla Fazione attiva).
-func _sa_target_id(sa: String) -> String:
-	var base := _sa_base(sa)
-	if base == "ambush":
-		return "ambush_m26" if _cur_faction == "m26" else "ambush_dr"
-	return base
 
 
-## Parametri per un'Att.Speciale a bersaglio singolo su `space`.
-func _sa_params(sa: String, space: String) -> Dictionary:
-	var vp := _sa_variant_p(sa)
-	match _sa_base(sa):
-		"profit":
-			if String(vp.get("mode", "cash")) == "convert":
-				return {"mode": "convert", "close": [space]}
-			return {"mode": "cash", "spaces": [space]}
-		"reprisal": return {"space": space, "move": {}}
-		"kidnap": return {"space": space, "target": String(vp.get("target", "government"))}
-		"bribe": return {"space": space, "action": String(vp.get("action", "cubes"))}
-		_: return {"space": space, "faction": _cur_faction}
 
 
-## Spazi dove l'Att.Speciale a bersaglio singolo ha davvero effetto (simulazione su copia).
-func _sa_valid_spaces(sa: String) -> Array:
-	var out: Array = []
-	var sid_id := _sa_target_id(sa)
-	var st: GameState = GameController.state
-	for s in _space_views.keys():
-		# Profitto (anche "converti") agisce solo dove c'è un Casinò aperto da chiudere/usare.
-		if _sa_base(sa) == "profit" and st.space_state(s).count("syndicate", "casino", "open") < 1:
-			continue
-		if GameController.can_special(sid_id, _sa_params(sa, s)):
-			out.append(s)
-	return out
-
-
-## Origini valide per Trasporto/Muscle (devono avere i pezzi da spostare).
-func _sa_valid_origins(sa: String) -> Array:
-	var out: Array = []
-	var st_all: GameState = GameController.state
-	for sid in _space_views.keys():
-		var sd: SpaceDef = GameController.game_def.space(sid)
-		var st: SpaceState = st_all.space_state(sid)
-		if sa == "transport":
-			var from_ok := (sd.type == CoinEnums.SpaceType.CITY or st.count("government", "base") > 0)
-			if from_ok and st.count("government", "troops") > 0:
-				out.append(sid)
-		elif sa == "muscle":
-			if st.count("government", "police") > 0 or st.count("government", "troops") > 0:
-				out.append(sid)
-	return out
-
-
-## Destinazioni valide per Trasporto/Muscle data l'origine scelta.
-func _sa_valid_dests(sa: String, from_id: String) -> Array:
-	var out: Array = []
-	var st_all: GameState = GameController.state
-	var from_st: SpaceState = st_all.space_state(from_id)
-	for sid in _space_views.keys():
-		if sid == from_id:
-			continue
-		var sd: SpaceDef = GameController.game_def.space(sid)
-		var st: SpaceState = st_all.space_state(sid)
-		if sa == "transport":
-			out.append(sid)   # qualsiasi spazio
-		elif sa == "muscle":
-			var dest_ok := sd.is_economic() or st.count("syndicate", "casino", "open") > 0
-			if not dest_ok:
-				continue
-			var needed := "police" if sd.type == CoinEnums.SpaceType.CITY else "troops"
-			if from_st.count("government", needed) > 0:
-				out.append(sid)
-	return out
-
-
-## Esegue l'Att.Speciale su uno spazio (specials a bersaglio singolo).
-func _run_sa(sa: String, space: String) -> Dictionary:
-	return GameController.run_special(_sa_target_id(sa), _sa_params(sa, space))
-
-
-## Esegue Trasporto/Muscle come spostamento origine->destinazione del numero scelto di cubi.
-func _run_sa_move(sa: String, from_id: String, to_id: String, count: int) -> Dictionary:
-	var p := {"from": from_id, "to": to_id, "count": count}
-	if sa == "muscle":
-		var dest: SpaceDef = GameController.game_def.space(to_id)
-		p["type"] = "police" if dest.type == CoinEnums.SpaceType.CITY else "troops"
-	return GameController.run_special(sa, p)
 
 
 func _end_sa() -> void:
-	_pending_sa = ""
-	_sa_from = ""
-	_sa_valid = []
-	_sa_move_to = ""
-	_sa_move_count = 0
-	_sa_spaces = []
-	_reprisal_from = ""
+	_sflow.clear()
 	_clear_highlights()
 	# Se l'Operazione era in corso, riprendila (Att.Speciale fatta DURANTE l'operazione).
 	if _resume_mode != "idle" and _flow.op != "":
@@ -1878,13 +1588,7 @@ func _on_new_game() -> void:
 func _clear_pending() -> void:
 	_mode = "idle"
 	_flow.clear()
-	_reprisal_from = ""
-	_sa_move_to = ""
-	_sa_move_count = 0
-	_sa_spaces = []
-	_pending_sa = ""
-	_sa_from = ""
-	_sa_valid = []
+	_sflow.clear()
 	_clear_highlights()
 	_update_moves_overlay()
 	_instr.text = ""
@@ -1892,7 +1596,7 @@ func _clear_pending() -> void:
 
 ## "Annulla sel.": scarta soltanto la selezione/coda in preparazione (mai distruttivo).
 func _on_cancel_selection() -> void:
-	var had_pending := _mode != "idle" or not _flow.selected.is_empty() or not _flow.moves.is_empty() or _pending_sa != ""
+	var had_pending := _mode != "idle" or not _flow.selected.is_empty() or not _flow.moves.is_empty() or _sflow.is_active()
 	_clear_pending()
 	_instr.text = "Selezione annullata" if had_pending else "Niente da annullare in preparazione"
 	_refresh_turn_banner()
