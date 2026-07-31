@@ -36,6 +36,8 @@ func _initialize() -> void:
 	_test_propaganda_resources()
 	_test_propaganda_support_reset()
 	_test_propaganda_victory()
+	_test_support_actions()
+	_test_free_ops_and_momentum()
 	_test_cards_data()
 	_test_events()
 	_test_all_events()
@@ -953,3 +955,100 @@ func _test_calixto_bot() -> void:
 	var ec := bot.event_choice("m26", 5)
 	_check("Calixto event_choice valido", ec.has("play"))
 	_check("Calixto event_choice non muta lo stato", state.to_dict().hash() == before.hash())
+
+
+# ---------------------------------------------------------------------------
+# Azioni di Supporto della Propaganda (6.3.2-6.3.4, interattive)
+# ---------------------------------------------------------------------------
+
+func _test_support_actions() -> void:
+	print("\n[Propaganda - Azioni di Supporto umane]")
+	var a := _new_game()
+	var mod: CubaLibreModule = a[0]
+	var state: GameState = a[2]
+	var prop := CubaLibrePropaganda.new(state, mod)
+	# 6.3.2 Azione Civica: Havana a Controllo GOV con Truppe e Polizia, 4 Risorse per passo.
+	state.place_from_available("government", "troops", "havana", 2)
+	state.place_from_available("government", "police", "havana", 2)
+	state.recompute_all_control()
+	state.resources["government"] = 10
+	state.space_state("havana").support = CoinEnums.Support.NEUTRAL
+	var r := prop.civic_step("havana")
+	_check("Civica: passo eseguito", r.ok)
+	_eq("Civica: Supporto +1", int(state.space_state("havana").support), 1)
+	_eq("Civica: -4 Risorse", state.get_resources("government"), 6)
+	state.space_state("havana").add_marker("terror", 1)
+	r = prop.civic_step("havana")
+	_check("Civica: prima il Terrore", r.ok and state.space_state("havana").marker("terror") == 0)
+	_eq("Civica: Supporto invariato col Terrore", int(state.space_state("havana").support), 1)
+	state.resources["government"] = 3
+	r = prop.civic_step("havana")
+	_check("Civica: rifiutata sotto 4 Risorse", not r.ok)
+	# 6.3.3 Dimostrazioni: Las Villas a Controllo 26J, 1 Risorsa per passo.
+	for f in ["government", "directorio", "syndicate"]:
+		for t in ["troops", "police", "guerrilla", "base", "casino"]:
+			state.remove_to_available(f, t, "las_villas", 99)
+	state.place_from_available("m26", "guerrilla", "las_villas", 3)
+	state.recompute_all_control()
+	_eq("Dimostrazioni: Controllo 26J", state.space_state("las_villas").control, "m26")
+	state.space_state("las_villas").support = CoinEnums.Support.NEUTRAL
+	state.resources["m26"] = 2
+	r = prop.demo_step("las_villas")
+	_check("Dimostrazioni: passo eseguito", r.ok)
+	_eq("Dimostrazioni: verso Opp. Attiva", int(state.space_state("las_villas").support), -1)
+	_eq("Dimostrazioni: -1 Risorsa", state.get_resources("m26"), 1)
+	# 6.3.4 Supporto Espatriati: spazio senza Attivi e senza Controllo altrui.
+	for f in ["government", "m26", "directorio", "syndicate"]:
+		for t in ["troops", "police", "guerrilla", "base", "casino"]:
+			state.remove_to_available(f, t, "matanzas", 99)
+	state.recompute_all_control()
+	state.space_state("matanzas").support = CoinEnums.Support.NEUTRAL
+	var g0 := state.space_state("matanzas").count("directorio", "guerrilla")
+	r = prop.expat_rally("matanzas")
+	_check("Espatriati: Rally gratuito eseguito", r.ok)
+	_eq("Espatriati: +1 Guerriglia DR", state.space_state("matanzas").count("directorio", "guerrilla"), g0 + 1)
+	_check("Espatriati: spazi validi elencati", not prop.support_action_spaces("directorio").is_empty() or state.available("directorio", "guerrilla") == 0)
+
+
+# ---------------------------------------------------------------------------
+# Operazioni gratuite (2.3.6) e Momentum operativi
+# ---------------------------------------------------------------------------
+
+func _test_free_ops_and_momentum() -> void:
+	print("\n[Op gratuite e Momentum]")
+	var a := _new_game()
+	var mod: CubaLibreModule = a[0]
+	var state: GameState = a[2]
+	var ops := CubaLibreOperations.new(state, mod)
+	var sp := CubaLibreSpecials.new(state, mod)
+	# Operazione gratuita: il Rally con free=true non spende Risorse.
+	state.resources["m26"] = 5
+	state.space_state("matanzas").support = CoinEnums.Support.NEUTRAL
+	var r := ops.rally({"faction": "m26", "spaces": ["matanzas"], "choices": {}, "free": true})
+	_check("Rally gratuito eseguito", r.ok)
+	_eq("Rally gratuito: Risorse invariate", state.get_resources("m26"), 5)
+	# Momentum "Armored Cars": pre-spostamento Truppe negli spazi d'Assalto.
+	state.resources["government"] = 30
+	state.place_from_available("government", "troops", "havana", 2)
+	var res := ops.assault({"spaces": ["la_habana"], "moves": [{"from": "havana", "to": "la_habana", "count": 1}]})
+	_check("Armored Cars: richiede il Momentum", not res.ok)
+	state.active_momentum.append("Armored Cars")
+	var before_t := state.space_state("la_habana").count("government", "troops")
+	res = ops.assault({"spaces": ["la_habana"], "moves": [{"from": "havana", "to": "la_habana", "count": 1}]})
+	_check("Armored Cars: Assalto con pre-moves ok", res.ok)
+	_eq("Armored Cars: Truppa spostata", state.space_state("la_habana").count("government", "troops"), before_t + 1)
+	# Momentum "Rolando Masferrer": Assalto gratuito nella Perlustrazione.
+	var res2 := ops.sweep({"spaces": ["havana"], "moves": [], "assault_space": "havana"})
+	_check("Masferrer: richiede il Momentum", not res2.ok)
+	state.active_momentum.append("Rolando Masferrer")
+	res2 = ops.sweep({"spaces": ["havana"], "moves": [], "assault_space": "havana"})
+	_check("Masferrer: Sweep con Assalto gratuito ok", res2.ok)
+	# Momentum "Raúl": le Risorse dal Sequestro raddoppiate sugli Aiuti.
+	state.active_momentum.append("Raúl")
+	state.remove_to_available("government", "police", "camaguey_city", 99)
+	state.place_from_available("m26", "guerrilla", "camaguey_city", 2)
+	state.resources["government"] = 10
+	var aid0 := int(state.tracks.get("aid", 0))
+	var kr := sp.kidnap({"space": "camaguey_city", "target": "government", "die": 3})
+	_check("Raúl: Sequestro eseguito", kr.ok)
+	_eq("Raúl: Aiuti +6 (2x3)", int(state.tracks.get("aid", 0)), aid0 + 6)

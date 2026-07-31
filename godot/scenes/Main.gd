@@ -124,6 +124,8 @@ var _rally_choice: Dictionary = {}     # sid -> "place"/"extra"/"base"/"flip" (R
 var _train_plan: Dictionary = {}       # sid -> {kind:"cubes"/"base"/"civic", n:int} (Addestramento)
 var _build_choice: Dictionary = {}     # sid -> "new"/"open" (Costruzione Sindacato)
 var _garrison_ec := ""                # EC scelto per l'Assalto gratuito della Guarnigione
+var _sweep_assault := ""              # spazio dell'Assalto gratuito in Sweep (Momentum Masferrer)
+var _btn_launder: Button              # Riciclaggio (2.3.6)
 var _reprisal_from := ""              # spazio Rappresaglia in attesa dello spostamento opzionale
 var _attack_target: Dictionary = {}    # sid -> fazione bersaglio preferita (Attacco)
 var _sa_move_to := ""                 # destinazione Trasporto/Muscle in attesa del numero
@@ -139,6 +141,9 @@ var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Specia
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Su schermi touch (iPad): canvas logico più piccolo = testi e bersagli ~25% più grandi.
+	if DisplayServer.is_touchscreen_available():
+		get_window().content_scale_size = Vector2i(1180, 650)
 	_build_ui()
 	GameController.state_changed.connect(_refresh)
 	GameController.action_logged.connect(_on_log)
@@ -368,6 +373,9 @@ func _build_action_bar() -> VBoxContainer:
 	turn_box.add_child(_btn_end)
 	_btn_pass = _mk_btn("Passa", func(): GameController.seq_pass())
 	turn_box.add_child(_btn_pass)
+	_btn_launder = _mk_btn("Riciclaggio", _on_launder)
+	_btn_launder.tooltip_text = "Rimuovi 1 tuo segnalino Denaro per un'Operazione Limitata extra GRATUITA (non Costruzione). Possibile dopo un'Operazione pagata senza Attività Speciale (max 1 per carta)."
+	turn_box.add_child(_btn_launder)
 	turn_box.add_child(_mk_btn("Annulla", _on_cancel))
 	row1.add_child(_labeled_group("Turno", turn_box))
 
@@ -418,8 +426,8 @@ func _build_action_bar() -> VBoxContainer:
 	row2.add_child(spd)
 	row2.add_child(VSeparator.new())
 	row2.add_child(_mk_label("Vista:"))
-	row2.add_child(_mk_btn("Zoom +", func(): _set_zoom(_zoom * 1.25)))
-	row2.add_child(_mk_btn("Zoom -", func(): _set_zoom(_zoom / 1.25)))
+	row2.add_child(_mk_btn("Zoom +", func(): _zoom_at(1.25)))
+	row2.add_child(_mk_btn("Zoom -", func(): _zoom_at(1.0 / 1.25)))
 	row2.add_child(_mk_btn("Adatta", func(): _set_zoom(1.0)))
 
 	# Istruzione di passo (sotto le righe)
@@ -441,11 +449,48 @@ func _build_action_bar() -> VBoxContainer:
 
 
 ## Esegui l'operazione (se selezionata e non ancora eseguita) e concludi il turno.
+## Durante la Propaganda interattiva "Concludi" chiude il passo corrente.
 func _on_execute_and_end() -> void:
+	if GameController.prop_pending:
+		GameController.prop_next_stage()
+		return
 	if _cur_action != "" and _mode != "idle":
 		if not _on_execute():
 			return   # l'esecuzione è fallita: l'errore è mostrato, il turno resta aperto
 	GameController.end_turn()
+
+
+## Banner, evidenziazione e pulsanti durante il Round di Propaganda interattivo.
+func _prop_banner(stage: String) -> void:
+	_set_btn(_btn_pass, false)
+	_set_btn(_btn_bot, false)
+	_set_btn(_btn_ev_u, false)
+	_set_btn(_btn_ev_s, false)
+	_set_btn(_btn_launder, false)
+	for b in _op_btns.get_children():
+		b.disabled = true
+	for b in _sa_btns.get_children():
+		b.disabled = true
+	_set_btn(_btn_end, stage != "")
+	_clear_highlights()
+	if stage == "":
+		_turn_banner.add_theme_color_override("font_color", Color("ffffff"))
+		_turn_banner.text = "» Round di Propaganda in corso..."
+		return
+	for sid in GameController.propaganda.support_action_spaces(stage):
+		if _space_views.has(sid):
+			_space_views[sid].set_highlight(true)
+	_turn_banner.add_theme_color_override("font_color", GameController.faction_color(stage))
+	_turn_banner.text = "» Propaganda - %s. %s - poi 'Concludi'" % \
+		[GameController.faction_name(stage), PROP_MSG.get(stage, "")]
+
+
+# Istruzioni dei passi interattivi della Propaganda (fase Supporto).
+const PROP_MSG := {
+	"government": "Azione Civica: clicca gli spazi evidenziati (4 Risorse: -1 Terrore o +1 Supporto)",
+	"m26": "Dimostrazioni: clicca gli spazi evidenziati (1 Risorsa: -1 Terrore o +1 Opposizione)",
+	"directorio": "Supporto Espatriati: Riorganizzazione gratuita in 1 spazio evidenziato (+1 Guerriglia)",
+}
 
 
 func _build_side_panel() -> PanelContainer:
@@ -536,6 +581,67 @@ func _build_side_panel() -> PanelContainer:
 func _set_zoom(z: float) -> void:
 	_zoom = clampf(z, 0.5, 4.0)
 	_layout_board()
+
+
+## Zoom mantenendo fermo il punto della mappa sotto il pivot (mouse/pinch); senza
+## pivot usa il centro dell'area visibile. Aggiorna lo scroll di conseguenza.
+func _zoom_at(factor: float, screen_pos: Vector2 = Vector2(-1, -1)) -> void:
+	if _board == null:
+		return
+	var local := screen_pos - _board.global_position
+	if screen_pos.x < 0 or local.x < 0 or local.y < 0 or local.x > _board.size.x or local.y > _board.size.y:
+		local = _board.size * 0.5
+	var old_zoom := _zoom
+	var target := clampf(_zoom * factor, 0.5, 4.0)
+	if is_equal_approx(target, old_zoom):
+		return
+	# Punto della mappa (a zoom 1) attualmente sotto il pivot.
+	var map_pt := (Vector2(_board.scroll_horizontal, _board.scroll_vertical) + local) / old_zoom
+	_zoom = target
+	_layout_board()
+	_board.scroll_horizontal = int(map_pt.x * _zoom - local.x)
+	_board.scroll_vertical = int(map_pt.y * _zoom - local.y)
+
+
+var _touch_pts: Dictionary = {}   # index -> posizione (pinch-zoom a due dita)
+
+
+## Zoom da input globale: rotellina del mouse (sull'area mappa), gesto magnify
+## (trackpad) e pinch a due dita (touch/iPad).
+func _input(event: InputEvent) -> void:
+	if _board == null:
+		return
+	var board_rect := Rect2(_board.global_position, _board.size)
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP and board_rect.has_point(event.position):
+			_zoom_at(1.15, event.position)
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and board_rect.has_point(event.position):
+			_zoom_at(1.0 / 1.15, event.position)
+			get_viewport().set_input_as_handled()
+	elif event is InputEventMagnifyGesture:
+		if board_rect.has_point(event.position):
+			_zoom_at(event.factor, event.position)
+			get_viewport().set_input_as_handled()
+	elif event is InputEventScreenTouch:
+		if event.pressed:
+			_touch_pts[event.index] = event.position
+		else:
+			_touch_pts.erase(event.index)
+	elif event is InputEventScreenDrag and _touch_pts.has(event.index):
+		if _touch_pts.size() == 2:
+			var other := Vector2.ZERO
+			for i in _touch_pts:
+				if i != event.index:
+					other = _touch_pts[i]
+			var d_old: float = (_touch_pts[event.index] as Vector2).distance_to(other)
+			_touch_pts[event.index] = event.position
+			var d_new: float = (event.position as Vector2).distance_to(other)
+			if d_old > 8.0 and d_new > 8.0:
+				_zoom_at(d_new / d_old, (event.position + other) * 0.5)
+				get_viewport().set_input_as_handled()
+		else:
+			_touch_pts[event.index] = event.position
 
 
 func _layout_board() -> void:
@@ -761,6 +867,11 @@ func _space_fp(s: GameState, sid: String) -> String:
 
 ## Banner di turno: mostra chi è di turno e le azioni legali; abilita i pulsanti pertinenti.
 func _refresh_turn_banner() -> void:
+	# Round di Propaganda interattivo: banner e comandi dedicati.
+	var pst: Dictionary = GameController.prop_status()
+	if pst.get("active", false):
+		_prop_banner(String(pst.get("stage", "")))
+		return
 	var st := GameController.seq_status()
 	var card: int = GameController.state.current_card
 	var turn_active: bool = st.get("active", false) and String(st.get("pending", "")) != ""
@@ -768,15 +879,18 @@ func _refresh_turn_banner() -> void:
 	_set_btn(_btn_end, turn_active)
 	_set_btn(_btn_pass, turn_active)
 	_set_btn(_btn_bot, turn_active)
+	_set_btn(_btn_launder, turn_active and GameController.can_launder())
 	var legal: Array = st.get("legal", [])
 	var event_ok := turn_active and (legal.has(4))  # EVENT
 	_set_btn(_btn_ev_u, event_ok)
 	_set_btn(_btn_ev_s, event_ok)
 	var lim := GameController.seq_is_limited_only()
+	# Momentum "MAP": il Governo può fare l'Att.Speciale anche in Op Limitata.
+	var lim_sa_ok := GameController.limited_special_ok(String(st.get("pending", "")))
 	for b in _op_btns.get_children():
 		b.disabled = not turn_active
 	for b in _sa_btns.get_children():
-		b.disabled = not turn_active or lim
+		b.disabled = not turn_active or (lim and not lim_sa_ok)
 
 	if not turn_active:
 		_turn_banner.add_theme_color_override("font_color", Color("ffffff"))
@@ -986,6 +1100,32 @@ func _on_game_menu(id: int) -> void:
 			_confirm_new.popup_centered()
 
 
+## Riciclaggio (2.3.6): se il Denaro è in un solo spazio agisci subito, altrimenti scegli.
+func _on_launder() -> void:
+	var spaces: Array = GameController.launder_spaces()
+	if spaces.is_empty():
+		_err("Riciclaggio: nessun tuo segnalino Denaro sulla mappa")
+		return
+	if spaces.size() == 1:
+		_do_launder(spaces[0])
+		return
+	_mode = "launder_pick"
+	_clear_highlights()
+	for sid in spaces:
+		_space_views[sid].set_highlight(true)
+	_instr.text = "Riciclaggio: clicca lo spazio da cui rimuovere 1 tuo Denaro"
+
+
+func _do_launder(sid: String) -> void:
+	var r: Dictionary = GameController.do_launder(sid)
+	if r.get("ok", false):
+		_mode = "idle"
+		_clear_highlights()
+		_instr.text = "Riciclaggio: ora scegli un'Operazione (1 spazio, GRATUITA, non Costruzione), poi 'Esegui'"
+	else:
+		_err(String(r.get("error", "Riciclaggio non riuscito")))
+
+
 func _load_from(path: String, label: String) -> void:
 	if not GameController.has_save(path):
 		_err("Nessun %s trovato" % label)
@@ -1095,7 +1235,8 @@ func _start_op(op_id: String) -> void:
 	_cur_action = op_id
 	_selected.clear()
 	_pending_moves.clear()
-	_limited = GameController.seq_is_limited_only()
+	# LimOp anche quando è armata la LimOp gratuita del Riciclaggio (1 spazio).
+	_limited = GameController.seq_is_limited_only() or GameController.free_limop_armed()
 	_mode = kind
 	_clear_highlights()
 	for sid in valid:
@@ -1108,6 +1249,19 @@ func _start_op(op_id: String) -> void:
 
 
 func _on_space_clicked(sid: String) -> void:
+	# Round di Propaganda interattivo: il click applica il passo della fase Supporto.
+	if GameController.prop_pending:
+		var pr: Dictionary = GameController.prop_click(sid)
+		if pr.get("ok", false):
+			if _space_views.has(sid):
+				_space_views[sid].flash(Color(0.4, 1.0, 0.5))
+		else:
+			_err(String(pr.get("error", "Azione non valida")))
+		return
+	# Riciclaggio: scelta dello spazio da cui rimuovere il Denaro.
+	if _mode == "launder_pick":
+		_do_launder(sid)
+		return
 	# Bersaglio Attività Speciale
 	if _mode == "sa_point":
 		if not _sa_valid.has(sid):
@@ -1207,6 +1361,14 @@ func _on_space_clicked(sid: String) -> void:
 		return
 	if _cur_action == "build":
 		_build_click(sid)
+		return
+	# Perlustrazione + Momentum Masferrer: clicca uno spazio per l'Assalto gratuito.
+	if _cur_action == "sweep" and _mode == "moves" \
+			and GameController.module.has_momentum(GameController.state, "Rolando Masferrer"):
+		_sweep_assault = "" if _sweep_assault == sid else sid
+		_space_views[sid].flash(Color(1.0, 0.7, 0.3))
+		var snm := GameController.game_def.space(sid).name
+		_instr.text = ("Masferrer: Assalto gratuito a %s - poi 'Esegui'" % snm) if _sweep_assault != "" else "Masferrer: Assalto gratuito annullato"
 		return
 	# Guarnigione (modalità trascinamento): clicca un EC per l'Assalto gratuito opzionale.
 	if _cur_action == "garrison" and _mode == "moves":
@@ -1444,6 +1606,16 @@ func _profit_instr() -> void:
 
 func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: String) -> void:
 	if _mode != "moves":
+		# Momentum "Armored Cars": Truppe trascinabili negli spazi scelti per l'Assalto.
+		if _mode == "space_list" and _cur_action == "assault" and type == "troops" \
+				and GameController.module.has_momentum(GameController.state, "Armored Cars"):
+			if not _selected.has(to_id):
+				_err("Armored Cars: trascina le Truppe in uno spazio già scelto per l'Assalto")
+				return
+			_pending_moves.append({"from": from_id, "to": to_id, "count": 1, "type": "troops"})
+			_update_moves_overlay()
+			_instr.text = "Armored Cars: %d Truppe verso gli spazi d'Assalto - poi 'Esegui'" % _pending_moves.size()
+			return
 		_err("! Per spostare i pezzi scegli prima un'operazione di movimento (Marcia / Perlustrazione / Guarnigione / Trasporto)")
 		return
 	if from_id == to_id:
@@ -1519,7 +1691,8 @@ func _on_execute() -> bool:
 
 ## Esegue l'Attività Speciale (tasto): evidenzia SOLO gli spazi dove ha davvero effetto.
 func _do_special(sa: String) -> void:
-	if _limited:
+	# Momentum "MAP": il Governo può accompagnare la LimOp con un'Att.Speciale.
+	if _limited and not GameController.limited_special_ok(_cur_faction):
 		_err("Operazione Limitata: niente Attività Speciale")
 		return
 	var sa_name: String = _sa_label(sa)
@@ -1803,6 +1976,7 @@ func _clear_pending() -> void:
 	_train_plan.clear()
 	_build_choice.clear()
 	_garrison_ec = ""
+	_sweep_assault = ""
 	_reprisal_from = ""
 	_attack_target.clear()
 	_sa_move_to = ""
@@ -1841,7 +2015,10 @@ func _build_params() -> Dictionary:
 			var dests := {}
 			for m in _pending_moves:
 				dests[m["to"]] = true
-			return {"spaces": dests.keys(), "moves": _pending_moves}
+			var sp := {"spaces": dests.keys(), "moves": _pending_moves}
+			if _sweep_assault != "":
+				sp["assault_space"] = _sweep_assault   # Momentum Masferrer
+			return sp
 		"garrison":
 			var gp := {"moves": _pending_moves}
 			if _garrison_ec != "":
@@ -1856,7 +2033,10 @@ func _build_params() -> Dictionary:
 		"terror":
 			return {"faction": _cur_faction, "spaces": _selected}
 		"assault":
-			return {"spaces": _selected}
+			var ap := {"spaces": _selected}
+			if not _pending_moves.is_empty():
+				ap["moves"] = _pending_moves.duplicate()   # Momentum Armored Cars
+			return ap
 		"build":
 			return {"spaces": _selected, "choices": _build_choice.duplicate()}
 		"train":

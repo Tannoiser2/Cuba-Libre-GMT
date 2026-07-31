@@ -163,6 +163,117 @@ func support_phase() -> Array:
 
 
 # ---------------------------------------------------------------------------
+# 6.3.2-6.3.4 Azioni della Fase di Supporto (interattive, per le Fazioni umane)
+# ---------------------------------------------------------------------------
+
+const CIVIC_STEP_COST := 4   ## 6.3.2: ogni 4 Risorse un passo di Azione Civica
+const DEMO_STEP_COST := 1    ## 6.3.3: ogni 1 Risorsa un passo di Dimostrazioni
+
+
+func _can_afford(fid: String, amount: int) -> bool:
+	return not state.tracks_resources(fid) or state.get_resources(fid) >= amount
+
+
+## Spazi dove la Fazione può svolgere la sua azione di Supporto (per l'evidenziazione UI).
+func support_action_spaces(fid: String) -> Array:
+	var out: Array = []
+	for sid in state.game_def.space_ids():
+		var ok := false
+		match fid:
+			"government": ok = _civic_ok(sid)
+			"m26": ok = _demo_ok(sid)
+			"directorio": ok = _expat_ok(sid)
+		if ok:
+			out.append(sid)
+	return out
+
+
+## 6.3.2 Azione Civica: Controllo GOV con Truppe E Polizia; 4 Risorse per passo.
+func _civic_ok(sid: String) -> bool:
+	var sd: SpaceDef = state.game_def.space(sid)
+	var st: SpaceState = state.space_state(sid)
+	if sd == null or not sd.has_population() or st.control != "government":
+		return false
+	if st.count("government", "troops") == 0 or st.count("government", "police") == 0:
+		return false
+	if st.marker("terror") == 0 and st.support >= CoinEnums.Support.ACTIVE_SUPPORT:
+		return false
+	return _can_afford("government", CIVIC_STEP_COST)
+
+
+func civic_step(sid: String) -> Dictionary:
+	if not _civic_ok(sid):
+		return _step_err("Azione Civica: serve Controllo GOV con Truppe e Polizia, 4 Risorse, e Terrore da togliere o Supporto da alzare")
+	var st: SpaceState = state.space_state(sid)
+	state.add_resources("government", -CIVIC_STEP_COST)
+	var msg: String
+	if st.marker("terror") > 0:
+		st.add_marker("terror", -1)
+		msg = "Azione Civica: -1 Terrore a %s (4 Risorse)" % sid
+	else:
+		st.support = (st.support + 1) as CoinEnums.Support
+		msg = "Azione Civica: Supporto +1 a %s (4 Risorse)" % sid
+	return _step_ok([msg])
+
+
+## 6.3.3 Dimostrazioni: Città/Province a Controllo 26J; 1 Risorsa per passo.
+func _demo_ok(sid: String) -> bool:
+	var sd: SpaceDef = state.game_def.space(sid)
+	var st: SpaceState = state.space_state(sid)
+	if sd == null or not sd.has_population() or st.control != "m26":
+		return false
+	if st.marker("terror") == 0 and st.support <= CoinEnums.Support.ACTIVE_OPPOSITION:
+		return false
+	return _can_afford("m26", DEMO_STEP_COST)
+
+
+func demo_step(sid: String) -> Dictionary:
+	if not _demo_ok(sid):
+		return _step_err("Dimostrazioni: serve Controllo del 26 Luglio, 1 Risorsa, e Terrore da togliere o Opposizione da aumentare")
+	var st: SpaceState = state.space_state(sid)
+	state.add_resources("m26", -DEMO_STEP_COST)
+	var msg: String
+	if st.marker("terror") > 0:
+		st.add_marker("terror", -1)
+		msg = "Dimostrazioni: -1 Terrore a %s (1 Risorsa)" % sid
+	else:
+		st.support = (st.support - 1) as CoinEnums.Support
+		msg = "Dimostrazioni: Opposizione +1 a %s (1 Risorsa)" % sid
+	return _step_ok([msg])
+
+
+## 6.3.4 Supporto degli Espatriati: Riorganizzazione gratuita DR in 1 spazio senza
+## Supporto/Opposizione Attivi né Controllo di altre Fazioni (piazza 1 Guerriglia).
+func _expat_ok(sid: String) -> bool:
+	var sd: SpaceDef = state.game_def.space(sid)
+	var st: SpaceState = state.space_state(sid)
+	if sd == null or not sd.has_population():
+		return false
+	if absi(int(st.support)) == 2:
+		return false
+	if st.control != "" and st.control != "directorio":
+		return false
+	return state.available("directorio", "guerrilla") > 0
+
+
+func expat_rally(sid: String) -> Dictionary:
+	if not _expat_ok(sid):
+		return _step_err("Supporto Espatriati: serve uno spazio senza Supporto/Opposizione Attivi né Controllo altrui, e una Guerriglia DR disponibile")
+	var placed := state.place_from_available("directorio", "guerrilla", sid, 1)
+	return _step_ok(["Supporto Espatriati: +%d Guerriglia DR a %s" % [placed, sid]])
+
+
+func _step_ok(log: Array) -> Dictionary:
+	state.recompute_all_control()
+	mod._refresh_victory_tracks(state)
+	return {"ok": true, "error": "", "log": log}
+
+
+func _step_err(msg: String) -> Dictionary:
+	return {"ok": false, "error": msg, "log": []}
+
+
+# ---------------------------------------------------------------------------
 # Redeploy del Governo (C8.5.9): consolida le forze
 # ---------------------------------------------------------------------------
 

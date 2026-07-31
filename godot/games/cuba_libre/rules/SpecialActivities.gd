@@ -184,6 +184,10 @@ func kidnap(params: Dictionary) -> Dictionary:
 		state.add_resources(target, -amt)
 		state.add_resources("m26", amt)
 		log.append("Sequestro: %d Risorse da %s a M26 (tiro %d)" % [amt, target, die])
+		# Momentum "Raúl": le Risorse dal Sequestro si aggiungono agli Aiuti raddoppiate.
+		if amt > 0 and mod.has_momentum(state, "Raúl"):
+			state.tracks["aid"] = int(state.tracks.get("aid", 0)) + 2 * amt
+			log.append("Raúl: Aiuti +%d" % (2 * amt))
 	# Chiudi 1 Casinò aperto nello spazio
 	state.flip_pieces("syndicate", "casino", sid, "open", "closed", 1)
 	return _ok(0, log)

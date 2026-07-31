@@ -44,6 +44,9 @@ func new_game(scenario: String = "standard") -> void:
 	events = CubaLibreEvents.new(state, module)
 	bot = CLCalixto.new(state, module)
 	stats = {}
+	prop_pending = false
+	prop_stage = ""
+	force_auto_propaganda = false
 	build_deck()
 	advance_card()
 	emit_signal("state_changed")
@@ -118,6 +121,8 @@ func draw_next() -> int:
 func _start_card_sequence() -> void:
 	seq = null
 	_undo = {}   # l'Annulla non attraversa il confine tra le carte
+	_laundered = {}   # il beneficio del Riciclaggio è 1 per Fazione per carta (2.3.6)
+	_free_limop = ""
 	_reset_turn_flags()
 	if state.current_card > 0:
 		var card: CardDef = game_def.card(state.current_card)
@@ -412,15 +417,203 @@ func _after_decision() -> void:
 	emit_signal("state_changed")
 
 
-## Pesca la carta successiva e risolve in automatico le eventuali Propaganda incontrate.
+## Vero durante le partite completamente automatiche: la Propaganda non si ferma mai.
+var force_auto_propaganda := false
+
+
+## Pesca la carta successiva. Le Propaganda incontrate si risolvono in automatico se
+## tutte le Fazioni con azioni di Supporto sono bot (o in modalità auto); altrimenti
+## il round diventa INTERATTIVO e attende i click del giocatore (fase Supporto).
 func advance_card() -> void:
+	if prop_pending:
+		return
 	draw_next()
 	var guard := 0
 	while state.current_card == 0 and not game_over and guard < 6:
 		guard += 1
-		resolve_propaganda()
-		if not game_over:
-			draw_next()
+		if force_auto_propaganda or _prop_humans().is_empty():
+			resolve_propaganda()
+			if not game_over:
+				draw_next()
+		else:
+			_begin_interactive_propaganda()
+			return
+
+
+# ---------------------------------------------------------------------------
+# Round di Propaganda interattivo (fase Supporto per le Fazioni umane, 6.3.2-6.3.4)
+# ---------------------------------------------------------------------------
+
+var prop_pending := false          ## round di Propaganda in attesa di input umano
+var prop_stage := ""               ## Fazione del passo interattivo corrente ("" = nessuno)
+var _prop_stages: Array = []
+var _prop_idx := 0
+var _prop_final := false
+
+
+func prop_status() -> Dictionary:
+	return {"active": prop_pending, "stage": prop_stage, "final": _prop_final}
+
+
+## Fazioni umane con azioni nella fase di Supporto (il Sindacato non ne ha).
+func _prop_humans() -> Array:
+	var out: Array = []
+	for fid in ["government", "m26", "directorio"]:
+		if is_player(fid):
+			out.append(fid)
+	return out
+
+
+func _begin_interactive_propaganda() -> void:
+	propaganda_played += 1
+	_prop_final = propaganda_played >= 4
+	prop_pending = true
+	prop_stage = ""
+	emit_signal("action_logged", " Round Propaganda %d/4" % propaganda_played, "")
+	var vp := propaganda.victory_phase(_prop_final)
+	if vp.get("winner", "") != "":
+		prop_pending = false
+		game_over = true
+		winner = vp.winner
+		_emit_final_report(winner)
+		emit_signal("state_changed")
+		return
+	for line in propaganda.resources_phase():
+		emit_signal("action_logged", " " + String(line), "")
+	for line in propaganda.support_phase():
+		emit_signal("action_logged", " " + String(line), "")
+	_prop_stages = ["government", "m26", "directorio"]
+	_prop_idx = 0
+	_advance_prop_stage()
+
+
+## Esegue i passi dei bot e si ferma al primo passo di una Fazione umana con opzioni.
+func _advance_prop_stage() -> void:
+	while _prop_idx < _prop_stages.size():
+		var fid: String = _prop_stages[_prop_idx]
+		if is_bot(fid):
+			for line in bot.propaganda_support([fid]):
+				emit_signal("action_logged", " " + String(line), fid)
+			_prop_idx += 1
+			continue
+		if propaganda.support_action_spaces(fid).is_empty():
+			emit_signal("action_logged", " Propaganda: %s non ha azioni di Supporto possibili" % faction_name(fid), fid)
+			_prop_idx += 1
+			continue
+		prop_stage = fid
+		emit_signal("state_changed")
+		return
+	_finish_propaganda()
+
+
+## Click su uno spazio durante il passo interattivo (Azione Civica/Dimostrazioni/Espatriati).
+func prop_click(sid: String) -> Dictionary:
+	if not prop_pending or prop_stage == "":
+		return {"ok": false, "error": "Nessun passo di Propaganda in corso"}
+	var res: Dictionary
+	match prop_stage:
+		"government": res = propaganda.civic_step(sid)
+		"m26": res = propaganda.demo_step(sid)
+		"directorio": res = propaganda.expat_rally(sid)
+		_: res = {"ok": false, "error": "Passo sconosciuto"}
+	if res.get("ok", false):
+		for line in res.get("log", []):
+			emit_signal("action_logged", " " + String(line), prop_stage)
+		# Il Supporto Espatriati è 1 solo spazio; altrimenti avanza se non resta nulla da fare.
+		if prop_stage == "directorio" or propaganda.support_action_spaces(prop_stage).is_empty():
+			prop_next_stage()
+		else:
+			emit_signal("state_changed")
+	return res
+
+
+## Chiude il passo interattivo corrente ("Concludi") e prosegue col round.
+func prop_next_stage() -> void:
+	if not prop_pending:
+		return
+	prop_stage = ""
+	_prop_idx += 1
+	_advance_prop_stage()
+
+
+func _finish_propaganda() -> void:
+	prop_stage = ""
+	prop_pending = false
+	# Come nel percorso automatico: Spostamento del Governo, poi Sistemazione (se non finale).
+	for line in propaganda.redeploy_phase():
+		emit_signal("action_logged", " " + String(line), "")
+	if _prop_final:
+		game_over = true
+		_emit_final_report("")
+		emit_signal("state_changed")
+		autosave()
+		return
+	for line in propaganda.reset_phase():
+		emit_signal("action_logged", " " + String(line), "")
+	advance_card()
+	autosave()
+	emit_signal("state_changed")
+
+
+# ---------------------------------------------------------------------------
+# Riciclaggio (2.3.6): rimuovi 1 Denaro per un'Op Limitata extra gratuita
+# ---------------------------------------------------------------------------
+
+var _laundered: Dictionary = {}   ## fid -> true: ha già beneficiato su questa carta
+var _free_limop := ""             ## Fazione con la LimOp gratuita armata ("" = nessuna)
+
+
+func free_limop_armed() -> bool:
+	return _free_limop != "" and seq != null and seq.pending_faction() == _free_limop
+
+
+## Spazi con Denaro della Fazione di turno (bersagli del Riciclaggio).
+func launder_spaces() -> Array:
+	if seq == null or seq.pending_faction() == "":
+		return []
+	var fid := seq.pending_faction()
+	var out: Array = []
+	for sid in game_def.space_ids():
+		if state.space_state(sid).cash_for(fid) > 0:
+			out.append(sid)
+	return out
+
+
+## Riciclaggio possibile: Op pagata, nessuna Att.Speciale, Denaro proprio, non già usato.
+func can_launder() -> bool:
+	if seq == null or seq.pending_faction() == "":
+		return false
+	var fid := seq.pending_faction()
+	return _turn_did_op and not _turn_did_special and _free_limop == "" \
+		and not bool(_laundered.get(fid, false)) and not launder_spaces().is_empty()
+
+
+func do_launder(space: String) -> Dictionary:
+	if not can_launder():
+		return {"ok": false, "error": "Riciclaggio non disponibile ora (serve un'Operazione pagata senza Attività Speciale)"}
+	var fid := seq.pending_faction()
+	if state.space_state(space).cash_for(fid) <= 0:
+		return {"ok": false, "error": "Nessun Denaro di %s a %s" % [faction_name(fid), space]}
+	state.remove_cash(space, fid, 1)
+	_laundered[fid] = true
+	_free_limop = fid
+	emit_signal("action_logged", "Riciclaggio: %s rimuove 1 Denaro (%s) - Op Limitata extra gratuita (non Costruzione)" % [faction_name(fid), space], fid)
+	emit_signal("state_changed")
+	return {"ok": true, "error": ""}
+
+
+## Numero di spazi/destinazioni distinti coinvolti (vincolo LimOp = 1 spazio).
+func _limop_scope(params: Dictionary) -> int:
+	var n := (params.get("spaces", []) as Array).size()
+	var dests := {}
+	for m in params.get("moves", []):
+		dests[m["to"]] = true
+	return maxi(n, dests.size())
+
+
+## Momentum "MAP": il Governo può accompagnare una Op Limitata con un'Att.Speciale gratuita.
+func limited_special_ok(fid: String) -> bool:
+	return fid == "government" and module.has_momentum(state, "MAP")
 
 
 func cards_left() -> int:
@@ -458,6 +651,7 @@ func auto_resolve_current() -> Dictionary:
 
 ## Gioca automaticamente l'intera partita (tutti i bot) fino a fine mazzo o vittoria.
 func run_full_game(max_steps: int = 200) -> void:
+	force_auto_propaganda = true
 	if state.current_card == -1:
 		draw_next()
 	var steps := 0
@@ -467,6 +661,7 @@ func run_full_game(max_steps: int = 200) -> void:
 			break
 		draw_next()
 		steps += 1
+	force_auto_propaganda = false
 
 
 ## Avanza: risolve la carta corrente e ne pesca una nuova.
@@ -485,7 +680,7 @@ var pace_delay := 1.1   ## Pausa (s) tra le mosse dei bot; regolabile dalla UI (
 func run_card_paced(delay: float = -1.0) -> void:
 	if delay < 0.0:
 		delay = pace_delay
-	if _busy or game_over or state.current_card == -1:
+	if _busy or game_over or state.current_card == -1 or prop_pending:
 		return
 	_busy = true
 	if seq == null:
@@ -512,6 +707,7 @@ func run_full_game_paced(delay: float = -1.0) -> void:
 		delay = pace_delay
 	if _busy:
 		return
+	force_auto_propaganda = true
 	if state.current_card == -1:
 		draw_next()
 	var steps := 0
@@ -519,6 +715,7 @@ func run_full_game_paced(delay: float = -1.0) -> void:
 		await run_card_paced(delay)
 		await get_tree().create_timer(delay * 0.5).timeout
 		steps += 1
+	force_auto_propaganda = false
 
 
 func current_card_text() -> String:
@@ -574,6 +771,19 @@ func undo_last() -> bool:
 
 
 func run_operation(op_id: String, params: Dictionary) -> Dictionary:
+	# Riciclaggio armato: questa è la LimOp extra gratuita (1 spazio, non Costruzione).
+	var free := free_limop_armed()
+	if free:
+		if op_id == "build":
+			var eb := {"ok": false, "error": "La Costruzione non è mai gratuita (2.3.6)", "log": []}
+			_emit_result(eb)
+			return eb
+		if _limop_scope(params) > 1:
+			var es := {"ok": false, "error": "Op Limitata gratuita: 1 solo spazio", "log": []}
+			_emit_result(es)
+			return es
+		params = params.duplicate(true)
+		params["free"] = true
 	_capture_undo()
 	var res: Dictionary
 	match op_id:
@@ -589,6 +799,8 @@ func run_operation(op_id: String, params: Dictionary) -> Dictionary:
 		_: res = {"ok": false, "error": "Operazione sconosciuta: %s" % op_id, "log": []}
 	if res.get("ok", false):
 		_turn_did_op = true
+		if free:
+			_free_limop = ""   # LimOp gratuita consumata
 	else:
 		_undo = {}   # azione fallita: niente da annullare
 	_emit_result(res)
@@ -801,6 +1013,10 @@ func load_game(path: String = SAVE_PATH) -> bool:
 	winner = String(d.get("winner", ""))
 	stats = {}
 	_undo = {}
+	prop_pending = false
+	prop_stage = ""
+	_laundered = {}
+	_free_limop = ""
 	_turn_did_op = bool(d.get("did_op", false))
 	_turn_did_special = bool(d.get("did_special", false))
 	_turn_did_event = bool(d.get("did_event", false))
@@ -817,8 +1033,12 @@ func load_game(path: String = SAVE_PATH) -> bool:
 	return true
 
 
-## Autosalvataggio silenzioso (dopo ogni azione conclusa).
+## Autosalvataggio silenzioso (dopo ogni azione conclusa). Mai a metà di un round di
+## Propaganda interattivo: lo stato intermedio non è serializzato e il caricamento
+## lascerebbe la partita bloccata sulla carta Propaganda.
 func autosave() -> void:
+	if prop_pending:
+		return
 	save_game(AUTOSAVE_PATH)
 
 

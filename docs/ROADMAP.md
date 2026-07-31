@@ -40,7 +40,7 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [x] Operazioni (Train/Garrison/Sweep/Assault, Rally/March/Attack/Terror/Build) + test.
 - [x] Attività Speciali (tutte le 12) + test.
 - [x] Sistema Denaro (Cash) — segnalini, proprietà, trasferimento, limite 4.
-- [ ] Riciclaggio (Launder) collegato alla sequenza di gioco.
+- [x] Riciclaggio (Launder) collegato alla sequenza di gioco (2.3.6: Denaro -> LimOp extra gratuita, UI inclusa).
 - [x] Round di Propaganda (Vittoria, Risorse, Supporto, Sistemazione) + test.
 - [x] Condizioni e margini di vittoria.
 - [x] Test unitari del motore (147 test headless).
@@ -52,7 +52,10 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [x] Framework Eventi (`Events.gd`): gestori per carta + fallback "manuale".
 - [x] Registrazione Capacità Insorgenti / Momentum del Governo.
 - [x] Effetti automatizzati per TUTTE le 48 carte (entrambi i lati), smoke test 96/96.
-- [ ] Applicare nelle Operazioni i modificatori duraturi di Capacità/Momentum (ora solo registrati).
+- [x] Applicare nelle Operazioni i modificatori duraturi di Capacità/Momentum: tutte le 7
+      Capacità (Guantánamo Bay, El Che, Pact of Caracas, Morgan, Guerrilla Life, Mafia
+      Offensive, Santo Trafficante) e i Momentum (S.I.M., Sánchez Mosquera, Armored Cars,
+      Rolando Masferrer, MAP, Raúl) hanno effetto operativo, con test.
 
 ### Fase 3 — Interfaccia utente
 - [x] Mappa interattiva (schematica) con pezzi trascinabili e stato leggibile.
@@ -65,6 +68,10 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [x] Salva/Carica partita dalla UI (menu Partita) con autosalvataggio a ogni azione.
 - [x] Conferma su Nuova Partita; zoom della carta Evento; pannello Vittoria/Risorse;
       errori in rosso nella riga istruzioni (tooltip a testo pieno).
+- [x] Round di Propaganda interattivo per le Fazioni umane: Azione Civica (6.3.2),
+      Dimostrazioni (6.3.3), Supporto Espatriati (6.3.4) guidati sulla mappa.
+- [x] Zoom con rotellina/pinch centrato sul puntatore; scala UI maggiorata su touch (iPad).
+- [ ] Spostamento (Redeploy) interattivo per il Governo umano (oggi automatico).
 - [ ] Hotseat multi-giocatore locale.
 
 ### Fase 4 — Bot (Non-Giocatore)

@@ -323,3 +323,14 @@ esiste già; insieme cambierebbero sensibilmente l'esperienza quotidiana di gioc
 > istruzioni con tooltip a testo pieno ed errori mostrati **in rosso** (compresi i
 > rifiuti del motore su Esegui/Attività Speciali, che ora non chiudono il turno).
 > Rimosso anche il codice morto `_faction_label`.
+
+> **Aggiornamento 2** — implementate anche le voci **6–8**:
+> **(6)** zoom con rotellina del mouse e pinch a due dita, centrato sul puntatore;
+> scala UI maggiorata (~25%) sugli schermi touch (iPad). **(7)** Round di Propaganda
+> **interattivo** per le Fazioni umane: Azione Civica, Dimostrazioni e Supporto
+> Espatriati si giocano cliccando gli spazi evidenziati (i bot mantengono il loro
+> comportamento automatico; il Redeploy resta automatico, voce aperta in roadmap).
+> **(8)** Riciclaggio (2.3.6) collegato alla sequenza con pulsante dedicato e LimOp
+> extra gratuita; completati i Momentum operativi mancanti (Armored Cars, Rolando
+> Masferrer, MAP, Raúl) — le 7 Capacità Insorgenti risultavano già applicate nelle
+> Operazioni. Tutto coperto da test (250 headless).
