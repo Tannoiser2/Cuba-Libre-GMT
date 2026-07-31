@@ -1,0 +1,45 @@
+name: Test (Godot)
+
+# Validazione di ogni ramo e di ogni pull request: test del motore e smoke test della
+# scena. Volutamente separato da deploy-web/build-desktop, che pubblicano su GitHub
+# Pages e creano una Release: quelli devono restare legati a main, non alle PR.
+
+on:
+  push:
+    branches-ignore:
+      - main          # su main ci pensano i workflow di pubblicazione
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "tests-${{ github.ref }}"
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.3-stable"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scarica Godot headless
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+
+      # Nessun template di export: qui non si compila nulla, si eseguono i test.
+      - name: Import del progetto
+        run: godot --headless --path godot --import || true
+
+      - name: Test del motore
+        run: godot --headless --path godot -s res://tests/test_runner.gd
+
+      - name: Smoke test della scena (montaggio UI)
+        run: godot --headless --path godot -s res://tests/scene_smoke.gd
