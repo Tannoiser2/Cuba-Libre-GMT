@@ -42,6 +42,7 @@ func _initialize() -> void:
 	_test_redeploy_interactive()
 	_test_action_flow()
 	_test_special_flow()
+	_test_scenarios()
 	_test_cards_data()
 	_test_events()
 	_test_all_events()
@@ -1341,3 +1342,69 @@ func _test_special_flow() -> void:
 		var empty_confirm: Dictionary = f3.confirm()
 		_check("Profitto: conferma senza Casinò rifiutata", not empty_confirm.get("ok", true))
 	gc.new_game()
+
+
+# ---------------------------------------------------------------------------
+# Scenari: Schieramento Standard, Variabile (p.30) e partita breve
+# ---------------------------------------------------------------------------
+
+func _test_scenarios() -> void:
+	print("\n[Scenari]")
+	# Lo Standard resta identico a se stesso a ogni avvio.
+	var m1 := CubaLibreModule.new()
+	var gd1 := m1.build_game_def()
+	var s1 := GameState.new(gd1)
+	m1.apply_setup(s1, "standard")
+	var s1b := GameState.new(gd1)
+	m1.apply_setup(s1b, "standard")
+	_check("Standard: schieramento riproducibile",
+		JSON.stringify(s1.to_dict()) == JSON.stringify(s1b.to_dict()))
+
+	# Variabile: stesse forze totali dello Standard, ma disposte diversamente.
+	var mod := CubaLibreModule.new()
+	var gd := mod.build_game_def()
+	var different := 0
+	for attempt in range(5):
+		var st := GameState.new(gd)
+		mod.apply_setup(st, "variable")
+		# Conteggi previsti dal regolamento (p.30).
+		_eq("Variabile: 3 Casinò del Sindacato", st.count_on_map("syndicate", "casino"), 3)
+		_eq("Variabile: 3 Guerriglie DR", st.count_on_map("directorio", "guerrilla"), 3)
+		_eq("Variabile: 4 Guerriglie 26J", st.count_on_map("m26", "guerrilla"), 4)
+		_eq("Variabile: 1 Base 26J", st.count_on_map("m26", "base"), 1)
+		_eq("Variabile: 12 Truppe del Governo", st.count_on_map("government", "troops"), 12)
+		_eq("Variabile: 8 Polizia", st.count_on_map("government", "police"), 8)
+		# Vincoli: niente Casinò/Basi negli EC; al massimo 1 Guerriglia 26J per Città;
+		# le Truppe del Governo stanno in Città più una sola Provincia.
+		var ok_ec := true
+		var ok_city := true
+		var provinces_with_troops := 0
+		for sid in gd.space_ids():
+			var sd: SpaceDef = gd.space(sid)
+			var sp: SpaceState = st.space_state(sid)
+			if sd.is_economic() and (sp.count("syndicate", "casino") > 0 or sp.count("m26", "base") > 0):
+				ok_ec = false
+			if sd.type == CoinEnums.SpaceType.CITY and sp.count("m26", "guerrilla") > 1:
+				ok_city = false
+			if sd.type == CoinEnums.SpaceType.PROVINCE and sp.count("government", "troops") > 0:
+				provinces_with_troops += 1
+		_check("Variabile: nessun Casinò/Base negli EC", ok_ec)
+		_check("Variabile: max 1 Guerriglia 26J per Città", ok_city)
+		_check("Variabile: Truppe del Governo in 1 sola Provincia", provinces_with_troops <= 1)
+		# I marcatori restano quelli dello Standard.
+		_eq("Variabile: Aiuti come nello Standard", int(st.tracks.get("aid", -1)), 15)
+		_eq("Variabile: Risorse del Governo", st.get_resources("government"), 15)
+		if JSON.stringify(st.to_dict()) != JSON.stringify(s1.to_dict()):
+			different += 1
+		break   # i conteggi bastano una volta; la varietà si verifica sotto
+	# Su più tentativi almeno due schieramenti devono differire fra loro.
+	var seen: Array = []
+	for attempt2 in range(6):
+		var stx := GameState.new(gd)
+		mod.apply_setup(stx, "variable")
+		seen.append(JSON.stringify(stx.to_dict()))
+	var uniq := {}
+	for x in seen:
+		uniq[x] = true
+	_check("Variabile: schieramenti diversi fra loro", uniq.size() > 1)
+	_check("Variabile: diverso dallo Standard", different > 0)

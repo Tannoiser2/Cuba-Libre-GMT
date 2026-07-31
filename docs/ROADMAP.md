@@ -98,8 +98,11 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [ ] Affinare l'ordine 1ª/2ª Disponibile e la scelta Evento/Operazione dei bot nel loop.
 
 ### Fase 5 — Rifinitura
-- [ ] Scenari (Standard / Variabile / gioco breve), opzioni (Inganno, ecc.).
-- [ ] Online/multiplayer (opzionale).
+- [x] Scenari: Standard e Schieramento Variabile (p.30, con vincoli verificati) + partita breve.
+- [x] Schermata iniziale: scelta scenario/ruoli, ripresa dell'autosalvataggio, ritorno al
+      menu a fine partita; voce "Gioca online" predisposta (disattivata).
+- [ ] Partita online (multigiocatore in rete).
+- [ ] Altre opzioni di partita (Inganno, ecc.).
 - [ ] Tutorial / esempio guidato interattivo.
 
 ## Note legali

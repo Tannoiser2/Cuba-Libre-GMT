@@ -44,6 +44,8 @@ var _log: LogView                     # registro (vive dentro il pannello latera
 var _track_overlay: TrackOverlay
 var _zoom := 1.0
 var _confirm_new: ConfirmationDialog   # conferma per "Nuova Partita"
+var _confirm_menu: ConfirmationDialog  # conferma per il ritorno al menu iniziale
+var _end_dialog: ConfirmationDialog    # riepilogo di fine partita
 
 var _instr: Label
 var _turn_banner: Label
@@ -80,6 +82,7 @@ func _ready() -> void:
 	GameController.state_changed.connect(_refresh)
 	GameController.action_logged.connect(_log.add_line)
 	GameController.bot_decision.connect(_log.add_decision)
+	GameController.game_finished.connect(_on_game_finished)
 	get_viewport().size_changed.connect(_layout_board)
 	_rebuild_action_buttons(_cur_faction)
 	# Driver automatico delle Fazioni Bot (gioca da sole al loro turno).
@@ -182,6 +185,23 @@ func _build_ui() -> void:
 	_confirm_new.cancel_button_text = "Annulla"
 	_confirm_new.confirmed.connect(_on_new_game)
 	add_child(_confirm_new)
+
+	# Ritorno al menu iniziale (la partita resta nell'autosalvataggio).
+	_confirm_menu = ConfirmationDialog.new()
+	_confirm_menu.title = "Menu iniziale"
+	_confirm_menu.dialog_text = "Tornare al menu iniziale?\nLa partita in corso resta nell'autosalvataggio e si può riprendere."
+	_confirm_menu.ok_button_text = "Torna al menu"
+	_confirm_menu.cancel_button_text = "Resta in partita"
+	_confirm_menu.confirmed.connect(_go_to_menu)
+	add_child(_confirm_menu)
+
+	# A fine partita: riepilogo e proposta di tornare al menu.
+	_end_dialog = ConfirmationDialog.new()
+	_end_dialog.title = "Partita conclusa"
+	_end_dialog.ok_button_text = "Torna al menu"
+	_end_dialog.cancel_button_text = "Resta a guardare"
+	_end_dialog.confirmed.connect(_go_to_menu)
+	add_child(_end_dialog)
 
 	resized.connect(_layout_board)
 	_layout_board()
@@ -334,6 +354,8 @@ func _build_action_bar() -> VBoxContainer:
 	gp.add_item("Riprendi autosalvataggio", 2)
 	gp.add_separator()
 	gp.add_item("Nuova Partita...", 3)
+	gp.add_separator()
+	gp.add_item("Torna al menu iniziale", 4)
 	gp.id_pressed.connect(_on_game_menu)
 	row2.add_child(game_menu)
 	row2.add_child(VSeparator.new())
@@ -854,6 +876,8 @@ func _on_game_menu(id: int) -> void:
 			_load_from(GameController.AUTOSAVE_PATH, "autosalvataggio")
 		3:
 			_confirm_new.popup_centered()
+		4:
+			_confirm_menu.popup_centered()
 
 
 ## Riciclaggio (2.3.6): se il Denaro è in un solo spazio agisci subito, altrimenti scegli.
@@ -1200,13 +1224,31 @@ func _auto_bot_tick() -> void:
 		GameController.bot_act_pending()
 
 
+## Torna alla schermata iniziale (l'autosalvataggio conserva la partita).
+func _go_to_menu() -> void:
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+
+
+## Fine partita: mostra il risultato e propone il ritorno al menu.
+func _on_game_finished(winner: String) -> void:
+	var vs: Dictionary = GameController.victory()
+	var lines: Array = ["Vince %s." % GameController.faction_name(winner), ""]
+	for fid in ["government", "m26", "directorio", "syndicate"]:
+		var d: Dictionary = vs.get(fid, {})
+		lines.append("%s%s: %d/%d (margine %+d)" % [
+			"» " if fid == winner else "   ", GameController.faction_name(fid),
+			int(d.get("value", 0)), int(d.get("threshold", 0)), int(d.get("margin", 0))])
+	_end_dialog.dialog_text = "\n".join(lines)
+	_end_dialog.popup_centered()
+
+
 ## Nuova partita: ripulisce il log e la selezione, poi reinizializza.
 func _on_new_game() -> void:
 	_clear_pending()
 	_log.clear_log()
 	_zoom = 1.0          # mappa adattata al riquadro
 	_layout_board()
-	GameController.new_game()
+	GameController.new_game(GameController.scenario, GameController.short_game)
 
 
 ## Pulizia interna della selezione/coda in preparazione (senza undo).

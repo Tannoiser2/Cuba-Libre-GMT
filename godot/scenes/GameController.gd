@@ -33,8 +33,18 @@ func _ready() -> void:
 	new_game()
 
 
-## Avvia una nuova partita con lo schieramento standard.
-func new_game(scenario: String = "standard") -> void:
+## Opzioni della partita in corso (scelte nel menu iniziale).
+var scenario := "standard"     ## "standard" | "variable"
+var short_game := false        ## gioco breve: 8 carte Evento da parte
+
+signal game_finished(winner: String)
+
+
+## Avvia una nuova partita. `p_scenario`: "standard" (posizioni fisse) o "variable"
+## (Schieramento Variabile); `p_short`: partita breve (mazzo ridotto).
+func new_game(p_scenario: String = "standard", p_short: bool = false) -> void:
+	scenario = p_scenario
+	short_game = p_short
 	module = CubaLibreModule.new()
 	game_def = module.build_game_def()
 	state = GameState.new(game_def)
@@ -49,7 +59,7 @@ func new_game(scenario: String = "standard") -> void:
 	prop_pending = false
 	prop_stage = ""
 	force_auto_propaganda = false
-	build_deck()
+	build_deck(short_game)
 	advance_card()
 	emit_signal("state_changed")
 
@@ -1002,6 +1012,7 @@ func _emit_final_report(forced_winner: String) -> void:
 				win = fid
 	winner = win
 	emit_signal("action_logged", "=== FINE PARTITA", "")
+	emit_signal("game_finished", win)
 	emit_signal("action_logged", "» Vince: %s" % faction_name(win), win)
 	# Classifica per margine decrescente.
 	var ranking := order.duplicate()
@@ -1052,6 +1063,8 @@ func save_to_dict() -> Dictionary:
 		"state": state.to_dict(),
 		"seq": seq.snapshot() if seq != null else {},
 		"roles": roles.duplicate(true),
+		"scenario": scenario,
+		"short_game": short_game,
 		"propaganda_played": propaganda_played,
 		"game_over": game_over,
 		"winner": winner,
@@ -1094,6 +1107,8 @@ func load_game(path: String = SAVE_PATH) -> bool:
 	events = CubaLibreEvents.new(state, module)
 	bot = CLCalixto.new(state, module)
 	bot.deck.restore(d.get("calixto_deck", []))
+	scenario = String(d.get("scenario", "standard"))
+	short_game = bool(d.get("short_game", false))
 	propaganda_played = int(d.get("propaganda_played", 0))
 	game_over = bool(d.get("game_over", false))
 	winner = String(d.get("winner", ""))

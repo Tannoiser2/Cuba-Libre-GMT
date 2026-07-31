@@ -11,6 +11,32 @@ func _initialize() -> void:
 	# In modalità -s il _ready() dell'autoload può non essere ancora scattato.
 	if gc.state == null:
 		gc.new_game()
+	# --- Menu iniziale: si monta, avvia una partita e imposta le opzioni ---
+	var menu_packed: PackedScene = load("res://scenes/MainMenu.tscn")
+	if menu_packed == null:
+		print("FAIL: MainMenu.tscn non caricata"); fails += 1
+	else:
+		var menu = menu_packed.instantiate()
+		root.add_child(menu)
+		await process_frame
+		print("ok  menu iniziale montato (%d nodi figli)" % menu.get_child_count())
+		if menu.get_child_count() == 0:
+			print("FAIL: il menu non ha costruito nulla"); fails += 1
+		# Avvio con scenario Variabile e partita breve.
+		menu._set_scenario("variable")
+		menu._toggle_short()
+		menu._start_game()
+		await process_frame
+		if gc.scenario != "variable" or not gc.short_game:
+			print("FAIL: opzioni non applicate (%s, breve=%s)" % [gc.scenario, str(gc.short_game)]); fails += 1
+		else:
+			print("ok  partita avviata dal menu: scenario=%s breve=%s carte=%d" % [
+				gc.scenario, str(gc.short_game), gc.state.draw_deck.size() + 1])
+		if is_instance_valid(menu):
+			menu.free()
+	# Torna allo scenario standard per il resto del test.
+	gc.new_game("standard", false)
+
 	var packed: PackedScene = load("res://scenes/Main.tscn")
 	if packed == null:
 		print("FAIL: Main.tscn non caricata"); quit(1); return

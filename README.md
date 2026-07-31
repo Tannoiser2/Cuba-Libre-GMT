@@ -39,7 +39,17 @@ Al push successivo, l'Action compila ed espone il gioco a un URL pubblico (visib
 nell'output del workflow), apribile anche da **Safari su iPad**.
 
 In locale: aprire la cartella `godot/` con **Godot 4.3** (gratuito) ed eseguire (F5),
-oppure i test con `godot4 --headless --path godot -s res://tests/test_runner.gd`.
+oppure i test con `godot4 --headless --path godot -s res://tests/test_runner.gd`
+(e lo smoke test della scena con `-s res://tests/scene_smoke.gd`).
+
+## Come si gioca
+
+All'avvio compare la **schermata iniziale**, dove si sceglie lo scenario
+(**Standard** a posizioni fisse oppure **Variabile**, sorteggiato entro i vincoli del
+regolamento), la **partita breve** e chi controlla ciascuna Fazione: **Giocatore**
+oppure **Bot** (il sistema Non-giocatore *Calixto*). Da lì si può anche riprendere
+l'ultima partita, perché il gioco si autosalva dopo ogni azione. La voce *Gioca online*
+è predisposta ma non ancora attiva. A fine partita si torna al menu.
 
 ## Riferimenti
 

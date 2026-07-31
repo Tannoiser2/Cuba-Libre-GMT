@@ -428,3 +428,20 @@ esiste già; insieme cambierebbero sensibilmente l'esperienza quotidiana di gioc
 > che all'inizio non aveva un solo test, ne ha 57. Totale: **334 test headless**
 > più lo smoke test di scena.
 
+> **Aggiornamento 9** — **schermata iniziale e scenari** (voce 13 dell'audit).
+> `MainMenu` è ora la scena principale: titolo sulla mappa attenuata, scelta dello
+> **scenario** (Standard o Schieramento Variabile), interruttore **partita breve**,
+> assegnazione dei ruoli Giocatore/Bot per tutte e quattro le Fazioni, ripresa
+> dell'autosalvataggio e voce **"Gioca online"** predisposta ma disattivata, in attesa
+> dell'implementazione. Dalla partita si torna al menu dal menu "Partita…", e a fine
+> partita compare da sé un riepilogo con i punteggi e la proposta di rientrare.
+>
+> Lato motore, `apply_setup` ignorava il parametro scenario: ora implementa lo
+> **Schieramento Variabile** (regolamento p.30) sorteggiando le posizioni entro i
+> vincoli — Casinò e Basi mai negli EC, al massimo 1 Guerriglia 26J per Città, forze
+> del Governo nelle Città più una sola Provincia. Il regolamento lascia la scelta ai
+> giocatori: qui è casuale, e serve a variare l'apertura. Lo Standard resta
+> riproducibile identico. Scenario e partita breve entrano nel salvataggio.
+> Copertura: **348 test headless** (14 nuovi sugli scenari) più lo smoke test di scena,
+> esteso al menu e al passaggio menu → partita.
+
