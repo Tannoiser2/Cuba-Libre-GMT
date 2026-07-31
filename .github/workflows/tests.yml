@@ -14,8 +14,11 @@ on:
 permissions:
   contents: read
 
+# Push e pull_request scattano entrambi sul commit di un ramo con PR aperta: con la
+# chiave sul NOME DEL RAMO le due esecuzioni finiscono nello stesso gruppo e ne resta
+# una sola, invece di consumare il doppio dei minuti per lo stesso risultato.
 concurrency:
-  group: "tests-${{ github.ref }}"
+  group: "tests-${{ github.event.pull_request.head.ref || github.ref_name }}"
   cancel-in-progress: true
 
 env:
