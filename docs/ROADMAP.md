@@ -62,6 +62,9 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
       marcatori come sprite (Controllo/Supporto/Terrore/Denaro), drag-and-drop con anteprima.
 - [ ] Rifinire le coordinate degli spazi e le dimensioni dei pezzi.
 - [x] Flussi guidati per Attività Speciali (menu per fazione) ed Eventi (lato chiaro/ombreggiato) nella UI.
+- [x] Salva/Carica partita dalla UI (menu Partita) con autosalvataggio a ogni azione.
+- [x] Conferma su Nuova Partita; zoom della carta Evento; pannello Vittoria/Risorse;
+      errori in rosso nella riga istruzioni (tooltip a testo pieno).
 - [ ] Hotseat multi-giocatore locale.
 
 ### Fase 4 — Bot (Non-Giocatore)

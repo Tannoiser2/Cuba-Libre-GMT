@@ -49,3 +49,21 @@ func draw_next(faction: String) -> String:
 	if not _cards.is_empty():
 		_cards.append(_cards.pop_front())
 	return draw_for(faction)
+
+
+## Istantanea dell'ordine corrente del mazzo (per il salvataggio partita).
+func snapshot() -> Array:
+	var out: Array = []
+	for c in _cards:
+		out.append({"faction": String(c["faction"]), "letter": String(c["letter"])})
+	return out
+
+
+## Ripristina l'ordine da un'istantanea; se non è valida, lascia il mazzo com'è.
+func restore(a: Array) -> void:
+	var out: Array[Dictionary] = []
+	for c in a:
+		if typeof(c) == TYPE_DICTIONARY and c.has("faction") and c.has("letter"):
+			out.append({"faction": String(c["faction"]), "letter": String(c["letter"])})
+	if out.size() == _cards.size():
+		_cards = out

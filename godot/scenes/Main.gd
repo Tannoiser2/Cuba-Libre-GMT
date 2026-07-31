@@ -87,7 +87,8 @@ var _card_img: TextureRect
 var _next_card_img: TextureRect
 var _zoom := 1.0
 var _card_label: RichTextLabel
-var _faction_label: RichTextLabel
+var _vic: RichTextLabel                # pannello Vittoria/Risorse (numerico)
+var _confirm_new: ConfirmationDialog   # conferma per "Nuova Partita"
 var _log: RichTextLabel
 var _instr: Label
 var _turn_banner: Label
@@ -235,6 +236,15 @@ func _build_ui() -> void:
 	# Pannello laterale (destra)
 	_side = _build_side_panel()
 	add_child(_side)
+
+	# Conferma per "Nuova Partita" (evita di azzerare la partita per un click di troppo).
+	_confirm_new = ConfirmationDialog.new()
+	_confirm_new.title = "Nuova Partita"
+	_confirm_new.dialog_text = "Iniziare una nuova partita?\nLa partita in corso andrà persa (l'autosalvataggio resta disponibile)."
+	_confirm_new.ok_button_text = "Nuova partita"
+	_confirm_new.cancel_button_text = "Annulla"
+	_confirm_new.confirmed.connect(_on_new_game)
+	add_child(_confirm_new)
 
 	resized.connect(_layout_board)
 	_layout_board()
@@ -386,7 +396,17 @@ func _build_action_bar() -> VBoxContainer:
 	row2.add_child(_btn_auto)
 	row2.add_child(_mk_btn("Tutti i Bot (questa carta)", _on_all_bots))
 	row2.add_child(_mk_btn("Auto: tutta la partita", func(): GameController.run_full_game_paced()))
-	row2.add_child(_mk_btn("Nuova Partita", _on_new_game))
+	# Menu Partita: salvataggio/caricamento e Nuova Partita (con conferma).
+	var game_menu := _mk_menu_btn("Partita...")
+	game_menu.tooltip_text = "Salva/carica la partita (anche l'autosalvataggio, aggiornato a ogni azione) o iniziane una nuova."
+	var gp := game_menu.get_popup()
+	gp.add_item("Salva partita", 0)
+	gp.add_item("Carica partita", 1)
+	gp.add_item("Riprendi autosalvataggio", 2)
+	gp.add_separator()
+	gp.add_item("Nuova Partita...", 3)
+	gp.id_pressed.connect(_on_game_menu)
+	row2.add_child(game_menu)
 	row2.add_child(VSeparator.new())
 	row2.add_child(_mk_label("Velocità:"))
 	var spd := OptionButton.new()
@@ -408,11 +428,13 @@ func _build_action_bar() -> VBoxContainer:
 	_instr.add_theme_font_size_override("font_size", 10)
 	_instr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_instr.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# Contenitore ad altezza FISSA: così la barra non cambia altezza e la mappa
-	# resta sempre adattata (le istruzioni lunghe vengono troncate, non spingono il board).
-	var instr_box := Control.new()
+	# Contenitore ad altezza FISSA: così la barra non cambia altezza e la mappa resta
+	# sempre adattata. Il testo che non entra si legge per intero nel tooltip (InstrBox).
+	var instr_box := InstrBox.new()
 	instr_box.custom_minimum_size = Vector2(0, 38)
 	instr_box.clip_contents = true
+	instr_box.mouse_filter = Control.MOUSE_FILTER_STOP
+	instr_box.mouse_entered.connect(func(): instr_box.tooltip_text = _instr.text)
 	instr_box.add_child(_instr)
 	bar.add_child(instr_box)
 	return bar
@@ -421,7 +443,8 @@ func _build_action_bar() -> VBoxContainer:
 ## Esegui l'operazione (se selezionata e non ancora eseguita) e concludi il turno.
 func _on_execute_and_end() -> void:
 	if _cur_action != "" and _mode != "idle":
-		_on_execute()
+		if not _on_execute():
+			return   # l'esecuzione è fallita: l'errore è mostrato, il turno resta aperto
 	GameController.end_turn()
 
 
@@ -449,6 +472,7 @@ func _build_side_panel() -> PanelContainer:
 	_card_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_card_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
 	_card_img.custom_minimum_size = Vector2(150, 200)
+	_make_card_zoomable(_card_img)
 	col_cur.add_child(_card_img)
 	cards_row.add_child(col_cur)
 	var col_next := VBoxContainer.new()
@@ -461,6 +485,7 @@ func _build_side_panel() -> PanelContainer:
 	_next_card_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
 	_next_card_img.custom_minimum_size = Vector2(150, 200)
 	_next_card_img.modulate = Color(1, 1, 1, 0.75)
+	_make_card_zoomable(_next_card_img)
 	col_next.add_child(_next_card_img)
 	cards_row.add_child(col_next)
 
@@ -470,6 +495,20 @@ func _build_side_panel() -> PanelContainer:
 	_card_label.add_theme_font_size_override("normal_font_size", 12)
 	_card_label.custom_minimum_size = Vector2(330, 48)
 	vb.add_child(_card_label)
+	vb.add_child(HSeparator.new())
+
+	# Pannello Vittoria: valore/soglia/margine di ogni Fazione + Risorse, sempre visibile.
+	var vic_title := Label.new()
+	vic_title.text = "Vittoria"
+	vb.add_child(vic_title)
+	_vic = RichTextLabel.new()
+	_vic.bbcode_enabled = true
+	_vic.fit_content = true
+	_vic.scroll_active = false
+	for fs in ["normal_font_size", "bold_font_size", "italics_font_size", "bold_italics_font_size", "mono_font_size"]:
+		_vic.add_theme_font_size_override(fs, 11)
+	_vic.add_theme_constant_override("line_separation", 3)
+	vb.add_child(_vic)
 	vb.add_child(HSeparator.new())
 
 	var log_title := Label.new()
@@ -843,6 +882,123 @@ func _refresh_side() -> void:
 	var nc: int = GameController.next_card()
 	_next_card_img.texture = CLAssets.card(nc) if nc >= 0 else null
 	_card_label.text = GameController.current_card_text()
+	_refresh_victory()
+
+
+# Metrica di vittoria di ogni Fazione (nome breve mostrato nel pannello).
+const _VIC_LABEL := {
+	"government": "Supporto", "m26": "Opp.+Basi",
+	"directorio": "Pop.+Basi", "syndicate": "Casinò",
+}
+
+
+## Pannello Vittoria: per ogni Fazione valore/soglia (margine) e Risorse; sotto, Aiuti
+## e stato dell'Alleanza USA. I numeri altrimenti si leggono solo dai segnalini sul tracciato.
+func _refresh_victory() -> void:
+	if _vic == null:
+		return
+	var vs: Dictionary = GameController.victory()
+	var s: GameState = GameController.state
+	var txt := ""
+	for fid in ["government", "m26", "directorio", "syndicate"]:
+		var d: Dictionary = vs.get(fid, {})
+		var m := int(d.get("margin", 0))
+		var mcol := "57c97e" if m >= 0 else "ff8080"
+		var res_txt := str(s.get_resources(fid)) if s.tracks_resources(fid) else "—"
+		txt += "%s %s [b]%d[/b]/%d [color=#%s](%+d)[/color] · Risorse %s\n" % [
+			_fmt_log_line(_ROLE_SHORT.get(fid, fid), fid), _VIC_LABEL.get(fid, ""),
+			int(d.get("value", 0)), int(d.get("threshold", 0)), mcol, m, res_txt]
+	var alliance: int = clampi(int(s.tracks.get("us_alliance", 0)), 0, 2)
+	txt += "[color=#9fb3c8]Aiuti %d · Alleanza USA: %s[/color]" % [
+		int(s.tracks.get("aid", 0)), ["Salda", "Riluttante", "Embargo"][alliance]]
+	_vic.text = txt
+
+
+## Rende cliccabile l'anteprima di una carta: click = ingrandimento a schermo intero.
+func _make_card_zoomable(tr: TextureRect) -> void:
+	tr.mouse_filter = Control.MOUSE_FILTER_STOP
+	tr.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	tr.tooltip_text = "Clicca per ingrandire"
+	tr.gui_input.connect(_on_card_gui_input.bind(tr))
+
+
+func _on_card_gui_input(event: InputEvent, tr: TextureRect) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_show_card_zoom(tr.texture)
+
+
+## Overlay a schermo intero con la carta ingrandita; un click qualsiasi lo chiude.
+func _show_card_zoom(tex: Texture2D) -> void:
+	if tex == null:
+		return
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.8)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.z_index = 100
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	var big := TextureRect.new()
+	big.texture = tex
+	big.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	big.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	big.set_anchors_preset(Control.PRESET_FULL_RECT)
+	big.offset_left = 30
+	big.offset_top = 30
+	big.offset_right = -30
+	big.offset_bottom = -30
+	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dim.add_child(big)
+	var hint := Label.new()
+	hint.text = "clicca per chiudere"
+	hint.add_theme_color_override("font_color", Color("9fb3c8"))
+	hint.add_theme_font_size_override("font_size", 11)
+	hint.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	hint.offset_top = -24
+	dim.add_child(hint)
+	dim.gui_input.connect(func(e):
+		if e is InputEventMouseButton and e.pressed:
+			dim.queue_free())
+	add_child(dim)
+
+
+## Messaggio di ERRORE nella riga istruzioni: rosso, poi torna al giallo standard.
+func _err(text: String) -> void:
+	_instr.text = text
+	_instr.add_theme_color_override("font_color", Color("ff6b6b"))
+	var tw := create_tween()
+	tw.tween_interval(2.5)
+	tw.tween_callback(func(): _instr.add_theme_color_override("font_color", Color("f1c40f")))
+
+
+## Menu "Partita...": salvataggio, caricamento, autosalvataggio, nuova partita.
+func _on_game_menu(id: int) -> void:
+	match id:
+		0:
+			if GameController.save_game():
+				_on_log("Partita salvata", "")
+				_instr.text = "Partita salvata"
+			else:
+				_err("Salvataggio non riuscito")
+		1:
+			_load_from(GameController.SAVE_PATH, "salvataggio")
+		2:
+			_load_from(GameController.AUTOSAVE_PATH, "autosalvataggio")
+		3:
+			_confirm_new.popup_centered()
+
+
+func _load_from(path: String, label: String) -> void:
+	if not GameController.has_save(path):
+		_err("Nessun %s trovato" % label)
+		return
+	_clear_pending()
+	# Evita le animazioni di massa al cambio di stato completo.
+	_prev_pc.clear()
+	_prev_fp.clear()
+	if GameController.load_game(path):
+		_on_log("Partita caricata (%s)" % label, "")
+		_instr.text = "Partita caricata (%s)" % label
+	else:
+		_err("File di %s non valido" % label)
 
 
 var _log_entries: Array = []
@@ -934,7 +1090,7 @@ func _start_op(op_id: String) -> void:
 	var valid := _valid_spaces(_cur_faction, op_id)
 	# Operazioni "a spazi": se nessuno spazio è efficace, non avviarla.
 	if kind == "space_list" and valid.is_empty():
-		_instr.text = "%s: nessuno spazio dove sia efficace al momento" % OP_NAMES.get(op_id, op_id)
+		_err("%s: nessuno spazio dove sia efficace al momento" % OP_NAMES.get(op_id, op_id))
 		return
 	_cur_action = op_id
 	_selected.clear()
@@ -955,7 +1111,7 @@ func _on_space_clicked(sid: String) -> void:
 	# Bersaglio Attività Speciale
 	if _mode == "sa_point":
 		if not _sa_valid.has(sid):
-			_instr.text = "%s: spazio non valido, scegline uno evidenziato" % _sa_label(_pending_sa)
+			_err("%s: spazio non valido, scegline uno evidenziato" % _sa_label(_pending_sa))
 			return
 		# Rappresaglia: dopo il bersaglio, scelta opzionale dello spostamento di 1 Guerriglia.
 		if _sa_base(_pending_sa) == "reprisal" and _reprisal_movable(sid) != "" and not _reprisal_dests(sid).is_empty():
@@ -968,7 +1124,9 @@ func _on_space_clicked(sid: String) -> void:
 				_space_views[d].set_highlight(true)
 			_instr.text = "Rappresaglia a %s - clicca uno spazio ADIACENTE per spostarci 1 Guerriglia, oppure riclicca %s per non spostare" % [GameController.game_def.space(sid).name, GameController.game_def.space(sid).name]
 			return
-		_run_sa(_pending_sa, sid)
+		var sres := _run_sa(_pending_sa, sid)
+		if not sres.get("ok", false):
+			_err("✗ %s" % String(sres.get("error", "Attività non eseguibile")))
 		_end_sa()
 		return
 	# Rappresaglia: 2° passo (spostamento opzionale).
@@ -979,7 +1137,7 @@ func _on_space_clicked(sid: String) -> void:
 			_end_sa()
 			return
 		if not _sa_valid.has(sid):
-			_instr.text = "Spostamento non valido: scegli uno spazio adiacente evidenziato"
+			_err("Spostamento non valido: scegli uno spazio adiacente evidenziato")
 			return
 		GameController.run_special("reprisal", {"space": _reprisal_from, "move": {"faction": _reprisal_movable(_reprisal_from), "to": sid}})
 		_reprisal_from = ""
@@ -988,7 +1146,7 @@ func _on_space_clicked(sid: String) -> void:
 	if _mode == "sa_move":
 		if _sa_from == "":
 			if not _sa_valid.has(sid):
-				_instr.text = "Origine non valida: scegline una evidenziata"
+				_err("Origine non valida: scegline una evidenziata")
 				return
 			_sa_from = sid
 			# Mostra solo le destinazioni valide per questa origine.
@@ -997,12 +1155,12 @@ func _on_space_clicked(sid: String) -> void:
 			for d in _sa_valid:
 				_space_views[d].set_highlight(true)
 			if _sa_valid.is_empty():
-				_instr.text = "Nessuna destinazione valida da %s - Annulla per cambiare" % GameController.game_def.space(sid).name
+				_err("Nessuna destinazione valida da %s - Annulla per cambiare" % GameController.game_def.space(sid).name)
 			else:
 				_instr.text = "Origine: %s - clicca una DESTINAZIONE evidenziata" % GameController.game_def.space(sid).name
 		else:
 			if not _sa_valid.has(sid):
-				_instr.text = "Destinazione non valida: scegline una evidenziata"
+				_err("Destinazione non valida: scegline una evidenziata")
 				return
 			# Passo numero cubi: scegli quanti spostarne (riclicca la destinazione per ciclare).
 			_sa_move_to = sid
@@ -1022,12 +1180,12 @@ func _on_space_clicked(sid: String) -> void:
 	# Profitto: selezione di 1-2 Casinò (cash) o dei Casinò da chiudere (convert).
 	if _mode == "sa_profit":
 		if not _sa_valid.has(sid):
-			_instr.text = "Profitto: scegli uno spazio con Casinò aperto evidenziato"
+			_err("Profitto: scegli uno spazio con Casinò aperto evidenziato")
 			return
 		if _sa_spaces.has(sid):
 			_sa_spaces.erase(sid)
 		elif _profit_mode == "cash" and _sa_spaces.size() >= 2:
-			_instr.text = "Profitto (incassa): massimo 2 spazi"
+			_err("Profitto (incassa): massimo 2 spazi")
 			return
 		else:
 			_sa_spaces.append(sid)
@@ -1063,7 +1221,7 @@ func _on_space_clicked(sid: String) -> void:
 	else:
 		# Accetta solo gli spazi dove l'Operazione è efficace.
 		if not _valid_spaces(_cur_faction, _cur_action).has(sid):
-			_instr.text = "%s: qui non è efficace, scegli uno spazio evidenziato" % OP_NAMES.get(_cur_action, _cur_action)
+			_err("%s: qui non è efficace, scegli uno spazio evidenziato" % OP_NAMES.get(_cur_action, _cur_action))
 			return
 		if _limited and _selected.size() >= 1:
 			for prev in _selected:
@@ -1095,7 +1253,7 @@ func _rally_options(sid: String) -> Array:
 func _rally_click(sid: String) -> void:
 	if not _selected.has(sid):
 		if not _valid_spaces(_cur_faction, "rally").has(sid):
-			_instr.text = "Riorganizzazione: qui non è efficace, scegli uno spazio evidenziato"
+			_err("Riorganizzazione: qui non è efficace, scegli uno spazio evidenziato")
 			return
 		_selected.append(sid)
 		_rally_choice[sid] = _rally_options(sid)[0]
@@ -1132,7 +1290,7 @@ func _attack_enemies(sid: String) -> Array:
 func _attack_click(sid: String) -> void:
 	if not _selected.has(sid):
 		if not _valid_spaces(_cur_faction, "attack").has(sid):
-			_instr.text = "Attacco: serve una tua Guerriglia e un nemico - scegli uno spazio evidenziato"
+			_err("Attacco: serve una tua Guerriglia e un nemico - scegli uno spazio evidenziato")
 			return
 		_selected.append(sid)
 		var en := _attack_enemies(sid)
@@ -1175,7 +1333,7 @@ func _train_special_owner(exclude: String) -> String:
 func _train_click(sid: String) -> void:
 	if not _selected.has(sid):
 		if not _valid_spaces(_cur_faction, "train").has(sid):
-			_instr.text = "Addestramento: scegli una Città o uno spazio con una Base del Governo"
+			_err("Addestramento: scegli una Città o uno spazio con una Base del Governo")
 			return
 		_selected.append(sid)
 		_train_plan[sid] = {"kind": "cubes", "n": 1}
@@ -1237,7 +1395,7 @@ func _build_options(sid: String) -> Array:
 func _build_click(sid: String) -> void:
 	if not _selected.has(sid):
 		if not _valid_spaces(_cur_faction, "build").has(sid):
-			_instr.text = "Costruzione: scegli uno spazio con Controllo Govt o Sindacato"
+			_err("Costruzione: scegli uno spazio con Controllo Govt o Sindacato")
 			return
 		_selected.append(sid)
 		_build_choice[sid] = _build_options(sid)[0]
@@ -1286,7 +1444,7 @@ func _profit_instr() -> void:
 
 func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: String) -> void:
 	if _mode != "moves":
-		_instr.text = "! Per spostare i pezzi scegli prima un'operazione di movimento (Marcia / Perlustrazione / Guarnigione / Trasporto)"
+		_err("! Per spostare i pezzi scegli prima un'operazione di movimento (Marcia / Perlustrazione / Guarnigione / Trasporto)")
 		return
 	if from_id == to_id:
 		return
@@ -1319,41 +1477,50 @@ func _update_moves_overlay() -> void:
 	_moves_overlay.set_segments(segs)
 
 
-func _on_execute() -> void:
+func _on_execute() -> bool:
 	# Conferma del numero di cubi (Trasporto/Muscle).
 	if _mode == "sa_move_confirm":
 		if _sa_move_count <= 0:
-			_instr.text = "Nessun cubo da spostare"
-			return
-		_run_sa_move(_pending_sa, _sa_from, _sa_move_to, _sa_move_count)
+			_err("Nessun cubo da spostare")
+			return false
+		var mres := _run_sa_move(_pending_sa, _sa_from, _sa_move_to, _sa_move_count)
+		if not mres.get("ok", false):
+			_err("✗ %s" % String(mres.get("error", "Spostamento non eseguibile")))
 		_sa_move_to = ""
 		_end_sa()
-		return
+		return bool(mres.get("ok", false))
 	# Conferma del Profitto (1-2 Casinò).
 	if _mode == "sa_profit":
 		if _sa_spaces.is_empty():
-			_instr.text = "Profitto: scegli almeno 1 Casinò"
-			return
+			_err("Profitto: scegli almeno 1 Casinò")
+			return false
 		var pp := {"mode": _profit_mode}
 		if _profit_mode == "cash":
 			pp["spaces"] = _sa_spaces.duplicate()
 		else:
 			pp["close"] = _sa_spaces.duplicate()
-		GameController.run_special("profit", pp)
+		var pres := GameController.run_special("profit", pp)
+		if not pres.get("ok", false):
+			_err("✗ %s" % String(pres.get("error", "Profitto non eseguibile")))
 		_sa_spaces = []
 		_end_sa()
-		return
+		return bool(pres.get("ok", false))
 	if _cur_action == "":
-		return
+		return false
 	var params := _build_params()
-	GameController.run_operation(_cur_action, params)
+	var res := GameController.run_operation(_cur_action, params)
+	if not res.get("ok", false):
+		# La selezione resta: si può correggere e ripremere "Esegui", o Annullare.
+		_err("✗ %s" % String(res.get("error", "Operazione non eseguibile")))
+		return false
 	_clear_pending()
+	return true
 
 
 ## Esegue l'Attività Speciale (tasto): evidenzia SOLO gli spazi dove ha davvero effetto.
 func _do_special(sa: String) -> void:
 	if _limited:
-		_instr.text = "Operazione Limitata: niente Attività Speciale"
+		_err("Operazione Limitata: niente Attività Speciale")
 		return
 	var sa_name: String = _sa_label(sa)
 	var sa_desc: String = SA_DESC.get(_sa_base(sa), "")
@@ -1362,7 +1529,7 @@ func _do_special(sa: String) -> void:
 	if _sa_base(sa) == "profit":
 		var pvalid := _sa_valid_spaces(sa)
 		if pvalid.is_empty():
-			_instr.text = "%s: nessun Casinò aperto al momento" % sa_name
+			_err("%s: nessun Casinò aperto al momento" % sa_name)
 			return
 		_resume_mode = resume
 		_pending_sa = sa
@@ -1378,7 +1545,7 @@ func _do_special(sa: String) -> void:
 	if sa == "transport" or sa == "muscle":
 		var origins := _sa_valid_origins(sa)
 		if origins.is_empty():
-			_instr.text = "%s: nessuna origine valida al momento" % sa_name
+			_err("%s: nessuna origine valida al momento" % sa_name)
 			return
 		_resume_mode = resume
 		_pending_sa = sa
@@ -1392,7 +1559,7 @@ func _do_special(sa: String) -> void:
 	else:
 		var valid := _sa_valid_spaces(sa)
 		if valid.is_empty():
-			_instr.text = "%s: nessuno spazio valido al momento" % sa_name
+			_err("%s: nessuno spazio valido al momento" % sa_name)
 			return
 		_resume_mode = resume
 		_pending_sa = sa
@@ -1520,17 +1687,17 @@ func _sa_valid_dests(sa: String, from_id: String) -> Array:
 
 
 ## Esegue l'Att.Speciale su uno spazio (specials a bersaglio singolo).
-func _run_sa(sa: String, space: String) -> void:
-	GameController.run_special(_sa_target_id(sa), _sa_params(sa, space))
+func _run_sa(sa: String, space: String) -> Dictionary:
+	return GameController.run_special(_sa_target_id(sa), _sa_params(sa, space))
 
 
 ## Esegue Trasporto/Muscle come spostamento origine->destinazione del numero scelto di cubi.
-func _run_sa_move(sa: String, from_id: String, to_id: String, count: int) -> void:
+func _run_sa_move(sa: String, from_id: String, to_id: String, count: int) -> Dictionary:
 	var p := {"from": from_id, "to": to_id, "count": count}
 	if sa == "muscle":
 		var dest: SpaceDef = GameController.game_def.space(to_id)
 		p["type"] = "police" if dest.type == CoinEnums.SpaceType.CITY else "troops"
-	GameController.run_special(sa, p)
+	return GameController.run_special(sa, p)
 
 
 func _end_sa() -> void:
@@ -1564,7 +1731,7 @@ func _on_event(side: String) -> void:
 	var res := GameController.play_event(side, params)
 	_clear_pending()
 	if not res.get("ok", false):
-		_instr.text = "! " + String(res.get("error", "Evento non eseguibile"))
+		_err("! " + String(res.get("error", "Evento non eseguibile")))
 	else:
 		_instr.text = "Evento giocato - turno concluso"
 	_refresh_turn_banner()

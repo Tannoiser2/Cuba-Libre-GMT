@@ -314,3 +314,12 @@ trattato come primo cittadino. Oggi:
 Le voci 1–5 sono il "pacchetto qualità percepita": tutte a basso sforzo perché
 l'infrastruttura (serializzazione, texture carte, `victory()`, simulazione su copia)
 esiste già; insieme cambierebbero sensibilmente l'esperienza quotidiana di gioco.
+
+> **Aggiornamento** — le voci **1–5** sono state implementate insieme a questo audit:
+> menu "Partita…" con Salva/Carica/Riprendi autosalvataggio (autosave a ogni azione,
+> incluso l'ordine del mazzo Calixto dei bot), conferma su Nuova Partita, click sulle
+> carte per ingrandirle a schermo intero, pannello **Vittoria** numerico
+> (valore/soglia/margine + Risorse, Aiuti, Alleanza USA) nel pannello laterale, riga
+> istruzioni con tooltip a testo pieno ed errori mostrati **in rosso** (compresi i
+> rifiuti del motore su Esegui/Attività Speciali, che ora non chiudono il turno).
+> Rimosso anche il codice morto `_faction_label`.

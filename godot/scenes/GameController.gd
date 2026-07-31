@@ -406,7 +406,9 @@ func _after_decision() -> void:
 		seq.finish()
 		emit_signal("action_logged", "- Carta conclusa -", "")
 		advance_card()
+		autosave()
 		return
+	autosave()
 	emit_signal("state_changed")
 
 
@@ -734,6 +736,90 @@ func _emit_result(res: Dictionary) -> void:
 		emit_signal("state_changed")
 	else:
 		emit_signal("action_logged", "! " + String(res.get("error", "errore")), "")
+
+
+# ---------------------------------------------------------------------------
+# Salvataggio / caricamento partita
+# ---------------------------------------------------------------------------
+
+const SAVE_PATH := "user://savegame.json"
+const AUTOSAVE_PATH := "user://autosave.json"
+
+
+## Istantanea completa della partita: stato del motore, Sequenza di Gioco della carta
+## corrente, ruoli, contatori di partita e ordine del mazzo Calixto dei bot.
+func save_to_dict() -> Dictionary:
+	return {
+		"version": 1,
+		"state": state.to_dict(),
+		"seq": seq.snapshot() if seq != null else {},
+		"roles": roles.duplicate(true),
+		"propaganda_played": propaganda_played,
+		"game_over": game_over,
+		"winner": winner,
+		"calixto_deck": bot.deck.snapshot() if bot != null and bot.deck != null else [],
+		"did_op": _turn_did_op,
+		"did_special": _turn_did_special,
+		"did_event": _turn_did_event,
+	}
+
+
+func save_game(path: String = SAVE_PATH) -> bool:
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f == null:
+		return false
+	f.store_string(JSON.stringify(save_to_dict()))
+	f.close()
+	return true
+
+
+func has_save(path: String = SAVE_PATH) -> bool:
+	return FileAccess.file_exists(path)
+
+
+## Ricarica una partita salvata: ricrea le classi di regole sul nuovo stato e
+## ripristina la Sequenza di Gioco della carta corrente. Restituisce true se ok.
+func load_game(path: String = SAVE_PATH) -> bool:
+	if not FileAccess.file_exists(path):
+		return false
+	var d = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if typeof(d) != TYPE_DICTIONARY or typeof(d.get("state")) != TYPE_DICTIONARY:
+		return false
+	state = GameState.from_dict(game_def, d["state"])
+	var r: Dictionary = d.get("roles", {})
+	for k in r.keys():
+		roles[k] = String(r[k])
+	state.roles = roles   # stessa referenza: i cambi di ruolo restano sincronizzati
+	ops = CubaLibreOperations.new(state, module)
+	specials = CubaLibreSpecials.new(state, module)
+	propaganda = CubaLibrePropaganda.new(state, module)
+	events = CubaLibreEvents.new(state, module)
+	bot = CLCalixto.new(state, module)
+	bot.deck.restore(d.get("calixto_deck", []))
+	propaganda_played = int(d.get("propaganda_played", 0))
+	game_over = bool(d.get("game_over", false))
+	winner = String(d.get("winner", ""))
+	stats = {}
+	_undo = {}
+	_turn_did_op = bool(d.get("did_op", false))
+	_turn_did_special = bool(d.get("did_special", false))
+	_turn_did_event = bool(d.get("did_event", false))
+	seq = null
+	var snap: Dictionary = d.get("seq", {})
+	if state.current_card > 0 and game_def.card(state.current_card) != null:
+		seq = SequenceOfPlay.new(state, module, game_def.card(state.current_card))
+		seq.final_event_card = cards_left() == 0
+		if not snap.is_empty():
+			seq.restore_snapshot(snap)
+	state.recompute_all_control()
+	module._refresh_victory_tracks(state)
+	emit_signal("state_changed")
+	return true
+
+
+## Autosalvataggio silenzioso (dopo ogni azione conclusa).
+func autosave() -> void:
+	save_game(AUTOSAVE_PATH)
 
 
 # --- Helper di lettura per la UI ---
