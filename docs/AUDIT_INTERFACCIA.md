@@ -362,3 +362,23 @@ esiste già; insieme cambierebbero sensibilmente l'esperienza quotidiana di gioc
 > Nota di regolamento emersa dai test: lo schieramento standard mette 3 Truppe a
 > Las Villas, Provincia priva di Base del Governo — vanno quindi ricollocate già al
 > primo Round di Propaganda.
+
+> **Aggiornamento 5** — avviato il **refactor** (voce 15), prima fetta: estratta
+> `ActionFlow` (`godot/scenes/ActionFlow.gd`), la pianificazione dell'Operazione in
+> preparazione — spazi scelti, ciclo delle varianti (cubi/Base/Civica, bersaglio
+> dell'Attacco, Casinò), coda degli spostamenti, `build_params()` e `valid_spaces()`.
+> È un `RefCounted` **senza dipendenze dalla scena**: non tocca viste né etichette,
+> espone stato, `highlights()` e `message`, e la scena si limita a disegnare. Il punto
+> non era accorciare il file (`Main.gd` 2.214 → 1.920 righe) ma **rendere collaudabile
+> la logica di flusso**, che prima non aveva un solo test: ora ne ha 27.
+> Creato anche `CLNames` (`games/cuba_libre/CLNames.gd`) come unica fonte dei nomi
+> italiani di Operazioni, Attività Speciali e pezzi, al posto dei dizionari duplicati
+> tra `Main.gd` e `GameController.gd` (`_OP_IT`/`_SA_IT` rimossi).
+> L'estrazione ha fatto emergere una guardia mancante: `start()` ora rifiuta
+> un'Operazione che la Fazione non possiede (prima ci si affidava al fatto che la
+> scena non costruisse quel tasto). Copertura: **304 test headless**.
+>
+> Restano da estrarre, nell'ordine previsto: flussi delle Attività Speciali, `LogView`,
+> `SidePanel`, `MapAnimator` e il `Theme` come risorsa unica; poi la rimozione del
+> codice morto (`SpaceView.gd`, costante `LAYOUT`).
+

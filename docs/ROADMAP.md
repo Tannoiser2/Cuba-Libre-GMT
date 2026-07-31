@@ -76,6 +76,9 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
 - [x] Scorciatoie da tastiera (Esc / Invio / Spazio / Ctrl+Z / +-0).
 - [x] Spostamento (Redeploy) interattivo per il Governo umano (6.4: trascinamento cubi,
       destinazioni validate e obbligo 6.4.2 verificato prima di concludere).
+- [x] Refactor UI (1/n): estratta `ActionFlow` (pianificazione senza dipendenze dalla
+      scena, 27 test) e `CLNames` (nomi italiani condivisi).
+- [ ] Refactor UI (2/n): Att.Speciali, LogView, SidePanel, MapAnimator, Theme unico.
 - [ ] Hotseat multi-giocatore locale.
 
 ### Fase 4 — Bot (Non-Giocatore)

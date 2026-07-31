@@ -40,6 +40,7 @@ func _initialize() -> void:
 	_test_free_ops_and_momentum()
 	_test_undo_stack_and_preview()
 	_test_redeploy_interactive()
+	_test_action_flow()
 	_test_cards_data()
 	_test_events()
 	_test_all_events()
@@ -1164,3 +1165,91 @@ func _test_redeploy_interactive() -> void:
 	var pol: Dictionary = prop.redeploy_move("havana", ec, "police")
 	_check("Spostamento: Polizia verso un EC accettata", pol.get("ok", false))
 	_check("Obbligo: la Polizia nell'EC non blocca la chiusura", prop.redeploy_can_finish().get("ok", false))
+
+
+# ---------------------------------------------------------------------------
+# ActionFlow: pianificazione dell'Operazione (estratta dalla scena, quindi
+# collaudabile headless: selezione, ciclo delle varianti, parametri per il motore)
+# ---------------------------------------------------------------------------
+
+func _test_action_flow() -> void:
+	print("\n[ActionFlow - pianificazione]")
+	var gc = Engine.get_main_loop().root.get_node_or_null("GameController")
+	if gc == null:
+		_check("GameController disponibile (autoload)", false)
+		return
+	gc.new_game()
+	var flow := ActionFlow.new(gc)
+
+	# Avvio: un'Operazione senza spazi efficaci non parte e spiega perché.
+	_check("Avvio: Costruzione del Governo non è efficace", not flow.start("build", "government", false))
+	_check("Avvio: il rifiuto è motivato", flow.error != "")
+	_check("Avvio: Addestramento parte", flow.start("train", "government", false))
+	_eq("Avvio: modalità a spazi", flow.kind, "space_list")
+
+	# Addestramento: il ri-clic accumula cubi fino a 4.
+	_check("Train: clic su L'Avana accettato", flow.click("havana"))
+	_eq("Train: 1 cubo dopo il primo clic", int(flow.train_plan["havana"]["n"]), 1)
+	flow.click("havana"); flow.click("havana"); flow.click("havana")
+	_eq("Train: 4 cubi dopo quattro clic", int(flow.train_plan["havana"]["n"]), 4)
+	var p := flow.build_params()
+	_check("Train: i parametri contengono lo spazio", (p.get("spaces", []) as Array).has("havana"))
+	_eq("Train: L'Avana è Città, quindi Polizia", int((p["place"]["havana"] as Dictionary).get("police", 0)), 4)
+	# Il 5° clic passa alla variante Base/Civica (una sola per Addestramento).
+	flow.click("havana")
+	_check("Train: il 5° clic cambia variante", String(flow.train_plan["havana"]["kind"]) != "cubes")
+	var kind_after := String(flow.train_plan["havana"]["kind"])
+	var p2 := flow.build_params()
+	_check("Train: la variante finisce in 'special'", p2.has("special"))
+	_eq("Train: tipo della variante", String(p2["special"]["type"]), kind_after)
+
+	# Uno spazio non valido viene rifiutato con messaggio.
+	_check("Train: spazio non valido rifiutato", not flow.click("sierra_maestra"))
+	_check("Train: rifiuto motivato", flow.error != "")
+
+	# Riorganizzazione del 26 Luglio: vietata dove c'è Supporto.
+	gc.new_game()
+	var f2 := ActionFlow.new(gc)
+	_check("Rally: parte per il 26 Luglio", f2.start("rally", "m26", false))
+	var rvalid := f2.valid_spaces("m26", "rally")
+	var sup_ok := true
+	for sid in rvalid:
+		if gc.state.space_state(sid).support > 0:
+			sup_ok = false
+	_check("Rally 26J: nessuno spazio con Supporto tra i validi", sup_ok)
+	# Ciclo delle varianti: dalla prima all'ultima, poi deseleziona.
+	var target: String = rvalid[0]
+	f2.click(target)
+	var opts := f2.rally_options(target)
+	_eq("Rally: prima variante = default", String(f2.rally_choice[target]), String(opts[0]))
+	for i in range(opts.size()):
+		f2.click(target)
+	_check("Rally: dopo l'ultimo giro lo spazio è deselezionato", not f2.selected.has(target))
+
+	# Operazione Limitata: un solo spazio alla volta.
+	var f3 := ActionFlow.new(gc)
+	f3.start("terror", "m26", true)
+	var tvalid := f3.valid_spaces("m26", "terror")
+	if tvalid.size() >= 2:
+		f3.click(tvalid[0])
+		f3.click(tvalid[1])
+		_eq("Op Limitata: resta 1 solo spazio", f3.selected.size(), 1)
+		_eq("Op Limitata: è l'ultimo scelto", String(f3.selected[0]), String(tvalid[1]))
+	else:
+		_check("Op Limitata: spazi insufficienti per il test", true)
+
+	# Marcia: gli spostamenti si accodano e finiscono nei parametri.
+	var f4 := ActionFlow.new(gc)
+	_check("March: parte", f4.start("march", "m26", false))
+	_eq("March: modalità a trascinamento", f4.kind, "moves")
+	_check("March: spostamento accodato", f4.queue_move("sierra_maestra", "oriente", "guerrilla"))
+	var mp := f4.build_params()
+	_eq("March: 1 spostamento nei parametri", (mp.get("moves", []) as Array).size(), 1)
+	_eq("March: la Fazione è nei parametri", String(mp.get("faction", "")), "m26")
+	# In modalità trascinamento il clic generico non seleziona spazi.
+	_eq("March: nessuno spazio selezionato col trascinamento", f4.selected.size(), 0)
+
+	# clear() riporta tutto a zero.
+	f4.clear()
+	_check("clear: pianificazione azzerata", f4.is_idle() and not f4.has_plan())
+	gc.new_game()

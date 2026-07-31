@@ -21,11 +21,6 @@ const LAYOUT := {
 	"santiago_de_cuba": Vector2(0.875, 0.74),
 }
 
-const OP_NAMES := {
-	"train": "Addestramento", "garrison": "Guarnigione", "sweep": "Perlustrazione",
-	"assault": "Assalto", "rally": "Riorganizzazione", "march": "Marcia",
-	"attack": "Attacco", "terror": "Terrorismo", "build": "Costruzione",
-}
 # Cosa permette di fare ogni Operazione (sintesi mostrata nel banner).
 const OP_DESC := {
 	"train": "Clicca uno spazio per piazzare cubi (riclicca per +1, fino a 4); un altro click cicla a Base (da 2 cubi) o Azione Civica (1 sola Att. speciale per Addestramento).",
@@ -69,13 +64,9 @@ const SA_VARIANTS := {
 		{"id": "bribe:base", "label": "Corruzione (rimuovi Base)", "p": {"action": "base"}},
 	],
 }
-# Tipo di flusso per ogni Operazione.
-const OP_KIND := {
-	"train": "space_list", "assault": "space_list", "rally": "space_list",
-	"attack": "space_list", "terror": "space_list", "build": "space_list",
-	"sweep": "moves", "garrison": "moves", "march": "moves",
-}
 
+## Pianificazione dell'Operazione in corso (stato + regole, senza dipendenze dalla scena).
+var _flow: ActionFlow
 var _space_views: Dictionary = {}     # space_id -> SpaceView
 var _board: ScrollContainer
 var _map_wrap: Control
@@ -103,39 +94,19 @@ var _btn_ev_s: Button
 
 # Stato del flusso azione
 var _mode := "idle"                  # idle | select_spaces | moves
-var _limited := false                 # turno limitato a 1 spazio, niente Att.Speciale
 var _op_btns: HBoxContainer
 var _sa_btns: HBoxContainer
 
-const PIECE_NAMES := {
-	"troops": "Truppa", "police": "Polizia", "guerrilla": "Guerriglia",
-	"base": "Base", "casino": "Casinò",
-}
-const SA_NAMES := {
-	"transport": "Trasporto", "air_strike": "Attacco Aereo", "reprisal": "Rappresaglia",
-	"infiltrate": "Infiltrazione", "ambush": "Imboscata", "kidnap": "Sequestro",
-	"subvert": "Sovversione", "assassinate": "Assassinio",
-	"profit": "Profitto", "muscle": "Muscle", "bribe": "Corruzione",
-}
 var _cur_faction := "government"
-var _cur_action := ""
-var _selected: Array = []
-var _rally_choice: Dictionary = {}     # sid -> "place"/"extra"/"base"/"flip" (Riorganizzazione)
-var _train_plan: Dictionary = {}       # sid -> {kind:"cubes"/"base"/"civic", n:int} (Addestramento)
-var _build_choice: Dictionary = {}     # sid -> "new"/"open" (Costruzione Sindacato)
-var _garrison_ec := ""                # EC scelto per l'Assalto gratuito della Guarnigione
-var _sweep_assault := ""              # spazio dell'Assalto gratuito in Sweep (Momentum Masferrer)
 var _btn_launder: Button              # Riciclaggio (2.3.6)
 var _btn_clear: Button                # scarta la selezione in preparazione
 var _btn_undo: Button                 # annulla l'ultima azione eseguita
 var _preview: TipLabel                # anteprima costo/effetti dell'Operazione in preparazione
 var _reprisal_from := ""              # spazio Rappresaglia in attesa dello spostamento opzionale
-var _attack_target: Dictionary = {}    # sid -> fazione bersaglio preferita (Attacco)
 var _sa_move_to := ""                 # destinazione Trasporto/Muscle in attesa del numero
 var _sa_move_count := 0                # numero di cubi da spostare (Trasporto/Muscle)
 var _sa_spaces: Array = []             # Casinò scelti per il Profitto (multi-selezione)
 var _profit_mode := "cash"            # "cash" | "convert"
-var _pending_moves: Array = []
 var _pending_sa := ""                 # Att.Speciale in attesa di bersaglio
 var _sa_from := ""                    # origine (per Trasporto/Muscle)
 var _resume_mode := "idle"            # modalità Operazione da riprendere dopo l'Att.Speciale
@@ -144,6 +115,7 @@ var _sa_valid: Array = []              # spazi bersaglio validi per l'Att.Specia
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	_flow = ActionFlow.new(GameController)
 	# Su schermi touch (iPad): canvas logico più piccolo = testi e bersagli ~25% più grandi.
 	if DisplayServer.is_touchscreen_available():
 		get_window().content_scale_size = Vector2i(1180, 650)
@@ -478,7 +450,7 @@ func _on_execute_and_end() -> void:
 				if _space_views.has(sid):
 					_space_views[sid].flash(Color(1.0, 0.4, 0.4))
 		return
-	if _cur_action != "" and _mode != "idle":
+	if _flow.op != "" and _mode != "idle":
 		if not _on_execute():
 			return   # l'esecuzione è fallita: l'errore è mostrato, il turno resta aperto
 	GameController.end_turn()
@@ -949,7 +921,7 @@ func _refresh_turn_banner() -> void:
 	_set_btn(_btn_pass, turn_active)
 	_set_btn(_btn_bot, turn_active)
 	_set_btn(_btn_launder, turn_active and GameController.can_launder())
-	_set_btn(_btn_clear, _mode != "idle" or not _selected.is_empty() or not _pending_moves.is_empty())
+	_set_btn(_btn_clear, _mode != "idle" or not _flow.selected.is_empty() or not _flow.moves.is_empty())
 	_refresh_undo_btn()
 	_refresh_preview()
 	var legal: Array = st.get("legal", [])
@@ -992,9 +964,9 @@ func _refresh_turn_banner() -> void:
 			acts.append(ACTION_NAMES.get(int(a), str(a)))
 		step = "scegli un'Operazione (tasti), oppure: %s" % ", ".join(acts)
 	elif _mode == "moves":
-		step = "trascina i pezzi (%d spostamenti) -> 'Concludi turno'" % _pending_moves.size()
+		step = "trascina i pezzi (%d spostamenti) -> 'Concludi turno'" % _flow.moves.size()
 	else:
-		step = "clicca gli spazi evidenziati (%d selezionati) -> 'Concludi turno'" % _selected.size()
+		step = "clicca gli spazi evidenziati (%d selezionati) -> 'Concludi turno'" % _flow.selected.size()
 	_turn_banner.text = "> Tocca a %s (%s Fazione) - %s" % \
 		[GameController.faction_name(pending), slot, step]
 
@@ -1021,12 +993,12 @@ func _refresh_preview() -> void:
 	if _preview == null:
 		return
 	var sst := GameController.seq_status()
-	if _cur_action == "" or _mode not in ["space_list", "select_spaces", "moves"] \
+	if _flow.op == "" or _mode not in ["space_list", "select_spaces", "moves"] \
 			or String(sst.get("pending", "")) == "":
 		_preview.text = ""
 		_preview.tooltip_text = ""
 		return
-	var res: Dictionary = GameController.preview_operation(_cur_action, _build_params())
+	var res: Dictionary = GameController.preview_operation(_flow.op, _flow.build_params())
 	if not res.get("ok", false):
 		# Errore atteso: si vede PRIMA di premere Esegui.
 		_preview.text = "⚠ non eseguibile"
@@ -1049,7 +1021,7 @@ func _refresh_preview() -> void:
 	# Nel tooltip: cosa succederà (l'Attacco dipende dal tiro, quindi è indicativo).
 	var lines: Array = res.get("log", [])
 	var tip := "Effetti previsti:\n- " + "\n- ".join(lines) if not lines.is_empty() else "Nessun effetto previsto"
-	if _cur_action == "attack":
+	if _flow.op == "attack":
 		tip += "\n\n(L'Attacco dipende dal tiro del dado: anteprima indicativa.)"
 	_preview.tooltip_text = tip
 
@@ -1065,7 +1037,7 @@ func _rebuild_action_buttons(fid: String) -> void:
 	for c in _op_btns.get_children():
 		c.queue_free()
 	for op in GameController.game_def.faction(fid).operations:
-		var ob: Button = _mk_btn(OP_NAMES.get(op, op), _start_op.bind(op))
+		var ob: Button = _mk_btn(CLNames.op(op), _start_op.bind(op))
 		ob.tooltip_text = OP_DESC.get(op, "")
 		_op_btns.add_child(ob)
 	for c in _sa_btns.get_children():
@@ -1073,7 +1045,7 @@ func _rebuild_action_buttons(fid: String) -> void:
 	for sa in GameController.game_def.faction(fid).special_activities:
 		if SA_VARIANTS.has(sa):
 			# Un solo tasto a tendina che "esplode" le varianti (niente barra che va a capo).
-			var mb := _mk_menu_btn("%s..." % SA_NAMES.get(sa, sa))
+			var mb := _mk_menu_btn("%s..." % CLNames.sa(sa))
 			mb.tooltip_text = SA_DESC.get(sa, "")
 			var pop := mb.get_popup()
 			var ids: Array = []
@@ -1083,7 +1055,7 @@ func _rebuild_action_buttons(fid: String) -> void:
 			pop.id_pressed.connect(func(i): _do_special(String(ids[i])))
 			_sa_btns.add_child(mb)
 		else:
-			var sb: Button = _mk_btn(SA_NAMES.get(sa, sa), _do_special.bind(sa))
+			var sb: Button = _mk_btn(CLNames.sa(sa), _do_special.bind(sa))
 			sb.tooltip_text = SA_DESC.get(sa, "")
 			_sa_btns.add_child(sb)
 
@@ -1348,26 +1320,27 @@ func _on_log_meta(meta: Variant) -> void:
 
 ## Avvia l'Operazione scelta (tasto): evidenzia gli spazi e imposta il flusso.
 func _start_op(op_id: String) -> void:
-	var kind: String = OP_KIND.get(op_id, "space_list")
-	var valid := _valid_spaces(_cur_faction, op_id)
-	# Operazioni "a spazi": se nessuno spazio è efficace, non avviarla.
-	if kind == "space_list" and valid.is_empty():
-		_err("%s: nessuno spazio dove sia efficace al momento" % OP_NAMES.get(op_id, op_id))
-		return
-	_cur_action = op_id
-	_selected.clear()
-	_pending_moves.clear()
 	# LimOp anche quando è armata la LimOp gratuita del Riciclaggio (1 spazio).
-	_limited = GameController.seq_is_limited_only() or GameController.free_limop_armed()
-	_mode = kind
-	_clear_highlights()
-	for sid in valid:
-		_space_views[sid].set_highlight(true)
-	var lim := " (Op Limitata: 1 spazio, niente Att.Speciale)" if _limited else ""
+	var lim_only: bool = GameController.seq_is_limited_only() or GameController.free_limop_armed()
+	if not _flow.start(op_id, _cur_faction, lim_only):
+		_err(_flow.error)
+		return
+	_mode = _flow.kind
+	_render_flow()
+	var lim := " (Op Limitata: 1 spazio, niente Att.Speciale)" if _flow.limited else ""
 	var desc: String = OP_DESC.get(op_id, "")
 	var hint := "trascina i pezzi nei loro spazi" if _mode == "moves" else "clicca gli spazi evidenziati"
-	_instr.text = "%s%s - %s\n> %s, poi 'Esegui' o 'Concludi turno'" % [OP_NAMES.get(op_id, op_id), lim, desc, hint]
+	_instr.text = "%s%s - %s\n> %s, poi 'Esegui' o 'Concludi turno'" % [CLNames.op(op_id), lim, desc, hint]
 	_refresh_turn_banner()
+
+
+## Ridisegna ciò che la pianificazione descrive: evidenziazioni e frecce degli spostamenti.
+func _render_flow() -> void:
+	_clear_highlights()
+	for sid in _flow.highlights():
+		if _space_views.has(sid):
+			_space_views[sid].set_highlight(true)
+	_update_moves_overlay()
 
 
 func _on_space_clicked(sid: String) -> void:
@@ -1470,238 +1443,37 @@ func _on_space_clicked(sid: String) -> void:
 		return
 	if _mode != "select_spaces" and _mode != "space_list":
 		return
-	# Riorganizzazione: ogni spazio ha un'AZIONE che si cambia ri-cliccando
-	# (Guerriglie -> Base -> ... -> deseleziona), così si può anche costruire una Base.
-	if _cur_action == "rally":
-		_rally_click(sid)
+	# Da qui in poi decide la pianificazione (ActionFlow): selezione degli spazi,
+	# ciclo delle varianti (cubi/Base/Civica, bersaglio dell'Attacco, ...) e
+	# Assalti gratuiti di Guarnigione/Perlustrazione. La scena si limita a disegnare.
+	var before: int = _flow.selected.size()
+	if not _flow.click(sid):
+		if _flow.error != "":
+			_err(_flow.error)
 		return
-	if _cur_action == "train":
-		_train_click(sid)
-		return
-	if _cur_action == "attack":
-		_attack_click(sid)
-		return
-	if _cur_action == "build":
-		_build_click(sid)
-		return
-	# Perlustrazione + Momentum Masferrer: clicca uno spazio per l'Assalto gratuito.
-	if _cur_action == "sweep" and _mode == "moves" \
-			and GameController.module.has_momentum(GameController.state, "Rolando Masferrer"):
-		_sweep_assault = "" if _sweep_assault == sid else sid
+	_instr.text = _flow.message
+	# Feedback: verde se lo spazio è entrato nel piano, arancio per gli Assalti gratuiti.
+	if _flow.op in ["garrison", "sweep"] and _mode == "moves":
 		_space_views[sid].flash(Color(1.0, 0.7, 0.3))
-		var snm := GameController.game_def.space(sid).name
-		_instr.text = ("Masferrer: Assalto gratuito a %s - poi 'Esegui'" % snm) if _sweep_assault != "" else "Masferrer: Assalto gratuito annullato"
-		return
-	# Guarnigione (modalità trascinamento): clicca un EC per l'Assalto gratuito opzionale.
-	if _cur_action == "garrison" and _mode == "moves":
-		if GameController.game_def.space(sid).is_economic():
-			_garrison_ec = "" if _garrison_ec == sid else sid
-			_space_views[sid].flash(Color(1.0, 0.7, 0.3))
-			var nm := GameController.game_def.space(sid).name
-			_instr.text = ("Guarnigione: Assalto gratuito a %s - trascina i cubi e 'Esegui'" % nm) if _garrison_ec != "" else "Guarnigione: Assalto in EC annullato"
-		return
-	if _selected.has(sid):
-		_selected.erase(sid)
-	else:
-		# Accetta solo gli spazi dove l'Operazione è efficace.
-		if not _valid_spaces(_cur_faction, _cur_action).has(sid):
-			_err("%s: qui non è efficace, scegli uno spazio evidenziato" % OP_NAMES.get(_cur_action, _cur_action))
-			return
-		if _limited and _selected.size() >= 1:
-			for prev in _selected:
-				_space_views[prev].set_highlight(false)
-			_selected.clear()
-		_selected.append(sid)
-		_space_views[sid].set_highlight(true)
-	_instr.text = "Selezionati: %s" % ", ".join(_selected)
+	elif _flow.selected.size() != before:
+		_space_views[sid].flash(Color(0.4, 1.0, 0.5))
+	_render_flow()
 	_refresh_turn_banner()
 
 
-const RALLY_LABEL := {"place": "Guerriglie", "extra": "Guerriglie", "base": "Base", "flip": "Clandestine"}
 
 
-## Azioni di Riorganizzazione possibili in uno spazio (la 1ª è il default).
-func _rally_options(sid: String) -> Array:
-	var f := _cur_faction
-	var st: SpaceState = GameController.state.space_state(sid)
-	var has_base := st.count(f, "base") > 0
-	var opts: Array = ["extra"] if has_base else ["place"]
-	if st.count(f, "guerrilla") >= 2 and GameController.module.can_place_base(GameController.state, sid, false):
-		opts.append("base")  # sostituisci 2 Guerriglie con 1 Base
-	if has_base and st.count(f, "guerrilla", "active") > 0:
-		opts.append("flip")  # gira le Guerriglie Clandestine
-	return opts
 
 
-## Click su uno spazio durante la Riorganizzazione: seleziona o cicla l'azione.
-func _rally_click(sid: String) -> void:
-	if not _selected.has(sid):
-		if not _valid_spaces(_cur_faction, "rally").has(sid):
-			_err("Riorganizzazione: qui non è efficace, scegli uno spazio evidenziato")
-			return
-		_selected.append(sid)
-		_rally_choice[sid] = _rally_options(sid)[0]
-		_space_views[sid].set_highlight(true)
-	else:
-		var opts := _rally_options(sid)
-		var i := opts.find(String(_rally_choice.get(sid, opts[0])))
-		if i + 1 < opts.size():
-			_rally_choice[sid] = opts[i + 1]   # azione successiva
-		else:
-			_selected.erase(sid)               # dopo l'ultima: deseleziona
-			_rally_choice.erase(sid)
-			_space_views[sid].set_highlight(false)
-	var parts: Array = []
-	for s in _selected:
-		parts.append("%s [%s]" % [GameController.game_def.space(s).name, RALLY_LABEL.get(_rally_choice.get(s, "place"), "?")])
-	_instr.text = "Riorganizza: %s - riclicca uno spazio per cambiare azione, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Riorganizzazione: clicca gli spazi"
-	_refresh_turn_banner()
 
 
-# ---- Attacco: bersaglio (Fazione) scelto per ogni spazio ----
-
-func _attack_enemies(sid: String) -> Array:
-	var st: SpaceState = GameController.state.space_state(sid)
-	var out: Array = []
-	for ff in ["m26", "directorio", "syndicate", "government"]:
-		if ff == _cur_faction:
-			continue
-		if st.count(ff, "guerrilla") + st.count(ff, "troops") + st.count(ff, "police") \
-				+ st.count(ff, "base") + st.count(ff, "casino", "open") > 0:
-			out.append(ff)
-	return out
-
-func _attack_click(sid: String) -> void:
-	if not _selected.has(sid):
-		if not _valid_spaces(_cur_faction, "attack").has(sid):
-			_err("Attacco: serve una tua Guerriglia e un nemico - scegli uno spazio evidenziato")
-			return
-		_selected.append(sid)
-		var en := _attack_enemies(sid)
-		_attack_target[sid] = en[0] if not en.is_empty() else ""
-		_space_views[sid].set_highlight(true)
-	else:
-		var en := _attack_enemies(sid)
-		var i := en.find(String(_attack_target.get(sid, "")))
-		if i + 1 < en.size():
-			_attack_target[sid] = en[i + 1]
-		else:
-			_selected.erase(sid)
-			_attack_target.erase(sid)
-			_space_views[sid].set_highlight(false)
-	var parts: Array = []
-	for s in _selected:
-		parts.append("%s -> %s" % [GameController.game_def.space(s).name, GameController.faction_name(String(_attack_target.get(s, "")))])
-	_instr.text = "Attacco: %s - riclicca uno spazio per cambiare bersaglio, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Attacco: clicca gli spazi"
-	_refresh_turn_banner()
 
 
-# ---- Addestramento (Train): cubi per spazio + 1 azione speciale (Base/Civica) ----
-
-func _train_base_ok(sid: String) -> bool:
-	var st: SpaceState = GameController.state.space_state(sid)
-	return st.count("government", "troops") + st.count("government", "police") >= 2 \
-		and GameController.module.can_place_base(GameController.state, sid, false)
-
-func _train_civic_ok(sid: String) -> bool:
-	var st: SpaceState = GameController.state.space_state(sid)
-	return st.control == "government" and st.count("government", "troops") > 0 and st.count("government", "police") > 0
-
-## Lo spazio che già ospita la singola Att. speciale di Train (Base/Civica), o "".
-func _train_special_owner(exclude: String) -> String:
-	for s in _train_plan:
-		if s != exclude and String(_train_plan[s].get("kind", "cubes")) in ["base", "civic"]:
-			return s
-	return ""
-
-func _train_click(sid: String) -> void:
-	if not _selected.has(sid):
-		if not _valid_spaces(_cur_faction, "train").has(sid):
-			_err("Addestramento: scegli una Città o uno spazio con una Base del Governo")
-			return
-		_selected.append(sid)
-		_train_plan[sid] = {"kind": "cubes", "n": 1}
-		_space_views[sid].set_highlight(true)
-	else:
-		var p: Dictionary = _train_plan[sid]
-		var kind := String(p["kind"])
-		if kind == "cubes" and int(p["n"]) < 4:
-			p["n"] = int(p["n"]) + 1
-		elif kind == "cubes":
-			# Una sola Att. speciale per Addestramento.
-			if _train_special_owner(sid) == "" and _train_base_ok(sid):
-				p["kind"] = "base"
-			elif _train_special_owner(sid) == "" and _train_civic_ok(sid):
-				p["kind"] = "civic"
-			else:
-				_train_drop(sid); _train_instr(); return
-		elif kind == "base":
-			if _train_civic_ok(sid):
-				p["kind"] = "civic"
-			else:
-				_train_drop(sid); _train_instr(); return
-		else:
-			_train_drop(sid); _train_instr(); return
-	_train_instr()
-
-func _train_drop(sid: String) -> void:
-	_selected.erase(sid)
-	_train_plan.erase(sid)
-	_space_views[sid].set_highlight(false)
-
-func _train_instr() -> void:
-	var parts: Array = []
-	for s in _selected:
-		var p: Dictionary = _train_plan.get(s, {"kind": "cubes", "n": 1})
-		var nm: String = GameController.game_def.space(s).name
-		match String(p["kind"]):
-			"base": parts.append("%s [Base]" % nm)
-			"civic": parts.append("%s [Civica]" % nm)
-			_:
-				var typ := "Polizia" if GameController.game_def.space(s).type == CoinEnums.SpaceType.CITY else "Truppe"
-				parts.append("%s [%d %s]" % [nm, int(p["n"]), typ])
-	_instr.text = "Addestramento: %s - riclicca per +cubo / Base / Civica, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Addestramento: clicca gli spazi"
-	_refresh_turn_banner()
 
 
-# ---- Costruzione (Build, Sindacato): nuovo Casinò chiuso oppure apri uno chiuso ----
-
-func _build_options(sid: String) -> Array:
-	var s: GameState = GameController.state
-	var st: SpaceState = s.space_state(sid)
-	var opts: Array = []
-	if st.count("syndicate", "casino", "closed") > 0:
-		opts.append("open")
-	if GameController.module.can_place_base(s, sid, true):
-		opts.append("new")
-	return opts if not opts.is_empty() else ["new"]
-
-func _build_click(sid: String) -> void:
-	if not _selected.has(sid):
-		if not _valid_spaces(_cur_faction, "build").has(sid):
-			_err("Costruzione: scegli uno spazio con Controllo Govt o Sindacato")
-			return
-		_selected.append(sid)
-		_build_choice[sid] = _build_options(sid)[0]
-		_space_views[sid].set_highlight(true)
-	else:
-		var opts := _build_options(sid)
-		var i := opts.find(String(_build_choice.get(sid, opts[0])))
-		if i + 1 < opts.size():
-			_build_choice[sid] = opts[i + 1]
-		else:
-			_selected.erase(sid)
-			_build_choice.erase(sid)
-			_space_views[sid].set_highlight(false)
-	var parts: Array = []
-	for s in _selected:
-		var lbl := "apri Casinò" if String(_build_choice.get(s, "new")) == "open" else "nuovo Casinò"
-		parts.append("%s [%s]" % [GameController.game_def.space(s).name, lbl])
-	_instr.text = "Costruzione: %s - riclicca per cambiare, poi 'Esegui'" % ", ".join(parts) if not parts.is_empty() else "Costruzione: clicca gli spazi"
-	_refresh_turn_banner()
 
 
-# ---- Trasporto/Muscle: numero di cubi ----
+
 
 func _sa_move_max(sa: String, from_id: String, to_id: String) -> int:
 	var from_st: SpaceState = GameController.state.space_state(from_id)
@@ -1744,29 +1516,26 @@ func _on_piece_dropped(from_id: String, to_id: String, faction: String, type: St
 		return
 	if _mode != "moves":
 		# Momentum "Armored Cars": Truppe trascinabili negli spazi scelti per l'Assalto.
-		if _mode == "space_list" and _cur_action == "assault" and type == "troops" \
+		if _mode == "space_list" and _flow.op == "assault" and type == "troops" \
 				and GameController.module.has_momentum(GameController.state, "Armored Cars"):
-			if not _selected.has(to_id):
-				_err("Armored Cars: trascina le Truppe in uno spazio già scelto per l'Assalto")
+			if not _flow.queue_assault_move(from_id, to_id):
+				_err(_flow.error)
 				return
-			_pending_moves.append({"from": from_id, "to": to_id, "count": 1, "type": "troops"})
+			_instr.text = _flow.message
 			_update_moves_overlay()
-			_instr.text = "Armored Cars: %d Truppe verso gli spazi d'Assalto - poi 'Esegui'" % _pending_moves.size()
 			return
 		_err("! Per spostare i pezzi scegli prima un'operazione di movimento (Marcia / Perlustrazione / Guarnigione / Trasporto)")
 		return
-	if from_id == to_id:
+	if not _flow.queue_move(from_id, to_id, type):
+		if _flow.error != "":
+			_err(_flow.error)
 		return
-	_pending_moves.append({"from": from_id, "to": to_id, "count": 1, "type": type})
 	# Feedback: lampeggia origine (blu) e destinazione (verde).
 	if _space_views.has(from_id):
 		_space_views[from_id].flash(Color(0.35, 0.6, 1.0))
 	if _space_views.has(to_id):
 		_space_views[to_id].flash(Color(0.4, 1.0, 0.5))
-	var pn: String = PIECE_NAMES.get(type, type)
-	var fn: String = GameController.game_def.space(from_id).name
-	var tn: String = GameController.game_def.space(to_id).name
-	_instr.text = "In coda (%d): 1 %s da %s -> %s - poi 'Esegui'" % [_pending_moves.size(), pn, fn, tn]
+	_instr.text = _flow.message
 	_update_moves_overlay()
 	_refresh_turn_banner()
 
@@ -1776,7 +1545,7 @@ func _update_moves_overlay() -> void:
 	if _moves_overlay == null:
 		return
 	var segs: Array = []
-	for m in _pending_moves:
+	for m in _flow.moves:
 		var fi: String = m["from"]
 		var ti: String = m["to"]
 		if _space_views.has(fi) and _space_views.has(ti):
@@ -1814,10 +1583,10 @@ func _on_execute() -> bool:
 		_sa_spaces = []
 		_end_sa()
 		return bool(pres.get("ok", false))
-	if _cur_action == "":
+	if _flow.op == "":
 		return false
-	var params := _build_params()
-	var res := GameController.run_operation(_cur_action, params)
+	var params := _flow.build_params()
+	var res := GameController.run_operation(_flow.op, params)
 	if not res.get("ok", false):
 		# La selezione resta: si può correggere e ripremere "Esegui", o Annullare.
 		_err("✗ %s" % String(res.get("error", "Operazione non eseguibile")))
@@ -1829,7 +1598,7 @@ func _on_execute() -> bool:
 ## Esegue l'Attività Speciale (tasto): evidenzia SOLO gli spazi dove ha davvero effetto.
 func _do_special(sa: String) -> void:
 	# Momentum "MAP": il Governo può accompagnare la LimOp con un'Att.Speciale.
-	if _limited and not GameController.limited_special_ok(_cur_faction):
+	if _flow.limited and not GameController.limited_special_ok(_cur_faction):
 		_err("Operazione Limitata: niente Attività Speciale")
 		return
 	var sa_name: String = _sa_label(sa)
@@ -1918,7 +1687,7 @@ func _sa_label(sa: String) -> String:
 	for v in SA_VARIANTS.get(base, []):
 		if v["id"] == sa:
 			return v["label"]
-	return SA_NAMES.get(sa, sa)
+	return CLNames.sa(sa)
 
 
 ## sa_id effettivo (Imboscata dipende dalla Fazione attiva).
@@ -2020,11 +1789,11 @@ func _end_sa() -> void:
 	_reprisal_from = ""
 	_clear_highlights()
 	# Se l'Operazione era in corso, riprendila (Att.Speciale fatta DURANTE l'operazione).
-	if _resume_mode != "idle" and _cur_action != "":
+	if _resume_mode != "idle" and _flow.op != "":
 		_mode = _resume_mode
-		for sid in _valid_spaces(_cur_faction, _cur_action):
+		for sid in _flow.valid_spaces(_cur_faction, _flow.op):
 			_space_views[sid].set_highlight(true)
-		for sid in _selected:
+		for sid in _flow.selected:
 			_space_views[sid].set_highlight(true)
 		_instr.text = "Continua l'Operazione (clicca/trascina), poi 'Esegui' o 'Concludi turno'"
 	else:
@@ -2036,8 +1805,8 @@ func _end_sa() -> void:
 ## Gioca l'Evento della carta corrente (lato chiaro/ombreggiato) per la Fazione selezionata.
 func _on_event(side: String) -> void:
 	var params := {}
-	if _selected.size() > 0:
-		params["space"] = _selected[0]
+	if _flow.selected.size() > 0:
+		params["space"] = _flow.selected[0]
 	var res := GameController.play_event(side, params)
 	_clear_pending()
 	if not res.get("ok", false):
@@ -2108,18 +1877,11 @@ func _on_new_game() -> void:
 ## Pulizia interna della selezione/coda in preparazione (senza undo).
 func _clear_pending() -> void:
 	_mode = "idle"
-	_selected.clear()
-	_rally_choice.clear()
-	_train_plan.clear()
-	_build_choice.clear()
-	_garrison_ec = ""
-	_sweep_assault = ""
+	_flow.clear()
 	_reprisal_from = ""
-	_attack_target.clear()
 	_sa_move_to = ""
 	_sa_move_count = 0
 	_sa_spaces = []
-	_pending_moves.clear()
 	_pending_sa = ""
 	_sa_from = ""
 	_sa_valid = []
@@ -2130,7 +1892,7 @@ func _clear_pending() -> void:
 
 ## "Annulla sel.": scarta soltanto la selezione/coda in preparazione (mai distruttivo).
 func _on_cancel_selection() -> void:
-	var had_pending := _mode != "idle" or not _selected.is_empty() or not _pending_moves.is_empty() or _pending_sa != ""
+	var had_pending := _mode != "idle" or not _flow.selected.is_empty() or not _flow.moves.is_empty() or _pending_sa != ""
 	_clear_pending()
 	_instr.text = "Selezione annullata" if had_pending else "Niente da annullare in preparazione"
 	_refresh_turn_banner()
@@ -2154,93 +1916,5 @@ func _clear_highlights() -> void:
 		_space_views[sid].set_highlight(false)
 
 
-func _build_params() -> Dictionary:
-	match _cur_action:
-		"sweep":
-			var dests := {}
-			for m in _pending_moves:
-				dests[m["to"]] = true
-			var sp := {"spaces": dests.keys(), "moves": _pending_moves}
-			if _sweep_assault != "":
-				sp["assault_space"] = _sweep_assault   # Momentum Masferrer
-			return sp
-		"garrison":
-			var gp := {"moves": _pending_moves}
-			if _garrison_ec != "":
-				gp["assault_ec"] = _garrison_ec
-			return gp
-		"march":
-			return {"faction": _cur_faction, "moves": _pending_moves}
-		"rally":
-			return {"faction": _cur_faction, "spaces": _selected, "choices": _rally_choice.duplicate()}
-		"attack":
-			return {"faction": _cur_faction, "spaces": _selected, "targets": _attack_target.duplicate()}
-		"terror":
-			return {"faction": _cur_faction, "spaces": _selected}
-		"assault":
-			var ap := {"spaces": _selected}
-			if not _pending_moves.is_empty():
-				ap["moves"] = _pending_moves.duplicate()   # Momentum Armored Cars
-			return ap
-		"build":
-			return {"spaces": _selected, "choices": _build_choice.duplicate()}
-		"train":
-			var place := {}
-			var special := {}
-			for sid in _selected:
-				var p: Dictionary = _train_plan.get(sid, {"kind": "cubes", "n": 1})
-				match String(p["kind"]):
-					"base": special = {"type": "base", "space": sid}
-					"civic": special = {"type": "civic", "space": sid, "steps": 1}
-					_:
-						var typ := "police" if GameController.game_def.space(sid).type == CoinEnums.SpaceType.CITY else "troops"
-						place[sid] = {typ: int(p["n"])}
-			var out := {"spaces": _selected, "place": place}
-			if not special.is_empty():
-				out["special"] = special
-			return out
-		_:
-			return {"spaces": _selected, "faction": _cur_faction}
 
 
-# Spazi validi (best-effort per evidenziazione; il motore valida comunque all'esecuzione).
-func _valid_spaces(faction: String, op: String) -> Array:
-	var s: GameState = GameController.state
-	var out: Array = []
-	for sid in _space_views.keys():
-		var sd: SpaceDef = GameController.game_def.space(sid)
-		var st: SpaceState = s.space_state(sid)
-		var ok := false
-		match op:
-			"train":
-				# Addestramento: Città oppure spazio con una Base del Governo.
-				ok = sd.type == CoinEnums.SpaceType.CITY or st.count("government", "base") > 0
-			"garrison", "march", "sweep":
-				ok = true   # Operazioni a spostamento: libere (trascina i pezzi)
-			"rally":
-				ok = sd.has_population()
-				if faction == "m26" and st.support > 0: ok = false
-				if faction == "directorio" and abs(st.support) == 2: ok = false
-			"attack":
-				ok = st.count(faction, "guerrilla") > 0 and _enemy_present(faction, st)
-			"terror":
-				ok = st.count(faction, "guerrilla", "underground") > 0
-			"build":
-				ok = sd.has_population() and (st.control == "government" or st.control == "syndicate") \
-					and GameController.module.can_place_base(s, sid, true)
-			"assault":
-				# Assalto efficace: Truppe del Governo e bersagli scoperti.
-				var enemy := st.count("m26", "guerrilla", "active") + st.count("directorio", "guerrilla", "active") \
-					+ st.count("m26", "base") + st.count("directorio", "base") + st.count("syndicate", "casino", "open")
-				ok = st.count("government", "troops") > 0 and enemy > 0
-		if ok:
-			out.append(sid)
-	return out
-
-
-## Almeno un pezzo nemico presente nello spazio (per la Fazione data).
-func _enemy_present(faction: String, st: SpaceState) -> bool:
-	for e in ["government", "m26", "directorio", "syndicate"]:
-		if e != faction and st.count(e) > 0:
-			return true
-	return false

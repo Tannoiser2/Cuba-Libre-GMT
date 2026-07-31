@@ -233,13 +233,6 @@ func bot_act_pending() -> bool:
 	return true
 
 
-const _OP_IT := {"train": "Addestramento", "garrison": "Guarnigione", "sweep": "Perlustrazione",
-	"assault": "Assalto", "rally": "Riorganizzazione", "march": "Marcia", "attack": "Attacco",
-	"terror": "Terrorismo", "construct": "Costruzione", "build": "Costruzione"}
-const _SA_IT := {"transport": "Trasporto", "air_strike": "Attacco Aereo", "reprisal": "Rappresaglia",
-	"infiltrate": "Infiltrazione", "ambush": "Imboscata", "kidnap": "Sequestro",
-	"subvert": "Sovversione", "assassinate": "Assassinio", "profit": "Profitto",
-	"muscle": "Muscle", "bribe": "Corruzione"}
 
 ## Conteggio azioni (per statistiche/simulazioni).
 var stats: Dictionary = {}
@@ -313,9 +306,9 @@ func _bot_take_pending() -> void:
 		atype = "Op+Att.Speciale"
 	elif t == A.LIMITED_OPERATION:
 		atype = "Op Limitata"
-	var label := "%s: %s" % [atype, _OP_IT.get(optype, optype)]
+	var label := "%s: %s" % [atype, CLNames.op(optype)]
 	if t == A.OPERATION_WITH_SPECIAL:
-		label += " + " + String(_SA_IT.get(String(br.get("special_type", "")), br.get("special_type", "")))
+		label += " + " + CLNames.sa(String(br.get("special_type", "")))
 	emit_signal("bot_decision", "%s -> %s" % [fname, label], fid, trace)
 	seq.act(t)
 	_count("act#" + fid)
@@ -888,7 +881,7 @@ func run_operation(op_id: String, params: Dictionary) -> Dictionary:
 			return es
 		params = params.duplicate(true)
 		params["free"] = true
-	_capture_undo(_OP_IT.get(op_id, op_id))
+	_capture_undo(CLNames.op(op_id))
 	var res := _dispatch_operation(ops, op_id, params)
 	if res.get("ok", false):
 		_turn_did_op = true
@@ -927,7 +920,7 @@ func can_special(sa_id: String, params: Dictionary) -> bool:
 
 
 func run_special(sa_id: String, params: Dictionary) -> Dictionary:
-	_capture_undo(_SA_IT.get(sa_id, sa_id))
+	_capture_undo(CLNames.sa(sa_id))
 	var res := _dispatch_special(specials, sa_id, params)
 	if res.get("ok", false):
 		_turn_did_special = true
