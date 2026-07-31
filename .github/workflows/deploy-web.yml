@@ -7,7 +7,6 @@ on:
   push:
     branches:
       - main
-      - claude/digital-game-version-sCnb6
   workflow_dispatch:
 
 permissions:
