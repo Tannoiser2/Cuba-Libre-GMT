@@ -397,3 +397,17 @@ esiste già; insieme cambierebbero sensibilmente l'esperienza quotidiana di gioc
 >
 > Restano da estrarre: `LogView`, `SidePanel`, `MapAnimator` e il `Theme` unico.
 
+> **Aggiornamento 7** — refactor, terza fetta: estratti **`LogView`** (registro che si
+> impagina da sé: la scena chiama `add_line()`/`add_decision()` e non tocca più il
+> BBCode), **`MapAnimator`** (scie dei pezzi e lampeggi, calcolati per differenza sui
+> conteggi) e **`CLTheme`**, unico posto dove vivono colori e riquadri dei comandi —
+> prima gli stessi StyleBox erano ricostruiti a mano in quattro funzioni diverse, con
+> il rischio che un ritocco ne raggiungesse solo una parte. Risolta lungo la strada
+> anche la segnalazione dell'audit sul **taglio silenzioso del log**: superate le 300
+> righe, ora compare "… N righe precedenti omesse".
+> `Main.gd` scende a **1.370 righe** (da 2.214 di partenza, −38%).
+>
+> Stato del refactor: fatti `ActionFlow`, `SpecialFlow`, `LogView`, `MapAnimator`,
+> `CLTheme`, `CLNames` e la rimozione del codice morto. Resta `SidePanel` (carte +
+> pannello Vittoria), l'ultima estrazione prevista.
+

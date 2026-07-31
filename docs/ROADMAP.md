@@ -80,7 +80,9 @@ Obiettivo: realizzare una versione digitale giocabile di **Cuba Libre** (Serie C
       scena, 27 test) e `CLNames` (nomi italiani condivisi).
 - [x] Refactor UI (2/n): estratta `SpecialFlow` (Att.Speciali, 30 test); rimosso il
       codice morto (`SpaceView.gd`, costante `LAYOUT`).
-- [ ] Refactor UI (3/n): LogView, SidePanel, MapAnimator, Theme unico.
+- [x] Refactor UI (3/n): estratti `LogView`, `MapAnimator` e `CLTheme` (aspetto unificato);
+      il log segnala le righe omesse invece di troncare in silenzio.
+- [ ] Refactor UI (4/n): `SidePanel` (carte + pannello Vittoria).
 - [ ] Hotseat multi-giocatore locale.
 
 ### Fase 4 — Bot (Non-Giocatore)

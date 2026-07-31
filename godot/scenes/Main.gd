@@ -47,7 +47,7 @@ var _zoom := 1.0
 var _card_label: RichTextLabel
 var _vic: RichTextLabel                # pannello Vittoria/Risorse (numerico)
 var _confirm_new: ConfirmationDialog   # conferma per "Nuova Partita"
-var _log: RichTextLabel
+var _log: LogView
 var _instr: Label
 var _turn_banner: Label
 var _btn_end: Button
@@ -81,8 +81,8 @@ func _ready() -> void:
 		get_window().content_scale_size = Vector2i(1180, 650)
 	_build_ui()
 	GameController.state_changed.connect(_refresh)
-	GameController.action_logged.connect(_on_log)
-	GameController.bot_decision.connect(_on_bot_decision)
+	GameController.action_logged.connect(_log.add_line)
+	GameController.bot_decision.connect(_log.add_decision)
 	get_viewport().size_changed.connect(_layout_board)
 	_rebuild_action_buttons(_cur_faction)
 	# Driver automatico delle Fazioni Bot (gioca da sole al loro turno).
@@ -103,7 +103,7 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var bg := ColorRect.new()
-	bg.color = Color("12161c")
+	bg.color = CLTheme.BG
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -167,11 +167,9 @@ func _build_ui() -> void:
 	_map.add_child(_moves_overlay)
 
 	# Layer per le animazioni dei pezzi che si spostano (sopra tutto, non interattivo)
-	_anim_layer = Control.new()
-	_anim_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_anim_layer.z_index = 50
+	_anim_layer = MapAnimator.new()
+	_anim_layer.setup(_space_views)   # le viste degli spazi esistono già: ne userà i centri
 	_map.add_child(_anim_layer)
-	_avail_box = _load_avail_boxes()
 
 	# Pannello laterale (destra)
 	_side = _build_side_panel()
@@ -196,44 +194,18 @@ func _load_regions() -> Dictionary:
 	return data.get("regions", {}) if typeof(data) == TYPE_DICTIONARY else {}
 
 
-func _btn_style(bg: Color, border: Color) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = bg
-	s.set_corner_radius_all(7)
-	s.set_border_width_all(1)
-	s.border_color = border
-	s.content_margin_left = 8.0
-	s.content_margin_right = 8.0
-	s.content_margin_top = 3.0
-	s.content_margin_bottom = 3.0
-	return s
-
 
 func _mk_btn(text: String, cb: Callable) -> Button:
 	var b := TipButton.new()
 	b.text = text
 	b.pressed.connect(cb)
-	# Aspetto da vero bottone: box arrotondato con bordo e stati hover/pressed.
-	b.add_theme_stylebox_override("normal", _btn_style(Color("2b3442"), Color("4a5666")))
-	b.add_theme_stylebox_override("hover", _btn_style(Color("3a4759"), Color("6f8197")))
-	b.add_theme_stylebox_override("pressed", _btn_style(Color("1d242e"), Color("4a5666")))
-	b.add_theme_stylebox_override("disabled", _btn_style(Color("222831"), Color("333b46")))
-	b.add_theme_color_override("font_color", Color("e6edf3"))
-	b.add_theme_color_override("font_hover_color", Color("ffffff"))
-	b.add_theme_color_override("font_disabled_color", Color("5b6571"))
-	b.add_theme_font_size_override("font_size", 12)
-	# Niente focus persistente: altrimenti Invio/Spazio ri-attivano l'ultimo tasto premuto
-	# invece di eseguire le scorciatoie di turno.
-	b.focus_mode = Control.FOCUS_NONE
+	CLTheme.style_button(b)
 	return b
 
 
 ## Evidenzia un tasto con uno sfondo colorato (per il tasto "Esegui").
 func _accent_btn(b: Button, bg: Color, border: Color) -> void:
-	b.add_theme_stylebox_override("normal", _btn_style(bg, border))
-	b.add_theme_stylebox_override("hover", _btn_style(bg.lightened(0.12), border))
-	b.add_theme_stylebox_override("pressed", _btn_style(bg.darkened(0.18), border))
-	b.add_theme_color_override("font_color", Color("ffffff"))
+	CLTheme.accent_button(b, bg, border)
 
 
 ## Gruppo verticale: etichetta centrata sopra, contenuto (tasti) sotto.
@@ -532,17 +504,8 @@ func _build_side_panel() -> PanelContainer:
 	vb.add_child(log_title)
 
 	# Log con altezza fissa, sempre visibile e scrollabile; righe "[+] logica" espandibili.
-	_log = RichTextLabel.new()
-	_log.bbcode_enabled = true
-	_log.scroll_following = true
-	_log.scroll_active = true
+	_log = LogView.new()
 	_log.custom_minimum_size = Vector2(340, 260)
-	# Testo del log piccolo (override di tema = affidabile, non dipende dal bbcode).
-	for fs in ["normal_font_size", "bold_font_size", "italics_font_size", "bold_italics_font_size", "mono_font_size"]:
-		_log.add_theme_font_size_override(fs, 11)
-	# Spaziatura compatta tra le righe del log.
-	_log.add_theme_constant_override("line_separation", 2)
-	_log.meta_clicked.connect(_on_log_meta)
 	vb.add_child(_log)
 
 	pc.custom_minimum_size = Vector2(380, 0)
@@ -710,163 +673,28 @@ const ACTION_NAMES := {
 }
 
 
-var _prev_fp: Dictionary = {}
-var _anim_layer: Control                  # layer per le animazioni dei pezzi
+var _anim_layer: MapAnimator              # animazioni dei pezzi e lampeggi
 var _moves_overlay: MovesOverlay          # frecce degli spostamenti in coda
-var _prev_pc: Dictionary = {}             # conteggi precedenti "sid|faction|type" -> n
-var _avail_box: Dictionary = {}           # faction -> centro (normalizzato) del box Forze Disponibili
-const ANIM_SZ := 26.0
-const ANIM_DUR := 0.9
 
 
 func _refresh() -> void:
-	_animate_moves()
+	if _anim_layer != null:
+		_anim_layer.update(GameController.state, _map.size)
 	for sid in _space_views.keys():
 		_space_views[sid].refresh(GameController.state)
 	if _track_overlay != null:
 		_track_overlay.queue_redraw()
-	_flash_changes()
 	_refresh_turn_banner()
 	_refresh_side()
 	if not _role_btns.is_empty():
 		_update_role_btns()
 
 
-## Centri normalizzati dei box "Forze Disponibili" (per animare piazzamenti/rimozioni).
-func _load_avail_boxes() -> Dictionary:
-	var out: Dictionary = {}
-	var data = JSON.parse_string(FileAccess.get_file_as_string("res://games/cuba_libre/data/board_layout.json"))
-	if typeof(data) != TYPE_DICTIONARY:
-		return out
-	var box: Dictionary = data.get("box", {})
-	for fid in ["government", "m26", "directorio", "syndicate"]:
-		var r = box.get("available_%s" % fid, null)
-		if r != null:
-			out[fid] = Vector2((r[0] + r[2]) * 0.5, (r[1] + r[3]) * 0.5)
-	return out
 
 
-## Anima i pezzi che si sono spostati dall'ultimo aggiornamento: da zona a zona, e
-## da/verso i box Forze Disponibili. Confronta i conteggi per (spazio, fazione, tipo).
-func _animate_moves() -> void:
-	if _anim_layer == null:
-		return
-	var s: GameState = GameController.state
-	var base: Vector2 = _map.size
-	# Nuovi conteggi
-	var nc: Dictionary = {}
-	for sid in _space_views.keys():
-		var st: SpaceState = s.space_state(sid)
-		for f in ["government", "m26", "directorio", "syndicate"]:
-			for t in ["troops", "police", "base", "guerrilla", "casino"]:
-				var n := st.count(f, t)
-				if n > 0:
-					nc["%s|%s|%s" % [sid, f, t]] = n
-	# Primo aggiornamento: memorizza soltanto.
-	if _prev_pc.is_empty():
-		_prev_pc = nc
-		return
-	# Raccoglie sorgenti e destinazioni per (fazione, tipo).
-	var ghosts: Array = []   # {f,t,from,to}
-	for f in ["government", "m26", "directorio", "syndicate"]:
-		var bc_norm: Vector2 = _avail_box.get(f, Vector2(0.5, 0.5))
-		var box_c := bc_norm * base
-		for t in ["troops", "police", "base", "guerrilla", "casino"]:
-			var sources: Array = []   # [sid, qty]
-			var dests: Array = []
-			for sid in _space_views.keys():
-				var key := "%s|%s|%s" % [sid, f, t]
-				var d: int = int(nc.get(key, 0)) - int(_prev_pc.get(key, 0))
-				if d < 0:
-					sources.append([sid, -d])
-				elif d > 0:
-					dests.append([sid, d])
-			# Accoppia sorgenti->destinazioni (movimento mappa->mappa); le restanti
-			# destinazioni vengono dal box Disponibili, le restanti sorgenti vi tornano.
-			var si := 0
-			var sleft := 0 if sources.is_empty() else int(sources[0][1])
-			for de in dests:
-				var dv: RegionView = _space_views[de[0]]
-				var dc := dv.center_point()
-				for _k in range(int(de[1])):
-					var from_pos := box_c
-					if si < sources.size():
-						var sv: RegionView = _space_views[sources[si][0]]
-						from_pos = sv.center_point()
-						sleft -= 1
-						if sleft <= 0:
-							si += 1
-							sleft = 0 if si >= sources.size() else int(sources[si][1])
-					ghosts.append({"f": f, "t": t, "from": from_pos, "to": dc})
-			while si < sources.size():
-				var rv: RegionView = _space_views[sources[si][0]]
-				var sc := rv.center_point()
-				for _k2 in range(sleft):
-					ghosts.append({"f": f, "t": t, "from": sc, "to": box_c})
-				si += 1
-				sleft = 0 if si >= sources.size() else int(sources[si][1])
-	_prev_pc = nc
-	# Troppi movimenti insieme (nuova partita / Propaganda): salta per non intasare.
-	if ghosts.size() > 24:
-		return
-	for g in ghosts:
-		_spawn_ghost(String(g["f"]), String(g["t"]), g["from"], g["to"])
 
 
-## Anima un pezzo che vola da `from_pos` a `to_pos` con una scia luminosa (effetto cometa):
-## una "testa" brillante più alcune copie sfalsate che la inseguono attenuandosi.
-func _spawn_ghost(faction: String, type: String, from_pos: Vector2, to_pos: Vector2) -> void:
-	var tex := CLAssets.piece(faction, type, "")
-	if tex == null:
-		return
-	var half := Vector2(ANIM_SZ, ANIM_SZ) * 0.5
-	var echoes := 4
-	for e in range(echoes):
-		var g := TextureRect.new()
-		g.texture = tex
-		g.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		g.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		g.size = Vector2(ANIM_SZ, ANIM_SZ)
-		g.pivot_offset = half
-		g.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		g.position = from_pos - half
-		var head := e == 0
-		# Testa brillante e ingrandita; le copie della scia più piccole e attenuate.
-		g.modulate = Color(1.5, 1.5, 1.2, 1.0) if head else Color(1.2, 1.2, 1.1, 0.5 - 0.1 * float(e))
-		g.scale = Vector2(1.45, 1.45) if head else Vector2(1.2, 1.2)
-		_anim_layer.add_child(g)
-		var lead := float(e) * 0.08   # ritardo crescente -> la copia resta "indietro" (scia)
-		var tw := create_tween()
-		tw.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
-		if lead > 0.0:
-			tw.tween_interval(lead)
-		tw.tween_property(g, "position", to_pos - half, ANIM_DUR)
-		tw.parallel().tween_property(g, "scale", Vector2(1, 1), ANIM_DUR)
-		tw.parallel().tween_property(g, "modulate:a", 0.0, ANIM_DUR * 0.45).set_delay(ANIM_DUR * 0.55)
-		tw.tween_callback(g.queue_free)
 
-
-## Lampeggia gli spazi il cui stato è cambiato dall'ultimo aggiornamento (feedback visivo).
-func _flash_changes() -> void:
-	var s: GameState = GameController.state
-	var first := _prev_fp.is_empty()
-	for sid in _space_views.keys():
-		var fp := _space_fp(s, sid)
-		if not first and _prev_fp.get(sid, "") != fp:
-			_space_views[sid].flash()
-		_prev_fp[sid] = fp
-
-
-func _space_fp(s: GameState, sid: String) -> String:
-	var st: SpaceState = s.space_state(sid)
-	var out := "%s,%d,%d,%d" % [st.control, st.support, st.marker("terror"), st.marker("sabotage")]
-	for f in ["government", "m26", "directorio", "syndicate"]:
-		for t in ["troops", "police", "base", "guerrilla", "casino"]:
-			out += "," + str(st.count(f, t))
-	return out
-
-
-## Banner di turno: mostra chi è di turno e le azioni legali; abilita i pulsanti pertinenti.
 func _refresh_turn_banner() -> void:
 	# Round di Propaganda interattivo: banner e comandi dedicati.
 	var pst: Dictionary = GameController.prop_status()
@@ -1032,14 +860,7 @@ func _mk_menu_btn(text: String) -> MenuButton:
 	var b := TipMenuButton.new()
 	b.text = text
 	b.flat = false
-	b.add_theme_stylebox_override("normal", _btn_style(Color("2b3442"), Color("4a5666")))
-	b.add_theme_stylebox_override("hover", _btn_style(Color("3a4759"), Color("6f8197")))
-	b.add_theme_stylebox_override("pressed", _btn_style(Color("1d242e"), Color("4a5666")))
-	b.add_theme_stylebox_override("disabled", _btn_style(Color("222831"), Color("333b46")))
-	b.add_theme_color_override("font_color", Color("e6edf3"))
-	b.add_theme_color_override("font_hover_color", Color("ffffff"))
-	b.add_theme_color_override("font_disabled_color", Color("5b6571"))
-	b.add_theme_font_size_override("font_size", 12)
+	CLTheme.style_button(b)
 	return b
 
 
@@ -1074,7 +895,7 @@ func _refresh_victory() -> void:
 		var mcol := "57c97e" if m >= 0 else "ff8080"
 		var res_txt := str(s.get_resources(fid)) if s.tracks_resources(fid) else "—"
 		txt += "%s %s [b]%d[/b]/%d [color=#%s](%+d)[/color] · Risorse %s\n" % [
-			_fmt_log_line(_ROLE_SHORT.get(fid, fid), fid), _VIC_LABEL.get(fid, ""),
+			CLTheme.faction_chip(String(_ROLE_SHORT.get(fid, fid)), fid), _VIC_LABEL.get(fid, ""),
 			int(d.get("value", 0)), int(d.get("threshold", 0)), mcol, m, res_txt]
 	var alliance: int = clampi(int(s.tracks.get("us_alliance", 0)), 0, 2)
 	txt += "[color=#9fb3c8]Aiuti %d · Alleanza USA: %s[/color]" % [
@@ -1142,7 +963,7 @@ func _on_game_menu(id: int) -> void:
 	match id:
 		0:
 			if GameController.save_game():
-				_on_log("Partita salvata", "")
+				_log.add_line("Partita salvata", "")
 				_instr.text = "Partita salvata"
 			else:
 				_err("Salvataggio non riuscito")
@@ -1186,92 +1007,20 @@ func _load_from(path: String, label: String) -> void:
 		return
 	_clear_pending()
 	# Evita le animazioni di massa al cambio di stato completo.
-	_prev_pc.clear()
-	_prev_fp.clear()
+	if _anim_layer != null:
+		_anim_layer.reset()
 	if GameController.load_game(path):
-		_on_log("Partita caricata (%s)" % label, "")
+		_log.add_line("Partita caricata (%s)" % label, "")
 		_instr.text = "Partita caricata (%s)" % label
 	else:
 		_err("File di %s non valido" % label)
 
 
-var _log_entries: Array = []
 
 
-func _on_log(text: String, faction: String = "") -> void:
-	_log_entries.append({"t": text, "f": faction, "tr": []})
-	_render_log()
 
 
-func _on_bot_decision(text: String, faction: String, trace: Array) -> void:
-	_log_entries.append({"t": text, "f": faction, "tr": trace})
-	_render_log()
 
-
-## Font corsiva sintetica (la font di default non ne ha una): inclina i glifi.
-func _fmt_log_line(text: String, faction: String) -> String:
-	if faction != "":
-		var hex := GameController.faction_color(faction).to_html(false)
-		var txt := "000000" if faction == "directorio" else "ffffff"
-		return "[bgcolor=#%s] [color=#%s] %s [/color] [/bgcolor]" % [hex, txt, text]
-	return text
-
-
-func _render_log() -> void:
-	if _log_entries.size() > 300:
-		_log_entries = _log_entries.slice(_log_entries.size() - 300)
-	var s := ""
-	var turn := 0
-	for i in range(_log_entries.size()):
-		var e: Dictionary = _log_entries[i]
-		var txt := String(e["t"])
-		# Fine carta = fine di un turno: divisore prominente con il numero del turno.
-		if String(e["f"]) == "" and txt.find("Carta conclusa") != -1:
-			turn += 1
-			s += "[center][b][color=#f1c40f]=====  Fine turno %d  =====[/color][/b][/center]\n" % turn
-			continue
-		# Banner di fine partita.
-		if String(e["f"]) == "" and txt.find("FINE PARTITA") != -1:
-			s += "\n[center][b][font_size=16][color=#f1c40f]===  FINE PARTITA  ===[/color][/font_size][/b][/center]\n"
-			continue
-		s += _fmt_log_line(txt, String(e["f"]))
-		if e["tr"].size() > 0:
-			var exp: bool = e.get("exp", false)
-			s += " [url=%d][font_size=10][color=#7fb0ff]%s[/color][/font_size][/url]\n" % [i, ("[-] logica" if exp else "[+] logica")]
-			if exp:
-				var depth := 1   # livello base delle sotto-righe sotto una carta
-				for tl in e["tr"]:
-					var raw := String(tl)
-					# Indentazione "originale" (le sotto-priorità hanno spazi iniziali).
-					var lead := 0
-					while lead < raw.length() and raw[lead] == " ":
-						lead += 1
-					var line := raw.strip_edges()
-					if line == "":
-						continue
-					var extra := lead / 2
-					var lvl := depth
-					if line.begins_with("Carta Calixto"):
-						depth = 1
-						lvl = 0
-					elif line.begins_with("-> giro") or line.find("(retro)") != -1:
-						lvl = depth
-						depth += 1            # le condizioni del retro rientrano di più
-					elif line.begins_with("Operazione scelta") or line.begins_with("Attività Speciale") or line.begins_with("Nessuna Operazione"):
-						lvl = 0
-					var pad := "  ".repeat(lvl + extra)
-					s += "  [font_size=9][color=#9fb3c8]%s%s[/color][/font_size]\n" % [pad, line]
-			else:
-				s += "\n"
-	_log.text = s
-	_log.scroll_to_line(maxi(0, _log.get_line_count() - 1))
-
-
-func _on_log_meta(meta: Variant) -> void:
-	var i := int(meta)
-	if i >= 0 and i < _log_entries.size():
-		_log_entries[i]["exp"] = not bool(_log_entries[i].get("exp", false))
-		_render_log()
 
 
 # ---------------------------------------------------------------------------
@@ -1556,10 +1305,7 @@ func _toggle_auto_bot() -> void:
 
 ## Riporta un tasto allo stile neutro standard.
 func _mk_btn_restyle(b: Button) -> void:
-	b.add_theme_stylebox_override("normal", _btn_style(Color("2b3442"), Color("4a5666")))
-	b.add_theme_stylebox_override("hover", _btn_style(Color("3a4759"), Color("6f8197")))
-	b.add_theme_stylebox_override("pressed", _btn_style(Color("1d242e"), Color("4a5666")))
-	b.add_theme_color_override("font_color", Color("e6edf3"))
+	CLTheme.style_button(b)
 
 
 func _auto_bot_tick() -> void:
@@ -1577,8 +1323,7 @@ func _auto_bot_tick() -> void:
 ## Nuova partita: ripulisce il log e la selezione, poi reinizializza.
 func _on_new_game() -> void:
 	_clear_pending()
-	_log_entries.clear()
-	_render_log()
+	_log.clear_log()
 	_zoom = 1.0          # mappa adattata al riquadro
 	_layout_board()
 	GameController.new_game()
@@ -1605,7 +1350,8 @@ func _on_cancel_selection() -> void:
 ## "Annulla azione": disfa l'ultima azione già eseguita (ripetibile, fino a 20 livelli).
 func _on_undo_action() -> void:
 	# L'undo riporta indietro tutta la mappa: niente animazioni di massa.
-	_prev_pc.clear()
+	if _anim_layer != null:
+		_anim_layer.reset()
 	if GameController.undo_last():
 		_clear_pending()
 		var n := GameController.undo_depth()
