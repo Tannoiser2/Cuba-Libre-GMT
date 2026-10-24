@@ -36,43 +36,63 @@ var _flow: ActionFlow
 var _sflow: SpecialFlow
 var _space_views: Dictionary = {}     # space_id -> RegionView
 var _board: ScrollContainer
+var _map_frame: Panel                 # cornice d'ottone attorno alla mappa
 var _map_wrap: Control
 var _map: TextureRect
-var _bar: VBoxContainer
-var _side: SidePanel
-var _log: LogView                     # registro (vive dentro il pannello laterale)
+var _top: TopBar                      # barra superiore (Fazioni, turno, comandi)
+var _strip: BottomStrip               # striscia inferiore (carta, Risorse, Vittoria, registro)
+var _panel: PanelContainer            # pannello azione (colonna di destra)
+var _log: LogView                     # registro (vive nella striscia inferiore)
 var _track_overlay: TrackOverlay
 var _zoom := 1.0
+var _view_ready := false              # prima inquadratura (isola a tutta larghezza) già fatta
 var _confirm_new: ConfirmationDialog   # conferma per "Nuova Partita"
 var _confirm_menu: ConfirmationDialog  # conferma per il ritorno al menu iniziale
 var _end_dialog: ConfirmationDialog    # riepilogo di fine partita
 
-var _instr: Label
+# Ordine di servizio sopra la mappa: di chi è il turno e cosa fare adesso.
+var _banner: PanelContainer
 var _turn_banner: Label
+var _instr: Label
+var _zoom_lbl: Label
+
+# Pannello azione
+var _head: PanelContainer
+var _head_tok: TextureRect
+var _head_name: Label
+var _head_sub: Label
+var _head_stamp: Label
+var _op_desc: Label
+var _sel_lbl: Label
+var _btn_exec: Button
 var _btn_end: Button
 var _btn_pass: Button
 var _btn_bot: Button
-var _btn_auto: Button
 var _auto_bot := false                 # se true, i Bot giocano da soli; altrimenti aspettano il consenso
-var _role_btns: Dictionary = {}        # fid -> Button (toggle Giocatore/Bot)
 var _btn_ev_u: Button
 var _btn_ev_s: Button
 
 # Stato del flusso azione
 var _mode := "idle"                  # idle | select_spaces | moves
-var _op_btns: HBoxContainer
-var _sa_btns: HBoxContainer
+var _op_btns: GridContainer
+var _op_btn_map: Dictionary = {}     # op_id -> Button (per evidenziare quella scelta)
+var _sa_btns: HFlowContainer
 
 var _cur_faction := "government"
 var _btn_launder: Button              # Riciclaggio (2.3.6)
 var _btn_clear: Button                # scarta la selezione in preparazione
-var _btn_undo: Button                 # annulla l'ultima azione eseguita
 var _preview: TipLabel                # anteprima costo/effetti dell'Operazione in preparazione
 var _resume_mode := "idle"            # modalità Operazione da riprendere dopo l'Att.Speciale
+
+const PANEL_W := 352.0
+const GAP := 10.0
 
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Tema "dossier": vale per tutta la scena e per menu a tendina e finestre di dialogo.
+	theme = CLTheme.dark_theme()
+	get_window().theme = CLTheme.dark_theme()
 	_flow = ActionFlow.new(GameController)
 	_sflow = SpecialFlow.new(GameController)
 	# Su schermi touch (iPad): canvas logico più piccolo = testi e bersagli ~25% più grandi.
@@ -107,14 +127,28 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	# Barra azioni in alto (va a capo automaticamente: niente troncamento)
-	_bar = _build_action_bar()
-	add_child(_bar)
-	_bar.resized.connect(_layout_board)
+	# Barra superiore: emblema, Fazioni, turno, comandi di partita.
+	_top = TopBar.new()
+	_top.role_toggle_requested.connect(_toggle_role)
+	_top.undo_requested.connect(_on_undo_action)
+	_top.auto_bot_toggled.connect(_toggle_auto_bot)
+	_top.menu_id_pressed.connect(_on_game_menu)
+	add_child(_top)
 
-	# Area mappa scrollabile (per lo zoom/pan)
+	# Cornice della mappa (ottone) e area scrollabile per zoom/pan.
+	_map_frame = Panel.new()
+	var fsb := CLTheme.flat(CLTheme.BG)
+	fsb.set_border_width_all(2)
+	fsb.border_color = Color("8a7340")
+	fsb.set_corner_radius_all(4)
+	fsb.expand_margin_left = 3
+	fsb.expand_margin_right = 3
+	fsb.expand_margin_top = 3
+	fsb.expand_margin_bottom = 3
+	_map_frame.add_theme_stylebox_override("panel", fsb)
+	_map_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_map_frame)
 	_board = ScrollContainer.new()
-	_board.position = Vector2(8, 96)
 	add_child(_board)
 
 	# Wrapper che definisce l'area scrollabile (= mappa * zoom); il nodo mappa viene scalato.
@@ -171,11 +205,19 @@ func _build_ui() -> void:
 	_anim_layer.setup(_space_views)   # le viste degli spazi esistono già: ne userà i centri
 	_map.add_child(_anim_layer)
 
-	# Pannello laterale (destra): carte, Vittoria e log si aggiornano da soli.
-	_side = SidePanel.new()
-	_side.card_zoom_requested.connect(_show_card_zoom)
-	_log = _side.log_view
-	add_child(_side)
+	# Sopra la mappa (non scalati): ordine di servizio al centro, zoom a destra.
+	_build_map_banner()
+	_build_zoom_box()
+
+	# Striscia inferiore: carta, Risorse, Vittoria e registro si aggiornano da soli.
+	_strip = BottomStrip.new()
+	_strip.card_zoom_requested.connect(_show_card_zoom)
+	_log = _strip.log_view
+	add_child(_strip)
+
+	# Pannello azione (colonna di destra).
+	_panel = _build_action_panel()
+	add_child(_panel)
 
 	# Conferma per "Nuova Partita" (evita di azzerare la partita per un click di troppo).
 	_confirm_new = ConfirmationDialog.new()
@@ -213,7 +255,6 @@ func _load_regions() -> Dictionary:
 	return data.get("regions", {}) if typeof(data) == TYPE_DICTIONARY else {}
 
 
-
 func _mk_btn(text: String, cb: Callable) -> Button:
 	var b := TipButton.new()
 	b.text = text
@@ -222,173 +263,306 @@ func _mk_btn(text: String, cb: Callable) -> Button:
 	return b
 
 
-## Evidenzia un tasto con uno sfondo colorato (per il tasto "Esegui").
-func _accent_btn(b: Button, bg: Color, border: Color) -> void:
-	CLTheme.accent_button(b, bg, border)
-
-
-## Gruppo verticale: etichetta centrata sopra, contenuto (tasti) sotto.
-func _labeled_group(title: String, content: Control) -> VBoxContainer:
+## Ordine di servizio sopra la mappa: foglietto con di chi è il turno e il passo da fare.
+func _build_map_banner() -> void:
+	_banner = InstrBox.new()
+	_banner.add_theme_stylebox_override("panel", CLTheme.paper_box(12.0))
+	_banner.theme = CLTheme.paper_theme()
+	_banner.mouse_filter = Control.MOUSE_FILTER_STOP
+	_banner.mouse_entered.connect(func(): _banner.tooltip_text = "%s\n%s" % [_turn_banner.text, _instr.text])
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 1)
-	var l := Label.new()
-	l.text = title
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.add_theme_color_override("font_color", Color("9fb3c8"))
-	l.add_theme_font_size_override("font_size", 11)
-	v.add_child(l)
-	v.add_child(content)
-	return v
-
-
-func _mk_label(text: String) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.add_theme_color_override("font_color", Color("9fb3c8"))
-	l.add_theme_font_size_override("font_size", 12)
-	return l
-
-
-func _build_action_bar() -> VBoxContainer:
-	var bar := VBoxContainer.new()
-	bar.position = Vector2(8, 6)
-	bar.add_theme_constant_override("separation", 3)
-
-	# --- Banner di turno (in alto, colorato per Fazione) ---
-	_turn_banner = Label.new()
-	_turn_banner.add_theme_font_size_override("font_size", 18)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_banner.add_child(v)
+	_turn_banner = CLTheme.label("", CLTheme.INK, 16, CLTheme.ui_heavy())
 	_turn_banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	bar.add_child(_turn_banner)
+	_turn_banner.max_lines_visible = 2
+	v.add_child(_turn_banner)
+	_instr = CLTheme.label("", CLTheme.INK, 13, CLTheme.typewriter())
+	_instr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_instr.max_lines_visible = 3
+	v.add_child(_instr)
+	add_child(_banner)
 
-	# --- Riga 1: AZIONI DI TURNO (tasti: Operazioni, Att.Speciali, Evento, Passa) ---
-	var row1 := HFlowContainer.new()
-	row1.add_theme_constant_override("h_separation", 5)
-	row1.add_theme_constant_override("v_separation", 3)
-	bar.add_child(row1)
 
-	# Gruppo Operazione (tasti operazioni + Esegui)
-	_op_btns = HBoxContainer.new()
-	_op_btns.add_theme_constant_override("separation", 3)
-	var op_box := HBoxContainer.new()
-	op_box.add_theme_constant_override("separation", 3)
-	op_box.add_child(_op_btns)
-	var btn_exec := _mk_btn("Esegui", _on_execute)
-	btn_exec.tooltip_text = "Applica l'Operazione preparata (Invio)"
-	_accent_btn(btn_exec, Color("2e7d46"), Color("57c97e"))   # sfondo verde, risalta
-	op_box.add_child(btn_exec)
-	# Anteprima: costo in Risorse ed esito previsto, calcolati simulando su una copia.
-	_preview = TipLabel.new()
-	_preview.add_theme_font_size_override("font_size", 11)
-	_preview.mouse_filter = Control.MOUSE_FILTER_STOP
-	op_box.add_child(_preview)
-	row1.add_child(_labeled_group("Operazione", op_box))
+var _map_rect := Rect2()
 
-	row1.add_child(VSeparator.new())
-	# Gruppo Attività Speciale
-	_sa_btns = HBoxContainer.new()
-	_sa_btns.add_theme_constant_override("separation", 3)
-	row1.add_child(_labeled_group("Attività Speciale", _sa_btns))
 
-	row1.add_child(VSeparator.new())
-	# Gruppo Evento
-	var ev_box := HBoxContainer.new()
-	ev_box.add_theme_constant_override("separation", 3)
-	_btn_ev_u = _mk_btn("- chiaro", func(): _on_event("unshaded"))
+## Il foglietto cambia altezza col testo: lo si tiene appoggiato al bordo basso della mappa.
+func _place_banner() -> void:
+	if _banner == null or _map_rect.size.x <= 0.0:
+		return
+	var bw := clampf(_map_rect.size.x * 0.55, 320.0, 620.0)
+	var bh := _banner.get_combined_minimum_size().y
+	var target := Rect2(_map_rect.position.x + 10.0, _map_rect.end.y - bh - 10.0, bw, bh)
+	if _banner.position != target.position or _banner.size != target.size:
+		_banner.position = target.position
+		_banner.size = target.size
+
+
+func _process(_delta: float) -> void:
+	_place_banner()
+
+
+## Comandi di vista sopra la mappa: zoom e inquadratura.
+var _zoom_box: PanelContainer
+
+
+func _build_zoom_box() -> void:
+	_zoom_box = PanelContainer.new()
+	_zoom_box.add_theme_stylebox_override("panel", CLTheme.dark_box())
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 2)
+	_zoom_box.add_child(h)
+	var minus := _mk_btn("−", func(): _zoom_at(1.0 / 1.25))
+	minus.tooltip_text = "Riduci (rotellina o −)"
+	minus.custom_minimum_size = Vector2(36, 34)
+	h.add_child(minus)
+	_zoom_lbl = CLTheme.label("100%", CLTheme.TEXT, 14)
+	_zoom_lbl.custom_minimum_size = Vector2(48, 0)
+	_zoom_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_zoom_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	h.add_child(_zoom_lbl)
+	var plus := _mk_btn("+", func(): _zoom_at(1.25))
+	plus.tooltip_text = "Ingrandisci (rotellina o +)"
+	plus.custom_minimum_size = Vector2(36, 34)
+	h.add_child(plus)
+	var fit := _mk_btn("Isola", _view_island)
+	fit.tooltip_text = "Inquadra Cuba a tutta larghezza"
+	h.add_child(fit)
+	var whole := _mk_btn("Tutta", func(): _set_zoom(1.0))
+	whole.tooltip_text = "Mostra tutta la plancia, con tracciati e forze disponibili (0)"
+	h.add_child(whole)
+	add_child(_zoom_box)
+
+
+## Pannello azione: i passi del turno in ordine, dal basso il tasto per eseguire.
+func _build_action_panel() -> PanelContainer:
+	var pc := PanelContainer.new()
+	pc.theme = CLTheme.paper_theme()
+	var psb := CLTheme.paper_box(0.0)
+	pc.add_theme_stylebox_override("panel", psb)
+	pc.clip_contents = true
+	var outer := VBoxContainer.new()
+	outer.add_theme_constant_override("separation", 0)
+	pc.add_child(outer)
+
+	# Intestazione nel colore della Fazione di turno.
+	_head = PanelContainer.new()
+	outer.add_child(_head)
+	var hh := HBoxContainer.new()
+	hh.add_theme_constant_override("separation", 10)
+	_head.add_child(hh)
+	_head_tok = TextureRect.new()
+	_head_tok.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_head_tok.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_head_tok.custom_minimum_size = Vector2(30, 38)
+	hh.add_child(_head_tok)
+	var hv := VBoxContainer.new()
+	hv.add_theme_constant_override("separation", -3)
+	hv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hh.add_child(hv)
+	_head_name = CLTheme.label("", Color.WHITE, 25, CLTheme.display())
+	_head_name.clip_text = true
+	hv.add_child(_head_name)
+	_head_sub = CLTheme.label("", Color("f6dcd6"), 14)
+	_head_sub.clip_text = true
+	hv.add_child(_head_sub)
+	_head_stamp = CLTheme.label("", Color.WHITE, 12, CLTheme.typewriter())
+	var stamp_sb := StyleBoxFlat.new()
+	stamp_sb.bg_color = Color(0, 0, 0, 0)
+	stamp_sb.set_border_width_all(2)
+	stamp_sb.border_color = Color.WHITE
+	stamp_sb.content_margin_left = 6
+	stamp_sb.content_margin_right = 6
+	stamp_sb.content_margin_top = 1
+	stamp_sb.content_margin_bottom = 1
+	_head_stamp.add_theme_stylebox_override("normal", stamp_sb)
+	_head_stamp.rotation_degrees = -6.0
+	_head_stamp.resized.connect(func(): _head_stamp.pivot_offset = _head_stamp.size * 0.5)
+	_head_stamp.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hh.add_child(_head_stamp)
+
+	# Corpo: passi numerati, scorrevole se lo schermo è basso (iPad).
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	outer.add_child(scroll)
+	var m := MarginContainer.new()
+	m.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	m.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	for side in ["left", "right"]:
+		m.add_theme_constant_override("margin_" + side, 14)
+	m.add_theme_constant_override("margin_top", 10)
+	m.add_theme_constant_override("margin_bottom", 12)
+	scroll.add_child(m)
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 6)
+	m.add_child(body)
+
+	body.add_child(CLTheme.section_title("1 · Operazione"))
+	_op_btns = GridContainer.new()
+	_op_btns.columns = 2
+	_op_btns.add_theme_constant_override("h_separation", 6)
+	_op_btns.add_theme_constant_override("v_separation", 6)
+	body.add_child(_op_btns)
+	_op_desc = CLTheme.label("", Color("3b3226"), 12, CLTheme.typewriter())
+	_op_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_op_desc.custom_minimum_size = Vector2(0, 46)
+	body.add_child(_op_desc)
+
+	body.add_child(CLTheme.section_title("2 · Spazi scelti"))
+	var sel_box := PanelContainer.new()
+	var ssb := CLTheme.flat(CLTheme.PAPER_DARK, 8)
+	ssb.set_corner_radius_all(3)
+	sel_box.add_theme_stylebox_override("panel", ssb)
+	_sel_lbl = CLTheme.label("", CLTheme.INK, 14)
+	_sel_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_sel_lbl.max_lines_visible = 3
+	sel_box.add_child(_sel_lbl)
+	body.add_child(sel_box)
+
+	var sa_title := HBoxContainer.new()
+	sa_title.add_child(CLTheme.section_title("3 · Attività speciale"))
+	var opt := CLTheme.label(" (facoltativa)", CLTheme.INK_DIM, 13)
+	opt.size_flags_vertical = Control.SIZE_SHRINK_END
+	sa_title.add_child(opt)
+	body.add_child(sa_title)
+	_sa_btns = HFlowContainer.new()
+	_sa_btns.add_theme_constant_override("h_separation", 6)
+	_sa_btns.add_theme_constant_override("v_separation", 6)
+	body.add_child(_sa_btns)
+
+	body.add_child(CLTheme.section_title("4 · Oppure l'Evento"))
+	var ev_box := GridContainer.new()
+	ev_box.columns = 2
+	ev_box.add_theme_constant_override("h_separation", 6)
+	_btn_ev_u = _mk_btn("Chiaro", func(): _on_event("unshaded"))
+	_btn_ev_u.tooltip_text = "Gioca il lato chiaro (non ombreggiato) dell'Evento"
+	_btn_ev_u.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_btn_ev_u.custom_minimum_size = Vector2(0, 38)
 	ev_box.add_child(_btn_ev_u)
-	_btn_ev_s = _mk_btn("- ombr.", func(): _on_event("shaded"))
+	_btn_ev_s = _mk_btn("Ombreggiato", func(): _on_event("shaded"))
+	_btn_ev_s.tooltip_text = "Gioca il lato ombreggiato dell'Evento"
+	_btn_ev_s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_btn_ev_s.custom_minimum_size = Vector2(0, 38)
 	ev_box.add_child(_btn_ev_s)
-	row1.add_child(_labeled_group("Evento", ev_box))
+	body.add_child(ev_box)
 
-	row1.add_child(VSeparator.new())
-	# Gruppo Turno
-	var turn_box := HBoxContainer.new()
-	turn_box.add_theme_constant_override("separation", 3)
-	_btn_end = _mk_btn("Concludi", func(): _on_execute_and_end())
-	_btn_end.tooltip_text = "Esegui (se serve) e chiudi il turno della Fazione (Spazio)"
-	_btn_end.add_theme_color_override("font_color", Color("a3e635"))
-	turn_box.add_child(_btn_end)
-	_btn_pass = _mk_btn("Passa", func(): GameController.seq_pass())
-	turn_box.add_child(_btn_pass)
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	spacer.custom_minimum_size = Vector2(0, 4)
+	body.add_child(spacer)
+
+	# Anteprima del costo + Riciclaggio.
+	var prev_box := PanelContainer.new()
+	var pvb := CLTheme.box(Color(0, 0, 0, 0), Color("8a7340"), 1)
+	prev_box.add_theme_stylebox_override("panel", pvb)
+	var prow := HBoxContainer.new()
+	prow.add_theme_constant_override("separation", 8)
+	prev_box.add_child(prow)
+	prow.add_child(CLTheme.label("Anteprima", CLTheme.INK_DIM, 14))
+	_preview = TipLabel.new()
+	_preview.add_theme_font_override("font", CLTheme.ui_heavy())
+	_preview.add_theme_font_size_override("font_size", 15)
+	_preview.add_theme_color_override("font_color", CLTheme.INK)
+	_preview.mouse_filter = Control.MOUSE_FILTER_STOP
+	_preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_preview.clip_text = true
+	prow.add_child(_preview)
 	_btn_launder = _mk_btn("Riciclaggio", _on_launder)
 	_btn_launder.tooltip_text = "Rimuovi 1 tuo segnalino Denaro per un'Operazione Limitata extra GRATUITA (non Costruzione). Possibile dopo un'Operazione pagata senza Attività Speciale (max 1 per carta)."
-	turn_box.add_child(_btn_launder)
-	# Due Annulla distinti: scartare la selezione ≠ disfare un'azione già eseguita.
-	_btn_clear = _mk_btn("Annulla sel.", _on_cancel_selection)
+	prow.add_child(_btn_launder)
+	body.add_child(prev_box)
+
+	_btn_exec = _mk_btn("Esegui", _on_execute)
+	_btn_exec.tooltip_text = "Applica l'Operazione preparata (Invio)"
+	CLTheme.primary_button(_btn_exec)
+	_btn_exec.custom_minimum_size = Vector2(0, 52)
+	body.add_child(_btn_exec)
+
+	var row_a := GridContainer.new()
+	row_a.columns = 2
+	row_a.add_theme_constant_override("h_separation", 8)
+	row_a.add_theme_constant_override("v_separation", 8)
+	body.add_child(row_a)
+	_btn_clear = _mk_btn("Annulla selezione", _on_cancel_selection)
 	_btn_clear.tooltip_text = "Scarta la selezione/coda in preparazione, senza toccare le azioni già eseguite. (Esc)"
-	turn_box.add_child(_btn_clear)
-	_btn_undo = _mk_btn("Annulla azione", _on_undo_action)
-	turn_box.add_child(_btn_undo)
-	row1.add_child(_labeled_group("Turno", turn_box))
+	_btn_end = _mk_btn("Concludi turno", func(): _on_execute_and_end())
+	_btn_end.tooltip_text = "Esegui (se serve) e chiudi il turno della Fazione (Spazio)"
+	_btn_pass = _mk_btn("Passa", func(): GameController.seq_pass())
+	_btn_pass.tooltip_text = "La Fazione passa e guadagna Risorse"
+	_btn_bot = _mk_btn("Gioca il Bot", func(): GameController.bot_act_pending())
+	_btn_bot.tooltip_text = "Fai decidere al Bot l'azione della Fazione di turno"
+	for b in [_btn_clear, _btn_end, _btn_pass, _btn_bot]:
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.custom_minimum_size = Vector2(0, 42)
+		row_a.add_child(b)
+	# "Concludi turno" pieno d'inchiostro: è la seconda azione più usata.
+	CLTheme.accent_button(_btn_end, CLTheme.INK, CLTheme.INK)
+	_btn_end.add_theme_color_override("font_color", CLTheme.PAPER)
+	_btn_end.add_theme_color_override("font_hover_color", Color.WHITE)
+	return pc
 
-	# Gruppo Ruoli (Giocatore/Bot) in griglia 2x2, subito dopo il Turno.
-	var roles_grid := GridContainer.new()
-	roles_grid.columns = 2
-	roles_grid.add_theme_constant_override("h_separation", 3)
-	roles_grid.add_theme_constant_override("v_separation", 2)
-	for fid in ["government", "m26", "directorio", "syndicate"]:
-		var rb := _mk_btn("", _toggle_role.bind(fid))
-		rb.add_theme_font_size_override("font_size", 11)
-		_role_btns[fid] = rb
-		roles_grid.add_child(rb)
-	row1.add_child(_labeled_group("Ruoli", roles_grid))
-	_update_role_btns()
 
-	# --- Riga 2: PARTITA / VISTA ---
-	var row2 := HFlowContainer.new()
-	row2.add_theme_constant_override("h_separation", 5)
-	row2.add_theme_constant_override("v_separation", 3)
-	bar.add_child(row2)
+## Intestazione del pannello: Fazione di turno, posto nella sequenza, Risorse, ruolo.
+func _refresh_panel_header(fid: String, sub: String, stamp: String) -> void:
+	var col := CLTheme.faction(fid) if fid != "" else CLTheme.INK
+	var hsb := CLTheme.flat(col, 0)
+	hsb.content_margin_left = 14
+	hsb.content_margin_right = 14
+	hsb.content_margin_top = 8
+	hsb.content_margin_bottom = 8
+	hsb.corner_radius_top_left = 3
+	hsb.corner_radius_top_right = 3
+	_head.add_theme_stylebox_override("panel", hsb)
+	var fg := Color("111111") if fid == "directorio" else Color.WHITE
+	_head_tok.texture = CLAssets.res_token(fid) if fid != "" else null
+	_head_tok.visible = fid != ""
+	_head_name.text = GameController.faction_name(fid) if fid != "" else "In attesa"
+	_head_name.add_theme_color_override("font_color", fg)
+	_head_sub.text = sub
+	_head_sub.add_theme_color_override("font_color", Color("3b2f0a") if fid == "directorio" else Color("f6e3df"))
+	_head_stamp.text = stamp
+	_head_stamp.visible = stamp != ""
+	_head_stamp.add_theme_color_override("font_color", fg)
+	(_head_stamp.get_theme_stylebox("normal") as StyleBoxFlat).border_color = fg
 
-	_btn_bot = _mk_btn(" Gioca la fazione di turno", func(): GameController.bot_act_pending())
-	row2.add_child(_btn_bot)
-	_btn_auto = _mk_btn("Auto-Bot: OFF", _toggle_auto_bot)
-	row2.add_child(_btn_auto)
-	row2.add_child(_mk_btn("Tutti i Bot (questa carta)", _on_all_bots))
-	row2.add_child(_mk_btn("Auto: tutta la partita", func(): GameController.run_full_game_paced()))
-	# Menu Partita: salvataggio/caricamento e Nuova Partita (con conferma).
-	var game_menu := _mk_menu_btn("Partita...")
-	game_menu.tooltip_text = "Salva/carica la partita (anche l'autosalvataggio, aggiornato a ogni azione) o iniziane una nuova."
-	var gp := game_menu.get_popup()
-	gp.add_item("Salva partita", 0)
-	gp.add_item("Carica partita", 1)
-	gp.add_item("Riprendi autosalvataggio", 2)
-	gp.add_separator()
-	gp.add_item("Nuova Partita...", 3)
-	gp.add_separator()
-	gp.add_item("Torna al menu iniziale", 4)
-	gp.id_pressed.connect(_on_game_menu)
-	row2.add_child(game_menu)
-	row2.add_child(VSeparator.new())
-	row2.add_child(_mk_label("Velocità:"))
-	var spd := OptionButton.new()
-	for it in [["Lento", 1.8], ["Medio", 1.1], ["Veloce", 0.7]]:
-		spd.add_item(it[0])
-		spd.set_item_metadata(spd.item_count - 1, it[1])
-	spd.select(1)
-	spd.item_selected.connect(func(i): GameController.pace_delay = float(spd.get_item_metadata(i)))
-	row2.add_child(spd)
-	row2.add_child(VSeparator.new())
-	row2.add_child(_mk_label("Vista:"))
-	row2.add_child(_mk_btn("Zoom +", func(): _zoom_at(1.25)))
-	row2.add_child(_mk_btn("Zoom -", func(): _zoom_at(1.0 / 1.25)))
-	row2.add_child(_mk_btn("Adatta", func(): _set_zoom(1.0)))
 
-	# Istruzione di passo (sotto le righe)
-	_instr = Label.new()
-	_instr.add_theme_color_override("font_color", Color("f1c40f"))
-	_instr.add_theme_font_size_override("font_size", 10)
-	_instr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_instr.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# Contenitore ad altezza FISSA: così la barra non cambia altezza e la mappa resta
-	# sempre adattata. Il testo che non entra si legge per intero nel tooltip (InstrBox).
-	var instr_box := InstrBox.new()
-	instr_box.custom_minimum_size = Vector2(0, 38)
-	instr_box.clip_contents = true
-	instr_box.mouse_filter = Control.MOUSE_FILTER_STOP
-	instr_box.mouse_entered.connect(func(): instr_box.tooltip_text = _instr.text)
-	instr_box.add_child(_instr)
-	bar.add_child(instr_box)
-	return bar
+## Evidenzia il tasto dell'Operazione in preparazione (pieno nel colore della Fazione).
+func _mark_op_button() -> void:
+	var active: String = _flow.op if _mode != "idle" and _flow.op != "" else ""
+	for op in _op_btn_map:
+		var b: Button = _op_btn_map[op]
+		if op == active and active != "":
+			CLTheme.accent_button(b, CLTheme.faction_ink(_cur_faction), CLTheme.faction_ink(_cur_faction))
+		else:
+			CLTheme.style_button(b)
+	_btn_exec.text = "Esegui" if active == "" else "Esegui %s" % CLNames.op(active)
+
+
+## Elenco degli spazi scelti (o degli spostamenti in coda) nel passo 2.
+func _refresh_selection_box() -> void:
+	if _sel_lbl == null:
+		return
+	if _sflow.is_active():
+		_sel_lbl.text = "Attività speciale: segui le istruzioni sulla mappa."
+		return
+	if _flow.op == "" or _mode == "idle":
+		_sel_lbl.text = "Scegli prima un'Operazione: gli spazi validi si illuminano sulla mappa."
+		return
+	if _mode == "moves":
+		_sel_lbl.text = "Nessuno spostamento in coda: trascina i pezzi sulla mappa." if _flow.moves.is_empty() \
+			else "%d spostamenti in coda." % _flow.moves.size()
+		return
+	if _flow.selected.is_empty():
+		_sel_lbl.text = "Nessuno: clicca uno spazio evidenziato."
+		return
+	var names: Array = []
+	for sid in _flow.selected:
+		var sd: SpaceDef = GameController.game_def.space(sid)
+		names.append(sd.name if sd != null else sid)
+	_sel_lbl.text = "%d · %s" % [names.size(), ", ".join(names)]
 
 
 ## Esegui l'operazione (se selezionata e non ancora eseguita) e concludi il turno.
@@ -417,7 +591,10 @@ func _prop_banner(stage: String) -> void:
 	_set_btn(_btn_ev_s, false)
 	_set_btn(_btn_launder, false)
 	_set_btn(_btn_clear, false)
-	_set_btn(_btn_undo, false)
+	_set_btn(_btn_exec, false)
+	_top.set_undo(0, "")
+	_sel_lbl.text = "Round di Propaganda: segui le istruzioni sulla mappa."
+	_op_desc.text = ""
 	if _preview != null:
 		_preview.text = ""
 	for b in _op_btns.get_children():
@@ -426,8 +603,13 @@ func _prop_banner(stage: String) -> void:
 		b.disabled = true
 	_set_btn(_btn_end, stage != "")
 	_clear_highlights()
+	var head_fid := stage if stage in ["government", "m26", "directorio", "syndicate"] else ""
+	if stage == "redeploy":
+		head_fid = "government"
+	_refresh_panel_header(head_fid, "Round di Propaganda", "PROPAGANDA")
+	_instr.text = ""
 	if stage == "":
-		_turn_banner.add_theme_color_override("font_color", Color("ffffff"))
+		_turn_banner.add_theme_color_override("font_color", CLTheme.INK)
 		_turn_banner.text = "» Round di Propaganda in corso..."
 		return
 	# Spostamento (6.4): si trascinano i cubi; evidenzia gli spazi che DEVONO svuotarsi.
@@ -436,16 +618,16 @@ func _prop_banner(stage: String) -> void:
 		for sid in must:
 			if _space_views.has(sid):
 				_space_views[sid].set_highlight(true)
-		_turn_banner.add_theme_color_override("font_color", GameController.faction_color("government"))
-		var tail := "nessun obbligo: sposta se vuoi, poi 'Concludi'" if must.is_empty() \
+		_turn_banner.add_theme_color_override("font_color", CLTheme.faction_ink("government"))
+		var tail := "nessun obbligo: sposta se vuoi, poi 'Concludi turno'" if must.is_empty() \
 			else "le Truppe DEVONO lasciare gli spazi evidenziati (%d)" % must.size()
 		_turn_banner.text = "» Propaganda - Spostamento del Governo: trascina Truppe/Polizia - %s" % tail
 		return
 	for sid in GameController.propaganda.support_action_spaces(stage):
 		if _space_views.has(sid):
 			_space_views[sid].set_highlight(true)
-	_turn_banner.add_theme_color_override("font_color", GameController.faction_color(stage))
-	_turn_banner.text = "» Propaganda - %s. %s - poi 'Concludi'" % \
+	_turn_banner.add_theme_color_override("font_color", CLTheme.faction_ink(stage))
+	_turn_banner.text = "» Propaganda - %s. %s - poi 'Concludi turno'" % \
 		[GameController.faction_name(stage), PROP_MSG.get(stage, "")]
 
 
@@ -476,11 +658,12 @@ func _zoom_at(factor: float, screen_pos: Vector2 = Vector2(-1, -1)) -> void:
 	if is_equal_approx(target, old_zoom):
 		return
 	# Punto della mappa (a zoom 1) attualmente sotto il pivot.
-	var map_pt := (Vector2(_board.scroll_horizontal, _board.scroll_vertical) + local) / old_zoom
+	var map_pt := (Vector2(_board.scroll_horizontal, _board.scroll_vertical) + local - _map.position) / old_zoom
 	_zoom = target
 	_layout_board()
-	_board.scroll_horizontal = int(map_pt.x * _zoom - local.x)
-	_board.scroll_vertical = int(map_pt.y * _zoom - local.y)
+	var off := _map.position
+	_board.scroll_horizontal = int(map_pt.x * _zoom + off.x - local.x)
+	_board.scroll_vertical = int(map_pt.y * _zoom + off.y - local.y)
 
 
 ## Scorciatoie da tastiera (desktop): Esc annulla la selezione, Invio esegue,
@@ -555,43 +738,59 @@ func _input(event: InputEvent) -> void:
 
 
 func _layout_board() -> void:
-	if _bar == null or _board == null:
+	if _top == null or _board == null or _strip == null or _panel == null:
 		return
-	# Larghezza minima del pannello laterale (log/carte); può crescere oltre.
-	var min_side := 360.0
-	# La barra azioni occupa la larghezza utile e va a capo; il board parte sotto.
-	_bar.size.x = maxf(300.0, size.x - 16.0)
-	var top: float = _bar.get_combined_minimum_size().y + 16.0
-	var avail_h := maxf(200.0, size.y - top - 8.0)
-	# La mappa (landscape) si adatta all'area disponibile lasciando spazio al pannello.
+	var W := size.x
+	var H := size.y
+	# Barra in alto a tutta larghezza; sotto: mappa + striscia a sinistra, pannello a destra.
+	_top.position = Vector2.ZERO
+	_top.size = Vector2(W, TopBar.HEIGHT)
+	var top := TopBar.HEIGHT + GAP
+	var panel_w := PANEL_W if W >= 1300.0 else 320.0
+	var left := 12.0
+	var map_w := maxf(300.0, W - left - GAP - panel_w - 12.0)
+	var strip_h := BottomStrip.HEIGHT
+	var map_h := maxf(200.0, H - top - GAP - strip_h - 12.0)
+	_panel.position = Vector2(W - 12.0 - panel_w, top)
+	_panel.size = Vector2(panel_w, H - top - 12.0)
+	_strip.position = Vector2(left, top + map_h + GAP)
+	_strip.size = Vector2(map_w, strip_h)
+	_board.position = Vector2(left, top)
+	_board.size = Vector2(map_w, map_h)
+	_map_frame.position = _board.position
+	_map_frame.size = _board.size
+	# Sopra la mappa: zoom in alto a destra, ordine di servizio centrato.
+	var zb := _zoom_box.get_combined_minimum_size()
+	_zoom_box.position = Vector2(left + map_w - zb.x - 10.0, top + 10.0)
+	_zoom_box.size = zb
+	# In basso a sinistra: lì la plancia ha legenda e sequenza di gioco, l'isola resta libera.
+	_map_rect = Rect2(left, top, map_w, map_h)
+	_place_banner()
+	# Dimensione base (zoom=1) = tutta la plancia contenuta nel riquadro; lo zoom è
+	# applicato come SCALA al nodo mappa, così mappa, pedine e segnalini scalano insieme.
 	var aspect := 2040.0 / 2640.0
-	var max_map_w := maxf(300.0, size.x - 16.0 - min_side - 8.0)
-	var mw0 := max_map_w
+	var mw0 := map_w
 	var mh0 := mw0 * aspect
-	if mh0 > avail_h:
-		mh0 = avail_h
+	if mh0 > map_h:
+		mh0 = map_h
 		mw0 = mh0 / aspect
-	# Pannello laterale di larghezza comoda (né troppo stretto né esageratamente largo);
-	# la mappa e il pannello stanno attaccati e il blocco è centrato, così l'eventuale
-	# spazio extra diventa due piccoli margini bilanciati invece di un vuoto tra i due.
-	var max_side := 470.0
-	var side_w := clampf(size.x - 16.0 - mw0 - 8.0, min_side, max_side)
-	var block_w := mw0 + 8.0 + side_w
-	var lm := maxf(8.0, (size.x - block_w) * 0.5)
-	_board.position = Vector2(lm, top)
-	_board.size = Vector2(mw0, avail_h)
-	_side.position = Vector2(lm + mw0 + 8.0, top)
-	_side.size = Vector2(side_w, avail_h)
-	# Dimensione base (zoom=1); lo zoom è applicato come SCALA al nodo mappa, così tutto
-	# (mappa, pedine, segnalini) scala in modo uniforme. Il wrapper definisce l'area scrollabile.
 	var base := Vector2(mw0, mh0)
+	# Prima inquadratura: l'isola a tutta larghezza (la plancia intera resta a un tasto).
+	if not _view_ready and map_w > 300.0:
+		_view_ready = true
+		_view_island.call_deferred()
+	var scaled := base * _zoom
 	if _map != null:
 		_map.custom_minimum_size = base
 		_map.size = base
 		_map.scale = Vector2(_zoom, _zoom)
+		# Se la plancia è più piccola del riquadro, resta centrata.
+		_map.position = ((_board.size - scaled) * 0.5).max(Vector2.ZERO)
 	if _map_wrap != null:
-		_map_wrap.custom_minimum_size = base * _zoom
-		_map_wrap.size = base * _zoom
+		_map_wrap.custom_minimum_size = scaled.max(_board.size)
+		_map_wrap.size = scaled.max(_board.size)
+	if _zoom_lbl != null:
+		_zoom_lbl.text = "%d%%" % roundi(_zoom * 100.0)
 	for sid in _space_views.keys():
 		var rv: RegionView = _space_views[sid]
 		rv.position = Vector2.ZERO
@@ -608,6 +807,27 @@ func _layout_board() -> void:
 		_moves_overlay.position = Vector2.ZERO
 		_moves_overlay.size = base
 		_update_moves_overlay()
+
+
+## Inquadra Cuba: plancia a tutta larghezza, scorsa sull'isola (fascia centrale).
+func _view_island() -> void:
+	if _board == null or _board.size.x <= 0.0:
+		return
+	var aspect := 2040.0 / 2640.0
+	var mw0 := _board.size.x
+	var mh0 := mw0 * aspect
+	if mh0 > _board.size.y:
+		mh0 = _board.size.y
+		mw0 = mh0 / aspect
+	# L'isola (con L'Avana e Santiago) occupa circa la fascia 12%–84% dell'altezza
+	# della plancia: la si fa entrare tutta, senza superare la larghezza del riquadro.
+	_zoom = clampf(minf(_board.size.x / mw0, _board.size.y / (mh0 * 0.72)), 0.5, 4.0)
+	_layout_board()
+	var h := mh0 * _zoom
+	var center := h * 0.48
+	await get_tree().process_frame
+	_board.scroll_vertical = int(maxf(0.0, center - _board.size.y * 0.5))
+	_board.scroll_horizontal = 0
 
 
 # ---------------------------------------------------------------------------
@@ -631,9 +851,8 @@ func _refresh() -> void:
 	if _track_overlay != null:
 		_track_overlay.queue_redraw()
 	_refresh_turn_banner()
-	_side.refresh()
-	if not _role_btns.is_empty():
-		_update_role_btns()
+	_strip.refresh()
+	_top.refresh()
 
 
 
@@ -656,8 +875,11 @@ func _refresh_turn_banner() -> void:
 	_set_btn(_btn_bot, turn_active)
 	_set_btn(_btn_launder, turn_active and GameController.can_launder())
 	_set_btn(_btn_clear, _mode != "idle" or not _flow.selected.is_empty() or not _flow.moves.is_empty())
+	_set_btn(_btn_exec, turn_active and (_sflow.is_active() or (_flow.op != "" and _mode != "idle")))
 	_refresh_undo_btn()
 	_refresh_preview()
+	_refresh_selection_box()
+	_mark_op_button()
 	var legal: Array = st.get("legal", [])
 	var event_ok := turn_active and (legal.has(4))  # EVENT
 	_set_btn(_btn_ev_u, event_ok)
@@ -671,23 +893,34 @@ func _refresh_turn_banner() -> void:
 		b.disabled = not turn_active or (lim and not lim_sa_ok)
 
 	if not turn_active:
-		_turn_banner.add_theme_color_override("font_color", Color("ffffff"))
+		_turn_banner.add_theme_color_override("font_color", CLTheme.INK)
+		_refresh_panel_header("", "Nessuna Fazione di turno", "")
 		if GameController.game_over:
 			if GameController.winner != "":
 				_turn_banner.text = "» Partita conclusa - vince %s" % GameController.faction_name(GameController.winner)
-				_turn_banner.add_theme_color_override("font_color", GameController.faction_color(GameController.winner))
+				_turn_banner.add_theme_color_override("font_color", CLTheme.faction_ink(GameController.winner))
 			else:
 				_turn_banner.text = "=== Partita conclusa"
 		elif card == -1:
 			_turn_banner.text = "Mazzo esaurito"
 		else:
 			_turn_banner.text = ""
+		_banner.visible = _turn_banner.text != "" or _instr.text != ""
 		return
 	var pending: String = st["pending"]
 	if pending != _cur_faction:
 		_select_faction(pending)
-	_turn_banner.add_theme_color_override("font_color", GameController.faction_color(pending))
+	_turn_banner.add_theme_color_override("font_color", CLTheme.faction_ink(pending))
 	var slot := "1ª" if st.get("first_slot", true) else "2ª"
+	var s: GameState = GameController.state
+	var res_txt := ("Risorse %d" % s.get_resources(pending)) if s.tracks_resources(pending) else "Risorse —"
+	var lim_txt := " · solo Op. Limitata" if lim else ""
+	_refresh_panel_header(pending, "%s Fazione · %s%s" % [slot, res_txt, lim_txt],
+		"IN AZIONE" if GameController.is_player(pending) else "BOT")
+	_banner.visible = true
+	if _mode == "idle" and not _sflow.is_active():
+		_op_desc.text = "Scegli un'Operazione: gli spazi dove è possibile si illuminano sulla mappa." \
+			if not lim else "Operazione Limitata: un solo spazio e nessuna Attività speciale."
 	# Guida passo-passo in base allo stato del flusso.
 	var step := ""
 	if _sflow.is_active():
@@ -701,7 +934,7 @@ func _refresh_turn_banner() -> void:
 		step = "trascina i pezzi (%d spostamenti) -> 'Concludi turno'" % _flow.moves.size()
 	else:
 		step = "clicca gli spazi evidenziati (%d selezionati) -> 'Concludi turno'" % _flow.selected.size()
-	_turn_banner.text = "> Tocca a %s (%s Fazione) - %s" % \
+	_turn_banner.text = "Tocca a %s (%s Fazione) — %s" % \
 		[GameController.faction_name(pending), slot, step]
 
 
@@ -710,15 +943,10 @@ func _set_btn(b: Button, on: bool) -> void:
 		b.disabled = not on
 
 
-## Tasto Annulla-azione: attivo solo se c'è qualcosa da disfare, e dice cosa.
+## Tasto Annulla (barra superiore): attivo solo se c'è qualcosa da disfare, e dice cosa.
 func _refresh_undo_btn() -> void:
-	if _btn_undo == null:
-		return
-	var n := GameController.undo_depth()
-	_set_btn(_btn_undo, n > 0)
-	_btn_undo.text = "Annulla azione" if n == 0 else "Annulla azione (%d)" % n
-	_btn_undo.tooltip_text = "Disfa l'ultima azione eseguita su questa carta (Ctrl+Z)." if n == 0 \
-		else "Disfa: %s  —  %d azioni annullabili (Ctrl+Z)" % [GameController.undo_label(), n]
+	if _top != null:
+		_top.set_undo(GameController.undo_depth(), GameController.undo_label())
 
 
 ## Anteprima dell'Operazione in preparazione: costo in Risorse ed effetti previsti,
@@ -729,29 +957,30 @@ func _refresh_preview() -> void:
 	var sst := GameController.seq_status()
 	if _flow.op == "" or _mode not in ["space_list", "select_spaces", "moves"] \
 			or String(sst.get("pending", "")) == "":
-		_preview.text = ""
+		_preview.text = "—"
+		_preview.add_theme_color_override("font_color", CLTheme.INK_FAINT)
 		_preview.tooltip_text = ""
 		return
 	var res: Dictionary = GameController.preview_operation(_flow.op, _flow.build_params())
 	if not res.get("ok", false):
 		# Errore atteso: si vede PRIMA di premere Esegui.
 		_preview.text = "⚠ non eseguibile"
-		_preview.add_theme_color_override("font_color", Color("ff9f6b"))
+		_preview.add_theme_color_override("font_color", CLTheme.WARN_INK)
 		_preview.tooltip_text = String(res.get("error", ""))
 		return
 	var cost := int(res.get("cost", 0))
 	var free := GameController.free_limop_armed()
 	if not bool(res.get("tracks_resources", true)):
 		_preview.text = "costo — (NP)"
-		_preview.add_theme_color_override("font_color", Color("9fb3c8"))
+		_preview.add_theme_color_override("font_color", CLTheme.INK_DIM)
 	elif free or cost == 0:
 		_preview.text = "GRATIS" if free else "costo 0"
-		_preview.add_theme_color_override("font_color", Color("57c97e"))
+		_preview.add_theme_color_override("font_color", CLTheme.OK_INK)
 	else:
 		var have := int(res.get("resources", 0))
 		_preview.text = "costo %d / %d" % [cost, have]
 		_preview.add_theme_color_override("font_color",
-			Color("57c97e") if res.get("affordable", false) else Color("ff6b6b"))
+			CLTheme.OK_INK if res.get("affordable", false) else CLTheme.ERR_INK)
 	# Nel tooltip: cosa succederà (l'Attacco dipende dal tiro, quindi è indicativo).
 	var lines: Array = res.get("log", [])
 	var tip := "Effetti previsti:\n- " + "\n- ".join(lines) if not lines.is_empty() else "Nessun effetto previsto"
@@ -770,16 +999,22 @@ func _select_faction(fid: String) -> void:
 func _rebuild_action_buttons(fid: String) -> void:
 	for c in _op_btns.get_children():
 		c.queue_free()
+	_op_btn_map.clear()
 	for op in GameController.game_def.faction(fid).operations:
 		var ob: Button = _mk_btn(CLNames.op(op), _start_op.bind(op))
 		ob.tooltip_text = OP_DESC.get(op, "")
+		ob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		ob.custom_minimum_size = Vector2(0, 44)
+		ob.add_theme_font_size_override("font_size", 17)
 		_op_btns.add_child(ob)
+		_op_btn_map[op] = ob
 	for c in _sa_btns.get_children():
 		c.queue_free()
 	for sa in GameController.game_def.faction(fid).special_activities:
 		if SpecialFlow.VARIANTS.has(sa):
 			# Un solo tasto a tendina che "esplode" le varianti (niente barra che va a capo).
-			var mb := _mk_menu_btn("%s..." % CLNames.sa(sa))
+			var mb := _mk_menu_btn("%s ▾" % CLNames.sa(sa))
+			mb.custom_minimum_size = Vector2(0, 36)
 			mb.tooltip_text = SA_DESC.get(sa, "")
 			var pop := mb.get_popup()
 			var ids: Array = []
@@ -790,6 +1025,7 @@ func _rebuild_action_buttons(fid: String) -> void:
 			_sa_btns.add_child(mb)
 		else:
 			var sb: Button = _mk_btn(CLNames.sa(sa), _do_special.bind(sa))
+			sb.custom_minimum_size = Vector2(0, 36)
 			sb.tooltip_text = SA_DESC.get(sa, "")
 			_sa_btns.add_child(sb)
 
@@ -811,10 +1047,6 @@ func _mk_menu_btn(text: String) -> MenuButton:
 
 
 
-const _VIC_LABEL := {
-	"government": "Supporto", "m26": "Opp.+Basi",
-	"directorio": "Pop.+Basi", "syndicate": "Casinò",
-}
 
 
 
@@ -855,10 +1087,11 @@ func _show_card_zoom(tex: Texture2D) -> void:
 ## Messaggio di ERRORE nella riga istruzioni: rosso, poi torna al giallo standard.
 func _err(text: String) -> void:
 	_instr.text = text
-	_instr.add_theme_color_override("font_color", Color("ff6b6b"))
+	_banner.visible = true
+	_instr.add_theme_color_override("font_color", CLTheme.ERR_INK)
 	var tw := create_tween()
 	tw.tween_interval(2.5)
-	tw.tween_callback(func(): _instr.add_theme_color_override("font_color", Color("f1c40f")))
+	tw.tween_callback(func(): _instr.add_theme_color_override("font_color", CLTheme.INK))
 
 
 ## Menu "Partita...": salvataggio, caricamento, autosalvataggio, nuova partita.
@@ -878,6 +1111,18 @@ func _on_game_menu(id: int) -> void:
 			_confirm_new.popup_centered()
 		4:
 			_confirm_menu.popup_centered()
+		TopBar.MenuId.BOT_TURN:
+			GameController.bot_act_pending()
+		TopBar.MenuId.ALL_BOTS:
+			_on_all_bots()
+		TopBar.MenuId.FULL_GAME:
+			GameController.run_full_game_paced()
+		TopBar.MenuId.SPEED_SLOW:
+			GameController.pace_delay = 1.8
+		TopBar.MenuId.SPEED_MED:
+			GameController.pace_delay = 1.1
+		TopBar.MenuId.SPEED_FAST:
+			GameController.pace_delay = 0.7
 
 
 ## Riciclaggio (2.3.6): se il Denaro è in un solo spazio agisci subito, altrimenti scegli.
@@ -944,7 +1189,8 @@ func _start_op(op_id: String) -> void:
 	var lim := " (Op Limitata: 1 spazio, niente Att.Speciale)" if _flow.limited else ""
 	var desc: String = OP_DESC.get(op_id, "")
 	var hint := "trascina i pezzi nei loro spazi" if _mode == "moves" else "clicca gli spazi evidenziati"
-	_instr.text = "%s%s - %s\n> %s, poi 'Esegui' o 'Concludi turno'" % [CLNames.op(op_id), lim, desc, hint]
+	_op_desc.text = desc
+	_instr.text = "%s%s — %s, poi 'Esegui' o 'Concludi turno'" % [CLNames.op(op_id), lim, hint]
 	_refresh_turn_banner()
 
 
@@ -1116,8 +1362,8 @@ func _do_special(sa: String) -> void:
 		return
 	_mode = "special"
 	_render_special()
-	_instr.text = "%s - %s\n> %s" % [SpecialFlow.label_of(sa),
-		SA_DESC.get(SpecialFlow.base_of(sa), ""), _sflow.message]
+	_op_desc.text = "%s: %s" % [SpecialFlow.label_of(sa), SA_DESC.get(SpecialFlow.base_of(sa), "")]
+	_instr.text = "%s — %s" % [SpecialFlow.label_of(sa), _sflow.message]
 	_refresh_turn_banner()
 
 
@@ -1189,27 +1435,14 @@ func _on_all_bots() -> void:
 
 func _toggle_role(fid: String) -> void:
 	GameController.set_role(fid, "bot" if GameController.is_player(fid) else "player")
-	_update_role_btns()
+	_top.refresh()
+	_refresh_turn_banner()
 
 
-func _update_role_btns() -> void:
-	for fid in _role_btns:
-		var player := GameController.is_player(fid)
-		var b: Button = _role_btns[fid]
-		b.text = "%s: %s" % [CLNames.faction_short(fid), "Giocatore" if player else "Bot"]
-		b.add_theme_color_override("font_color", GameController.faction_color(fid) if player else Color("8aa0b3"))
-
-
-## Tick automatico: se tocca a una Fazione Bot (e non sto scegliendo nulla), gioca da sola.
+## Auto-Bot: se acceso, le Fazioni Bot giocano da sole quando tocca a loro.
 func _toggle_auto_bot() -> void:
 	_auto_bot = not _auto_bot
-	_btn_auto.text = "Auto-Bot: ON" if _auto_bot else "Auto-Bot: OFF"
-	_accent_btn(_btn_auto, Color("2e7d46"), Color("57c97e")) if _auto_bot else _mk_btn_restyle(_btn_auto)
-
-
-## Riporta un tasto allo stile neutro standard.
-func _mk_btn_restyle(b: Button) -> void:
-	CLTheme.style_button(b)
+	_top.set_auto_bot(_auto_bot)
 
 
 func _auto_bot_tick() -> void:

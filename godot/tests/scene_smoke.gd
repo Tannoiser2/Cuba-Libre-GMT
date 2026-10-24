@@ -45,19 +45,25 @@ func _initialize() -> void:
 	# Il _ready() dei nodi (e quindi la costruzione della UI) scatta al primo frame.
 	await process_frame
 	print("ok  scena istanziata (%d nodi figli)" % main.get_child_count())
-	# I sotto-componenti estratti devono esserci ed essere collegati.
+	# I sotto-componenti (barra superiore, striscia inferiore) devono esserci ed essere collegati.
 	var side = null
 	var anim = null
 	var logv = null
 	for c in main.get_children():
 		var scr = c.get_script()
 		var nm := "" if scr == null else String(scr.resource_path).get_file()
-		if nm == "SidePanel.gd":
+		if nm == "BottomStrip.gd":
 			side = c
-	if side == null:
-		print("FAIL: SidePanel non trovato"); fails += 1
+		if nm == "TopBar.gd":
+			anim = c
+	if anim == null:
+		print("FAIL: TopBar non trovata"); fails += 1
 	else:
-		print("ok  SidePanel montato")
+		print("ok  TopBar montata")
+	if side == null:
+		print("FAIL: BottomStrip non trovata"); fails += 1
+	else:
+		print("ok  BottomStrip montata")
 		if side.log_view == null:
 			print("FAIL: LogView assente"); fails += 1
 		else:

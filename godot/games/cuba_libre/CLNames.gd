@@ -31,6 +31,9 @@ const RALLY := {"place": "Guerriglie", "extra": "Guerriglie", "base": "Base", "f
 ## Sigle delle Fazioni (tasti dei Ruoli, pannello Vittoria).
 const FACTION_SHORT := {"government": "Gov", "m26": "26J", "directorio": "DR", "syndicate": "SYN"}
 
+## Nomi medi delle Fazioni (tessere della barra superiore, pannello Risorse).
+const FACTION_TILE := {"government": "Governo", "m26": "26 Luglio", "directorio": "Directorio", "syndicate": "Sindacato"}
+
 
 static func op(id: String) -> String:
 	return String(OP.get(id, id))
@@ -42,6 +45,10 @@ static func sa(id: String) -> String:
 
 static func piece(id: String) -> String:
 	return String(PIECE.get(id, id))
+
+
+static func faction_tile(id: String) -> String:
+	return String(FACTION_TILE.get(id, id))
 
 
 static func faction_short(id: String) -> String:

@@ -1155,9 +1155,5 @@ func faction_name(fid: String) -> String:
 
 
 func faction_color(fid: String) -> Color:
-	match fid:
-		"government": return Color("3a6ea5")
-		"m26": return Color("c0392b")
-		"directorio": return Color("d4ac0d")
-		"syndicate": return Color("27ae60")
-		_: return Color.WHITE
+	# I colori vivono nel tema: un solo posto da cambiare per un altro gioco COIN.
+	return CLTheme.faction(fid)

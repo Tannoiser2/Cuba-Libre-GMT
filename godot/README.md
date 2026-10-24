@@ -24,7 +24,15 @@ games/
 tests/
   test_runner.gd      test headless (validano dati, setup, controllo, vittoria)
 
-scenes/               interfaccia grafica (fase successiva)
+scenes/               interfaccia grafica
+  CLTheme.gd          tema "dossier 1958": palette, caratteri, riquadri (unico file da
+                      cambiare per vestire un altro gioco COIN)
+  TopBar.gd           barra superiore: emblema, tessere Fazione, carte, comandi
+  BottomStrip.gd      striscia inferiore: carta, Risorse, Vittoria, registro
+  Main.gd             mappa, ordine di servizio, pannello azione a passi
+
+assets/fonts/         Bebas Neue, Barlow Condensed (OFL), Special Elite (Apache 2.0)
+tools/screenshot.gd   fotografia della scena per controllare l'interfaccia
 ```
 
 Il principio è la separazione tra **motore generico** (meccaniche comuni a tutti i COIN:
@@ -48,3 +56,14 @@ Esce con codice 0 se tutti i test passano.
 ## Aprire nell'editor
 
 Aprire la cartella `godot/` come progetto in Godot 4.3+.
+
+## Fotografare l'interfaccia
+
+Serve un display (in CI o in un container: `xvfb-run`).
+
+```bash
+xvfb-run godot --path godot --rendering-method gl_compatibility --resolution 1500x820 \
+  -s res://tools/screenshot.gd -- partita.png rally   # Rally del 26 Luglio in Sierra Maestra
+xvfb-run godot --path godot --rendering-method gl_compatibility --resolution 1500x820 \
+  -s res://tools/screenshot.gd -- menu.png menu       # menu iniziale
+```
