@@ -217,7 +217,18 @@ func center_point() -> Vector2:
 
 func set_highlight(on: bool) -> void:
 	_highlight = on
+	set_process(on)   # lo spazio valido "respira": serve ridisegnarlo a ogni frame
 	queue_redraw()
+
+
+func _process(_delta: float) -> void:
+	if _highlight:
+		queue_redraw()
+
+
+## Intensità della pulsazione degli spazi validi (0..1).
+func _pulse() -> float:
+	return 0.5 + 0.5 * sin(Time.get_ticks_msec() / 1000.0 * TAU / 1.8)
 
 
 var _flash := 0.0
@@ -237,8 +248,10 @@ func _set_flash(v: float) -> void:
 
 
 func _draw() -> void:
-	var outline := Color("f1c40f") if _highlight else Color(1, 1, 1, 0.35)
+	var outline := CLTheme.BRASS_HI if _highlight else Color(1, 1, 1, 0.35)
 	var width := 3.0 if _highlight else 1.0
+	var glow := CLTheme.BRASS_HI
+	glow.a = 0.10 + 0.14 * _pulse()
 	# Città/EC: cerchio
 	if _circle.z >= 0.0:
 		var c := Vector2(_circle.x * size.x, _circle.y * size.y)
@@ -246,6 +259,8 @@ func _draw() -> void:
 		if _control != "":
 			var cc := GameController.faction_color(_control); cc.a = 0.22
 			draw_circle(c, r, cc)
+		if _highlight:
+			draw_circle(c, r, glow)
 		if _flash > 0.0:
 			var fc := _flash_color; fc.a = _flash * 0.55
 			draw_circle(c, r, fc)
@@ -259,6 +274,8 @@ func _draw() -> void:
 		var col := GameController.faction_color(_control)
 		col.a = 0.22
 		draw_colored_polygon(poly, col)
+	if _highlight:
+		draw_colored_polygon(poly, glow)
 	if _flash > 0.0:
 		var fc2 := _flash_color; fc2.a = _flash * 0.45
 		draw_colored_polygon(poly, fc2)

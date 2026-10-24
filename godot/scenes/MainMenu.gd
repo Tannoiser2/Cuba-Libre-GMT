@@ -25,6 +25,8 @@ const SCENARIOS := [
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	theme = CLTheme.dark_theme()
+	get_window().theme = CLTheme.dark_theme()
 	# I ruoli di default sono quelli del controller (solitario: Governo umano).
 	for fid in _roles:
 		_roles[fid] = String(GameController.roles.get(fid, _roles[fid]))
@@ -51,38 +53,40 @@ func _build() -> void:
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
 
+	# Il menu è un fascicolo: foglio di carta con la testata rossa.
 	var panel := PanelContainer.new()
-	var pstyle := StyleBoxFlat.new()
-	pstyle.bg_color = Color(0.07, 0.086, 0.11, 0.93)
-	pstyle.set_corner_radius_all(12)
-	pstyle.set_border_width_all(1)
-	pstyle.border_color = CLTheme.BTN_BORDER
-	pstyle.content_margin_left = 34.0
-	pstyle.content_margin_right = 34.0
-	pstyle.content_margin_top = 24.0
-	pstyle.content_margin_bottom = 24.0
+	panel.theme = CLTheme.paper_theme()
+	var pstyle := CLTheme.paper_box(34.0)
+	pstyle.content_margin_top = 0.0
 	panel.add_theme_stylebox_override("panel", pstyle)
 	center.add_child(panel)
 
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 10)
+	vb.custom_minimum_size = Vector2(380, 0)
 	panel.add_child(vb)
 
-	# --- Testata ---
-	var title := Label.new()
-	title.text = "CUBA LIBRE"
+	# --- Testata: banda rossa con il titolo, come la barra della partita ---
+	var head := PanelContainer.new()
+	var hsb := CLTheme.flat(CLTheme.RED, 0)
+	hsb.content_margin_top = 14
+	hsb.content_margin_bottom = 10
+	hsb.expand_margin_left = 34
+	hsb.expand_margin_right = 34
+	hsb.corner_radius_top_left = 3
+	hsb.corner_radius_top_right = 3
+	head.add_theme_stylebox_override("panel", hsb)
+	var hv := VBoxContainer.new()
+	hv.add_theme_constant_override("separation", -6)
+	head.add_child(hv)
+	var title := CLTheme.label("Cuba Libre", Color.WHITE, 58, CLTheme.display())
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 40)
-	title.add_theme_color_override("font_color", CLTheme.ACCENT)
-	vb.add_child(title)
-
-	var sub := Label.new()
-	sub.text = "L'insorgenza di Castro a Cuba, 1957-1958 — Serie COIN, Volume II"
+	hv.add_child(title)
+	var sub := CLTheme.label("L'insorgenza di Castro a Cuba, 1957–1958 · Serie COIN, Vol. II",
+		Color("f6e3df"), 12, CLTheme.typewriter())
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.add_theme_font_size_override("font_size", 12)
-	sub.add_theme_color_override("font_color", CLTheme.TEXT_DIM)
-	vb.add_child(sub)
-	vb.add_child(HSeparator.new())
+	hv.add_child(sub)
+	vb.add_child(head)
 
 	# --- Scenario ---
 	vb.add_child(_section("Scenario"))
@@ -102,7 +106,6 @@ func _build() -> void:
 	vb.add_child(_btn_short)
 
 	# --- Ruoli ---
-	vb.add_child(HSeparator.new())
 	vb.add_child(_section("Chi gioca cosa"))
 	var grid := GridContainer.new()
 	grid.columns = 2
@@ -117,10 +120,9 @@ func _build() -> void:
 	vb.add_child(grid)
 
 	# --- Avvio ---
-	vb.add_child(HSeparator.new())
-	var play := _mk_btn("  Inizia la partita  ", _start_game)
-	play.add_theme_font_size_override("font_size", 16)
-	CLTheme.accent_button(play, Color("2e7d46"), Color("57c97e"))
+	var play := _mk_btn("Inizia la partita", _start_game)
+	CLTheme.primary_button(play, 28)
+	play.custom_minimum_size = Vector2(0, 54)
 	vb.add_child(play)
 
 	var resume := _mk_btn("Riprendi l'ultima partita", _resume)
@@ -139,8 +141,9 @@ func _build() -> void:
 
 	_status = Label.new()
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_status.add_theme_font_size_override("font_size", 11)
-	_status.add_theme_color_override("font_color", CLTheme.TEXT_DIM)
+	_status.add_theme_font_size_override("font_size", 12)
+	_status.add_theme_font_override("font", CLTheme.typewriter())
+	_status.add_theme_color_override("font_color", CLTheme.INK_DIM)
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_status.custom_minimum_size = Vector2(360, 32)
 	vb.add_child(_status)
@@ -149,11 +152,8 @@ func _build() -> void:
 
 
 func _section(text: String) -> Label:
-	var l := Label.new()
-	l.text = text
+	var l := CLTheme.section_title(text, CLTheme.INK_DIM, 20)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.add_theme_font_size_override("font_size", 12)
-	l.add_theme_color_override("font_color", CLTheme.TEXT_DIM)
 	return l
 
 
@@ -188,16 +188,16 @@ func _refresh() -> void:
 	for id in _scen_btns:
 		var b: Button = _scen_btns[id]
 		if id == _scenario:
-			CLTheme.accent_button(b, Color("2b4b6f"), Color("6f9ccc"))
+			CLTheme.accent_button(b, CLTheme.INK, CLTheme.INK)
 		else:
 			CLTheme.style_button(b)
 	_btn_short.text = "Partita breve: %s" % ("SÌ" if _short else "no")
 	for fid in _role_btns:
 		var rb: Button = _role_btns[fid]
 		var is_player: bool = _roles[fid] == "player"
-		rb.text = "%s: %s" % [CLNames.faction_short(fid), "Giocatore" if is_player else "Bot"]
+		rb.text = "%s: %s" % [CLNames.faction_tile(fid), "Giocatore" if is_player else "Bot"]
 		rb.add_theme_color_override("font_color",
-			GameController.faction_color(fid) if is_player else Color("8aa0b3"))
+			CLTheme.faction_ink(fid) if is_player else CLTheme.INK_FAINT)
 	# Descrizione dello scenario scelto + avviso se non gioca nessun umano.
 	var desc := ""
 	for sc in SCENARIOS:

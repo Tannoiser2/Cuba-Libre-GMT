@@ -19,7 +19,11 @@ func _init() -> void:
 	scroll_active = true
 	for fs in ["normal_font_size", "bold_font_size", "italics_font_size",
 			"bold_italics_font_size", "mono_font_size"]:
-		add_theme_font_size_override(fs, 11)
+		add_theme_font_size_override(fs, 12)
+	# Registro dattiloscritto, come un rapporto da campo.
+	add_theme_font_override("normal_font", CLTheme.typewriter())
+	add_theme_font_override("bold_font", CLTheme.ui_heavy())
+	add_theme_color_override("default_color", Color("d9d1bd"))
 	add_theme_constant_override("line_separation", 2)
 	meta_clicked.connect(_on_meta_clicked)
 
@@ -57,7 +61,7 @@ func render() -> void:
 	var s := ""
 	# Il taglio non è più silenzioso: si vede che qualcosa è stato omesso.
 	if _dropped > 0:
-		s += "[center][font_size=9][color=#5b6571]… %d righe precedenti omesse[/color][/font_size][/center]\n" % _dropped
+		s += "[center][font_size=9][color=#6a6352]… %d righe precedenti omesse[/color][/font_size][/center]\n" % _dropped
 	var turn := 0
 	for i in range(_entries.size()):
 		var e: Dictionary = _entries[i]
@@ -65,15 +69,15 @@ func render() -> void:
 		# Fine carta = fine di un turno: divisore prominente col numero del turno.
 		if String(e["f"]) == "" and txt.find("Carta conclusa") != -1:
 			turn += 1
-			s += "[center][b][color=#f1c40f]=====  Fine turno %d  =====[/color][/b][/center]\n" % turn
+			s += "[center][b][color=#e9c46a]=====  Fine turno %d  =====[/color][/b][/center]\n" % turn
 			continue
 		if String(e["f"]) == "" and txt.find("FINE PARTITA") != -1:
-			s += "\n[center][b][font_size=16][color=#f1c40f]===  FINE PARTITA  ===[/color][/font_size][/b][/center]\n"
+			s += "\n[center][b][font_size=16][color=#e9c46a]===  FINE PARTITA  ===[/color][/font_size][/b][/center]\n"
 			continue
 		s += CLTheme.faction_chip(txt, String(e["f"]))
 		if (e["tr"] as Array).size() > 0:
 			var exp: bool = e.get("exp", false)
-			s += " [url=%d][font_size=10][color=#7fb0ff]%s[/color][/font_size][/url]\n" % [
+			s += " [url=%d][font_size=10][color=#e9c46a]%s[/color][/font_size][/url]\n" % [
 				i, ("[-] logica" if exp else "[+] logica")]
 			if exp:
 				s += _render_trace(e["tr"])
@@ -107,5 +111,5 @@ func _render_trace(trace: Array) -> String:
 		elif line.begins_with("Operazione scelta") or line.begins_with("Attività Speciale") \
 				or line.begins_with("Nessuna Operazione"):
 			lvl = 0
-		s += "  [font_size=9][color=#9fb3c8]%s%s[/color][/font_size]\n" % ["  ".repeat(lvl + extra), line]
+		s += "  [font_size=9][color=#b9ad90]%s%s[/color][/font_size]\n" % ["  ".repeat(lvl + extra), line]
 	return s
