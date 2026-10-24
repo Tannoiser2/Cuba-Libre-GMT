@@ -2,12 +2,13 @@ extends SceneTree
 
 ## Cattura uno screenshot della scena di partita (serve un display: xvfb-run).
 ##   xvfb-run godot --path godot --rendering-method gl_compatibility -s res://tools/screenshot.gd -- out.png [rally]
-## Con "menu" fotografa il menu iniziale; con "sindacato" gioca il Sindacato; con "rally" prepara un Rally del 26 Luglio in Sierra Maestra per mostrare il pannello azione.
+## Con "rally-eseguito" esegue anche la Riorganizzazione; con "menu" fotografa il menu iniziale; con "sindacato" gioca il Sindacato; con "rally" prepara un Rally del 26 Luglio in Sierra Maestra per mostrare il pannello azione.
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	var out := args[0] if args.size() > 0 else "user://screenshot.png"
-	var demo := args.size() > 1 and args[1] == "rally"
+	var demo := args.size() > 1 and args[1] in ["rally", "rally-eseguito"]
+	var execute := args.size() > 1 and args[1] == "rally-eseguito"
 	# "sindacato": il Sindacato è il giocatore umano (molte Attività speciali da mostrare).
 	var human := "syndicate" if args.size() > 1 and args[1] == "sindacato" else "m26"
 	if args.size() > 1 and args[1] == "menu":
@@ -42,6 +43,9 @@ func _initialize() -> void:
 		main._start_op("rally")
 		await process_frame
 		main._on_space_clicked("sierra_maestra")
+		if execute:
+			await process_frame
+			main._on_execute()
 	for i in range(20):
 		await process_frame
 	await RenderingServer.frame_post_draw

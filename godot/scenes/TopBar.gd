@@ -279,7 +279,8 @@ func refresh() -> void:
 	var passers: PackedStringArray = gc.seq.passers() if gc.seq != null else PackedStringArray()
 	_turn_lbl.text = str(gc.cards_left())
 	var vs: Dictionary = gc.victory()
-	_btn_bot.disabled = pending == "" or gc.prop_pending
+	# Il Bot decide un turno intero: non a metà di un turno già iniziato a mano.
+	_btn_bot.disabled = pending == "" or gc.prop_pending or gc.turn_op() != "" or gc.turn_special_done()
 	for fid in FACTIONS:
 		var t: Dictionary = _tiles[fid]
 		var col := CLTheme.faction(fid)

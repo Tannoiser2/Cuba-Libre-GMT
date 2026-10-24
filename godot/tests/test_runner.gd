@@ -39,6 +39,7 @@ func _initialize() -> void:
 	_test_support_actions()
 	_test_free_ops_and_momentum()
 	_test_undo_stack_and_preview()
+	_test_one_action_per_turn()
 	_test_redeploy_interactive()
 	_test_action_flow()
 	_test_special_flow()
@@ -1057,6 +1058,56 @@ func _test_free_ops_and_momentum() -> void:
 	var kr := sp.kidnap({"space": "camaguey_city", "target": "government", "die": 3})
 	_check("Raúl: Sequestro eseguito", kr.ok)
 	_eq("Raúl: Aiuti +6 (2x3)", int(state.tracks.get("aid", 0)), aid0 + 6)
+
+
+# ---------------------------------------------------------------------------
+# Una sola Operazione e una sola Attività speciale per turno
+# ---------------------------------------------------------------------------
+
+func _test_one_action_per_turn() -> void:
+	print("\n[Una Operazione e una Attività speciale per turno]")
+	var gc = Engine.get_main_loop().root.get_node_or_null("GameController")
+	if gc == null:
+		_check("GameController disponibile (autoload)", false)
+		return
+	gc.new_game()
+	var fid: String = gc.seq.pending_faction()
+	gc.set_role(fid, "player")
+	var state: GameState = gc.state
+	state.space_state("matanzas").support = CoinEnums.Support.NEUTRAL
+	state.space_state("la_habana").support = CoinEnums.Support.NEUTRAL
+	state.recompute_all_control()
+	gc.module._refresh_victory_tracks(state)
+	var op := "train" if fid == "government" else "rally"
+	var other := "sweep" if fid == "government" else "terror"
+	var p1: Dictionary = {"spaces": ["havana"], "place": {"havana": {"police": 2}}} if fid == "government" \
+		else {"faction": fid, "spaces": ["matanzas"], "choices": {}}
+	var p2: Dictionary = {"spaces": ["santiago_de_cuba"], "place": {"santiago_de_cuba": {"police": 1}}} if fid == "government" \
+		else {"faction": fid, "spaces": ["la_habana"], "choices": {}}
+	_check("Prima Operazione eseguita", gc.run_operation(op, p1).get("ok", false))
+	_eq("Operazione del turno registrata", gc.turn_op(), op)
+	var r_other: Dictionary = gc.run_operation(other, {"faction": fid, "spaces": ["oriente"]})
+	_check("Un'altra Operazione nello stesso turno è rifiutata", not r_other.get("ok", true))
+	var r_same_space: Dictionary = gc.run_operation(op, p1)
+	_check("La stessa Operazione non torna in uno spazio già usato", not r_same_space.get("ok", true))
+	_check("La stessa Operazione prosegue in un altro spazio", gc.run_operation(op, p2).get("ok", false))
+	_check("Dopo un'Operazione non si può Passare", not gc.seq_pass())
+	_check("Dopo un'Operazione non si gioca l'Evento", not gc.play_event("unshaded").get("ok", true))
+	# Attività speciale: la prima passa il controllo, la seconda no.
+	gc._turn_did_special = true
+	gc._turn_sa = "infiltrate"
+	_check("Una seconda Attività speciale è rifiutata", gc.special_block_reason() != "")
+	_check("Rifiuto anche da run_special", not gc.run_special("infiltrate", {}).get("ok", true))
+	# Annulla: torna a prima dell'ultima Operazione, che resta quella scelta.
+	gc._turn_did_special = false
+	gc._turn_sa = ""
+	gc.undo_last()
+	_eq("Annulla: l'Operazione del turno resta quella", gc.turn_op(), op)
+	gc.undo_last()
+	_eq("Annulla tutto: nessuna Operazione scelta", gc.turn_op(), "")
+	_check("Annulla tutto: si può di nuovo scegliere un'altra Operazione",
+		gc.op_block_reason(other, {}) == "")
+	gc.new_game()
 
 
 # ---------------------------------------------------------------------------

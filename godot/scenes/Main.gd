@@ -960,10 +960,31 @@ func _refresh_turn_banner() -> void:
 	var lim := GameController.seq_is_limited_only()
 	# Momentum "MAP": il Governo può fare l'Att.Speciale anche in Op Limitata.
 	var lim_sa_ok := GameController.limited_special_ok(String(st.get("pending", "")))
-	for b in _op_btns.get_children():
-		b.disabled = not turn_active
-	for b in _sa_btns.get_children():
-		b.disabled = not turn_active or (lim and not lim_sa_ok)
+	# Una sola Operazione e una sola Attività speciale per turno: scelta (o svolta)
+	# un'Operazione, le altre si bloccano; si può solo proseguire quella. Idem per
+	# l'Attività speciale. "Annulla scelta" sblocca finché nulla è stato eseguito.
+	var free_lim := GameController.free_limop_armed()
+	var done_op: String = GameController.turn_op()
+	var prep_op: String = _flow.op if _mode != "idle" and _flow.op != "" else ""
+	var lock_op := prep_op if prep_op != "" else ("" if free_lim else done_op)
+	var lim_used := lim and done_op != "" and not free_lim
+	for op in _op_btn_map:
+		var ob: Button = _op_btn_map[op]
+		ob.disabled = not turn_active or GameController.turn_event_done() or lim_used \
+			or (lock_op != "" and op != lock_op) or _event_side != ""
+		ob.tooltip_text = OP_DESC.get(op, "") if not (lock_op != "" and op != lock_op) \
+			else "In questo turno l'Operazione è %s" % CLNames.op(lock_op)
+	var sa_done := GameController.turn_special_done()
+	var prep_sa: String = _sflow.pending if _sflow.is_active() else ""
+	for sa in _sa_btn_map:
+		var sb: Button = _sa_btn_map[sa]
+		sb.disabled = not turn_active or (lim and not lim_sa_ok) or sa_done \
+			or (prep_sa != "" and sa != prep_sa) or _event_side != ""
+	# Evento: solo se in questo turno non si è ancora fatto nulla.
+	if done_op != "" or sa_done or prep_op != "" or prep_sa != "":
+		_set_btn(_btn_ev_u, false)
+		_set_btn(_btn_ev_s, false)
+	_set_btn(_btn_pass, turn_active and done_op == "" and not sa_done)
 
 	if not turn_active:
 		_turn_banner.add_theme_color_override("font_color", CLTheme.INK)
@@ -1000,6 +1021,16 @@ func _refresh_turn_banner() -> void:
 		for a in legal:
 			acts.append(ACTION_NAMES.get(int(a), str(a)))
 		step = "scegli un'Operazione, un'Attività speciale o l'Evento (possibili: %s)" % ", ".join(acts)
+		var dop: String = GameController.turn_op()
+		if dop != "" or GameController.turn_special_done():
+			var parts: Array = []
+			if dop != "":
+				parts.append("%s svolta: puoi proseguirla in altri spazi" % CLNames.op(dop))
+			if not GameController.turn_special_done() and not lim:
+				parts.append("aggiungere un'Attività speciale")
+			elif GameController.turn_special_done():
+				parts.append("Attività speciale svolta")
+			step = "%s, oppure 'Concludi turno'" % ", ".join(parts)
 	elif _mode == "moves":
 		step = "trascina i pezzi (%d spostamenti in coda), poi 'Esegui' o 'Concludi turno'" % _flow.moves.size()
 	else:
@@ -1400,6 +1431,9 @@ func _on_execute() -> bool:
 		_err("✗ %s" % String(res.get("error", "Operazione non eseguibile")))
 		return false
 	_clear_pending()
+	# Il controller ha già aggiornato la scena PRIMA che la selezione fosse ripulita:
+	# senza questo, i tasti resterebbero sulla scelta appena eseguita.
+	_refresh_turn_banner()
 	return true
 
 

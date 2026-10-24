@@ -22,6 +22,12 @@ var seq: SequenceOfPlay
 var _turn_did_op := false
 var _turn_did_special := false
 var _turn_did_event := false
+## Una sola Operazione e una sola Attività speciale per turno (2.3, 4.1): si ricorda
+## QUALE Operazione è stata scelta (la si può proseguire, anche dopo l'Attività
+## speciale, ma non cambiarla) e in quali spazi, che non si possono riusare.
+var _turn_op := ""
+var _turn_op_spaces: Array = []
+var _turn_sa := ""
 
 ## Annulla (undo) multi-livello: pila di istantanee, la più recente in fondo.
 ## Le istantanee non attraversano il confine tra le carte (la pila si svuota).
@@ -147,6 +153,9 @@ func _reset_turn_flags() -> void:
 	_turn_did_op = false
 	_turn_did_special = false
 	_turn_did_event = false
+	_turn_op = ""
+	_turn_op_spaces = []
+	_turn_sa = ""
 
 
 ## Stato della sequenza per la UI: chi è di turno, slot, azioni legali, conclusione.
@@ -184,6 +193,8 @@ func play_event(side: String, params: Dictionary = {}) -> Dictionary:
 	var n: int = state.current_card
 	if n <= 0:
 		return {"ok": false, "error": "Nessuna carta Evento corrente"}
+	if _turn_did_op or _turn_did_special:
+		return {"ok": false, "error": "In questo turno hai già svolto un'Operazione: niente Evento"}
 	var fid := seq.pending_faction()
 	var p := params.duplicate()
 	p["faction"] = fid
@@ -198,6 +209,9 @@ func play_event(side: String, params: Dictionary = {}) -> Dictionary:
 ## La Fazione di turno Passa.
 func seq_pass() -> bool:
 	if seq == null or seq.pending_faction() == "":
+		return false
+	if _turn_did_op or _turn_did_special:
+		emit_signal("action_logged", "! Hai già agito in questo turno: non puoi più Passare, usa 'Concludi turno'", "")
 		return false
 	var fid := seq.pending_faction()
 	if not seq.act_pass():
@@ -780,6 +794,9 @@ func _capture_undo(label: String = "azione") -> void:
 		"did_op": _turn_did_op,
 		"did_special": _turn_did_special,
 		"did_event": _turn_did_event,
+		"turn_op": _turn_op,
+		"turn_op_spaces": _turn_op_spaces.duplicate(),
+		"turn_sa": _turn_sa,
 		"laundered": _laundered.duplicate(true),
 		"free_limop": _free_limop,
 	})
@@ -817,6 +834,9 @@ func undo_last() -> bool:
 	_turn_did_op = bool(u["did_op"])
 	_turn_did_special = bool(u["did_special"])
 	_turn_did_event = bool(u["did_event"])
+	_turn_op = String(u.get("turn_op", ""))
+	_turn_op_spaces = (u.get("turn_op_spaces", []) as Array).duplicate()
+	_turn_sa = String(u.get("turn_sa", ""))
 	_laundered = (u.get("laundered", {}) as Dictionary).duplicate(true)
 	_free_limop = String(u.get("free_limop", ""))
 	state.recompute_all_control()
@@ -891,12 +911,23 @@ func run_operation(op_id: String, params: Dictionary) -> Dictionary:
 			return es
 		params = params.duplicate(true)
 		params["free"] = true
+	else:
+		var why := op_block_reason(op_id, params)
+		if why != "":
+			var eo := {"ok": false, "error": why, "log": []}
+			_emit_result(eo)
+			return eo
 	_capture_undo(CLNames.op(op_id))
 	var res := _dispatch_operation(ops, op_id, params)
 	if res.get("ok", false):
 		_turn_did_op = true
 		if free:
 			_free_limop = ""   # LimOp gratuita consumata
+		else:
+			_turn_op = op_id
+			for sid in params.get("spaces", []):
+				if not _turn_op_spaces.has(sid):
+					_turn_op_spaces.append(sid)
 	else:
 		_drop_undo()   # azione fallita: niente da annullare
 	_emit_result(res)
@@ -923,6 +954,45 @@ func _dispatch_special(sp: CubaLibreSpecials, sa_id: String, params: Dictionary)
 
 ## Verifica (senza modificare lo stato) se un'Att.Speciale sarebbe legale ed efficace.
 ## Simula l'azione su una copia dello stato e ne restituisce l'esito.
+## Operazione già scelta in questo turno ("" se nessuna). Si può solo proseguirla.
+func turn_op() -> String:
+	return _turn_op
+
+
+func turn_special_done() -> bool:
+	return _turn_did_special
+
+
+func turn_event_done() -> bool:
+	return _turn_did_event
+
+
+## Perché questa Operazione non si può (più) svolgere in questo turno ("" = si può).
+## Una Fazione fa UNA Operazione: la si può eseguire a riprese (per esempio prima e
+## dopo l'Attività speciale), ma sempre la stessa e mai due volte nello stesso spazio.
+func op_block_reason(op_id: String, params: Dictionary = {}) -> String:
+	if _turn_did_event:
+		return "In questo turno hai già giocato l'Evento"
+	if _turn_op != "" and op_id != _turn_op:
+		return "In questo turno hai già scelto %s: puoi solo proseguirla" % CLNames.op(_turn_op)
+	if _turn_op != "" and seq_is_limited_only():
+		return "Operazione Limitata: un solo spazio, già usato"
+	for sid in params.get("spaces", []):
+		if _turn_op_spaces.has(sid):
+			var sd := game_def.space(String(sid))
+			return "%s è già stato scelto per questa Operazione" % (sd.name if sd != null else String(sid))
+	return ""
+
+
+## Perché non si può svolgere un'Attività speciale ("" = si può): una sola per turno.
+func special_block_reason() -> String:
+	if _turn_did_event:
+		return "In questo turno hai già giocato l'Evento"
+	if _turn_did_special:
+		return "In questo turno hai già svolto un'Attività speciale (%s)" % SpecialFlow.label_of(_turn_sa)
+	return ""
+
+
 func can_special(sa_id: String, params: Dictionary) -> bool:
 	var copy := GameState.from_dict(game_def, state.to_dict())
 	var sp := CubaLibreSpecials.new(copy, module)
@@ -930,10 +1000,16 @@ func can_special(sa_id: String, params: Dictionary) -> bool:
 
 
 func run_special(sa_id: String, params: Dictionary) -> Dictionary:
+	var why := special_block_reason()
+	if why != "":
+		var es := {"ok": false, "error": why, "log": []}
+		_emit_result(es)
+		return es
 	_capture_undo(CLNames.sa(sa_id))
 	var res := _dispatch_special(specials, sa_id, params)
 	if res.get("ok", false):
 		_turn_did_special = true
+		_turn_sa = sa_id
 	else:
 		_drop_undo()   # azione fallita: niente da annullare
 	_emit_result(res)
@@ -1072,6 +1148,9 @@ func save_to_dict() -> Dictionary:
 		"did_op": _turn_did_op,
 		"did_special": _turn_did_special,
 		"did_event": _turn_did_event,
+		"turn_op": _turn_op,
+		"turn_op_spaces": _turn_op_spaces.duplicate(),
+		"turn_sa": _turn_sa,
 	}
 
 
@@ -1121,6 +1200,9 @@ func load_game(path: String = SAVE_PATH) -> bool:
 	_turn_did_op = bool(d.get("did_op", false))
 	_turn_did_special = bool(d.get("did_special", false))
 	_turn_did_event = bool(d.get("did_event", false))
+	_turn_op = String(d.get("turn_op", ""))
+	_turn_op_spaces = (d.get("turn_op_spaces", []) as Array).duplicate()
+	_turn_sa = String(d.get("turn_sa", ""))
 	seq = null
 	var snap: Dictionary = d.get("seq", {})
 	if state.current_card > 0 and game_def.card(state.current_card) != null:
