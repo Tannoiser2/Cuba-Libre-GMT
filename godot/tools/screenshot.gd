@@ -2,12 +2,14 @@ extends SceneTree
 
 ## Cattura uno screenshot della scena di partita (serve un display: xvfb-run).
 ##   xvfb-run godot --path godot --rendering-method gl_compatibility -s res://tools/screenshot.gd -- out.png [rally]
-## Con "menu" fotografa il menu iniziale; con "rally" prepara un Rally del 26 Luglio in Sierra Maestra per mostrare il pannello azione.
+## Con "menu" fotografa il menu iniziale; con "sindacato" gioca il Sindacato; con "rally" prepara un Rally del 26 Luglio in Sierra Maestra per mostrare il pannello azione.
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	var out := args[0] if args.size() > 0 else "user://screenshot.png"
 	var demo := args.size() > 1 and args[1] == "rally"
+	# "sindacato": il Sindacato è il giocatore umano (molte Attività speciali da mostrare).
+	var human := "syndicate" if args.size() > 1 and args[1] == "sindacato" else "m26"
 	if args.size() > 1 and args[1] == "menu":
 		root.add_child(load("res://scenes/MainMenu.tscn").instantiate())
 		for i in range(10):
@@ -19,9 +21,8 @@ func _initialize() -> void:
 		return
 	var gc = root.get_node("GameController")
 	gc.new_game("standard", false)
-	for f in ["government", "directorio", "syndicate"]:
-		gc.set_role(f, "bot")
-	gc.set_role("m26", "player")
+	for f in ["government", "m26", "directorio", "syndicate"]:
+		gc.set_role(f, "player" if f == human else "bot")
 	var main = load("res://scenes/Main.tscn").instantiate()
 	root.add_child(main)
 	for i in range(10):
@@ -30,7 +31,7 @@ func _initialize() -> void:
 	for i in range(30):
 		var st: Dictionary = gc.seq_status()
 		var p := String(st.get("pending", ""))
-		if p == "m26":
+		if p == human:
 			break
 		if p != "" and gc.is_bot(p):
 			gc.bot_act_pending()

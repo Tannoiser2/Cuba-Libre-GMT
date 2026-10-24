@@ -50,7 +50,7 @@ var _confirm_new: ConfirmationDialog   # conferma per "Nuova Partita"
 var _confirm_menu: ConfirmationDialog  # conferma per il ritorno al menu iniziale
 var _end_dialog: ConfirmationDialog    # riepilogo di fine partita
 
-# Ordine di servizio sopra la mappa: di chi è il turno e cosa fare adesso.
+# Istruzioni di turno (in testa al pannello azione): cosa fare adesso.
 var _banner: PanelContainer
 var _turn_banner: Label
 var _instr: Label
@@ -63,7 +63,6 @@ var _head_name: Label
 var _head_sub: Label
 var _head_stamp: Label
 var _op_desc: Label
-var _sel_lbl: Label
 var _btn_exec: Button
 var _btn_end: Button
 var _btn_pass: Button
@@ -76,7 +75,7 @@ var _btn_ev_s: Button
 var _mode := "idle"                  # idle | select_spaces | moves
 var _op_btns: GridContainer
 var _op_btn_map: Dictionary = {}     # op_id -> Button (per evidenziare quella scelta)
-var _sa_btns: HFlowContainer
+var _sa_btns: GridContainer
 
 var _cur_faction := "government"
 var _btn_launder: Button              # Riciclaggio (2.3.6)
@@ -133,6 +132,7 @@ func _build_ui() -> void:
 	_top.undo_requested.connect(_on_undo_action)
 	_top.auto_bot_toggled.connect(_toggle_auto_bot)
 	_top.menu_id_pressed.connect(_on_game_menu)
+	_top.bot_turn_requested.connect(func(): GameController.bot_act_pending())
 	add_child(_top)
 
 	# Cornice della mappa (ottone) e area scrollabile per zoom/pan.
@@ -206,12 +206,10 @@ func _build_ui() -> void:
 	_map.add_child(_anim_layer)
 
 	# Sopra la mappa (non scalati): ordine di servizio al centro, zoom a destra.
-	_build_map_banner()
 	_build_zoom_box()
 
-	# Striscia inferiore: carta, Risorse, Vittoria e registro si aggiornano da soli.
+	# Striscia inferiore: il registro.
 	_strip = BottomStrip.new()
-	_strip.card_zoom_requested.connect(_show_card_zoom)
 	_log = _strip.log_view
 	add_child(_strip)
 
@@ -263,47 +261,6 @@ func _mk_btn(text: String, cb: Callable) -> Button:
 	return b
 
 
-## Ordine di servizio sopra la mappa: foglietto con di chi è il turno e il passo da fare.
-func _build_map_banner() -> void:
-	_banner = InstrBox.new()
-	_banner.add_theme_stylebox_override("panel", CLTheme.paper_box(12.0))
-	_banner.theme = CLTheme.paper_theme()
-	_banner.mouse_filter = Control.MOUSE_FILTER_STOP
-	_banner.mouse_entered.connect(func(): _banner.tooltip_text = "%s\n%s" % [_turn_banner.text, _instr.text])
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 1)
-	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_banner.add_child(v)
-	_turn_banner = CLTheme.label("", CLTheme.INK, 16, CLTheme.ui_heavy())
-	_turn_banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_turn_banner.max_lines_visible = 2
-	v.add_child(_turn_banner)
-	_instr = CLTheme.label("", CLTheme.INK, 13, CLTheme.typewriter())
-	_instr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_instr.max_lines_visible = 3
-	v.add_child(_instr)
-	add_child(_banner)
-
-
-var _map_rect := Rect2()
-
-
-## Il foglietto cambia altezza col testo: lo si tiene appoggiato al bordo basso della mappa.
-func _place_banner() -> void:
-	if _banner == null or _map_rect.size.x <= 0.0:
-		return
-	var bw := clampf(_map_rect.size.x * 0.55, 320.0, 620.0)
-	var bh := _banner.get_combined_minimum_size().y
-	var target := Rect2(_map_rect.position.x + 10.0, _map_rect.end.y - bh - 10.0, bw, bh)
-	if _banner.position != target.position or _banner.size != target.size:
-		_banner.position = target.position
-		_banner.size = target.size
-
-
-func _process(_delta: float) -> void:
-	_place_banner()
-
-
 ## Comandi di vista sopra la mappa: zoom e inquadratura.
 var _zoom_box: PanelContainer
 
@@ -328,7 +285,7 @@ func _build_zoom_box() -> void:
 	plus.custom_minimum_size = Vector2(36, 34)
 	h.add_child(plus)
 	var fit := _mk_btn("Isola", _view_island)
-	fit.tooltip_text = "Inquadra Cuba a tutta larghezza"
+	fit.tooltip_text = "Inquadra Cuba"
 	h.add_child(fit)
 	var whole := _mk_btn("Tutta", func(): _set_zoom(1.0))
 	whole.tooltip_text = "Mostra tutta la plancia, con tracciati e forze disponibili (0)"
@@ -336,12 +293,28 @@ func _build_zoom_box() -> void:
 	add_child(_zoom_box)
 
 
-## Pannello azione: i passi del turno in ordine, dal basso il tasto per eseguire.
+## Etichette brevi delle varianti di Attività speciale (tasti del pannello).
+const SA_SHORT := {
+	"profit:cash": "Incassa Denaro", "profit:convert": "Converti Denaro",
+	"bribe:cubes": "Corruzione (cubi)", "bribe:guerrillas_remove": "Corruzione (via Guerr.)",
+	"bribe:guerrillas_flip": "Corruzione (gira Guerr.)", "bribe:base": "Corruzione (Base)",
+	"kidnap:government": "Sequestro (Governo)", "kidnap:syndicate": "Sequestro (Sindacato)",
+}
+
+var _sa_desc: Label                  # cosa fare per l'Attività speciale in corso
+var _sa_btn_map: Dictionary = {}     # sa_id (con variante) -> Button
+var _event_side := ""                # "", "unshaded", "shaded": Evento scelto, da eseguire
+var _cur_img: TextureRect
+var _next_img: TextureRect
+var _ev_title: Label
+
+
+## Pannello azione: Fazione e istruzioni in testa, poi Operazioni, Attività speciali,
+## Evento con le carte, e in fondo il tasto Esegui contestuale con Passa e Concludi.
 func _build_action_panel() -> PanelContainer:
 	var pc := PanelContainer.new()
 	pc.theme = CLTheme.paper_theme()
-	var psb := CLTheme.paper_box(0.0)
-	pc.add_theme_stylebox_override("panel", psb)
+	pc.add_theme_stylebox_override("panel", CLTheme.paper_box(0.0))
 	pc.clip_contents = true
 	var outer := VBoxContainer.new()
 	outer.add_theme_constant_override("separation", 0)
@@ -383,7 +356,33 @@ func _build_action_panel() -> PanelContainer:
 	_head_stamp.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hh.add_child(_head_stamp)
 
-	# Corpo: passi numerati, scorrevole se lo schermo è basso (iPad).
+	# Istruzioni di turno, subito sotto la Fazione: cosa fare adesso.
+	_banner = InstrBox.new()
+	var bsb := CLTheme.flat(CLTheme.PAPER_DARK, 0)
+	bsb.content_margin_left = 14
+	bsb.content_margin_right = 14
+	bsb.content_margin_top = 7
+	bsb.content_margin_bottom = 7
+	bsb.border_width_bottom = 1
+	bsb.border_color = Color("cdbd93")
+	_banner.add_theme_stylebox_override("panel", bsb)
+	_banner.mouse_filter = Control.MOUSE_FILTER_STOP
+	_banner.mouse_entered.connect(func(): _banner.tooltip_text = "%s\n%s" % [_turn_banner.text, _instr.text])
+	var bv := VBoxContainer.new()
+	bv.add_theme_constant_override("separation", 1)
+	bv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_banner.add_child(bv)
+	_turn_banner = CLTheme.label("", CLTheme.INK, 15, CLTheme.ui_heavy())
+	_turn_banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_turn_banner.max_lines_visible = 2
+	bv.add_child(_turn_banner)
+	_instr = CLTheme.label("", CLTheme.INK, 12, CLTheme.typewriter())
+	_instr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_instr.max_lines_visible = 2
+	bv.add_child(_instr)
+	outer.add_child(_banner)
+
+	# Corpo scorrevole (schermi bassi), con il blocco "Esegui" sempre in fondo.
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -393,14 +392,14 @@ func _build_action_panel() -> PanelContainer:
 	m.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	for side in ["left", "right"]:
 		m.add_theme_constant_override("margin_" + side, 14)
-	m.add_theme_constant_override("margin_top", 10)
-	m.add_theme_constant_override("margin_bottom", 12)
+	m.add_theme_constant_override("margin_top", 8)
+	m.add_theme_constant_override("margin_bottom", 4)
 	scroll.add_child(m)
 	var body := VBoxContainer.new()
-	body.add_theme_constant_override("separation", 6)
+	body.add_theme_constant_override("separation", 5)
 	m.add_child(body)
 
-	body.add_child(CLTheme.section_title("1 · Operazione"))
+	body.add_child(CLTheme.section_title("Operazione"))
 	_op_btns = GridContainer.new()
 	_op_btns.columns = 2
 	_op_btns.add_theme_constant_override("h_separation", 6)
@@ -408,60 +407,74 @@ func _build_action_panel() -> PanelContainer:
 	body.add_child(_op_btns)
 	_op_desc = CLTheme.label("", Color("3b3226"), 12, CLTheme.typewriter())
 	_op_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_op_desc.custom_minimum_size = Vector2(0, 46)
+	_op_desc.max_lines_visible = 3
 	body.add_child(_op_desc)
 
-	body.add_child(CLTheme.section_title("2 · Spazi scelti"))
-	var sel_box := PanelContainer.new()
-	var ssb := CLTheme.flat(CLTheme.PAPER_DARK, 8)
-	ssb.set_corner_radius_all(3)
-	sel_box.add_theme_stylebox_override("panel", ssb)
-	_sel_lbl = CLTheme.label("", CLTheme.INK, 14)
-	_sel_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_sel_lbl.max_lines_visible = 3
-	sel_box.add_child(_sel_lbl)
-	body.add_child(sel_box)
-
 	var sa_title := HBoxContainer.new()
-	sa_title.add_child(CLTheme.section_title("3 · Attività speciale"))
+	sa_title.add_child(CLTheme.section_title("Attività speciale"))
 	var opt := CLTheme.label(" (facoltativa)", CLTheme.INK_DIM, 13)
 	opt.size_flags_vertical = Control.SIZE_SHRINK_END
 	sa_title.add_child(opt)
 	body.add_child(sa_title)
-	_sa_btns = HFlowContainer.new()
+	_sa_btns = GridContainer.new()
+	_sa_btns.columns = 2
 	_sa_btns.add_theme_constant_override("h_separation", 6)
 	_sa_btns.add_theme_constant_override("v_separation", 6)
 	body.add_child(_sa_btns)
+	_sa_desc = CLTheme.label("", Color("3b3226"), 12, CLTheme.typewriter())
+	_sa_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_sa_desc.max_lines_visible = 3
+	_sa_desc.visible = false
+	body.add_child(_sa_desc)
 
-	body.add_child(CLTheme.section_title("4 · Oppure l'Evento"))
-	var ev_box := GridContainer.new()
-	ev_box.columns = 2
-	ev_box.add_theme_constant_override("h_separation", 6)
-	_btn_ev_u = _mk_btn("Chiaro", func(): _on_event("unshaded"))
-	_btn_ev_u.tooltip_text = "Gioca il lato chiaro (non ombreggiato) dell'Evento"
-	_btn_ev_u.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_btn_ev_u.custom_minimum_size = Vector2(0, 38)
-	ev_box.add_child(_btn_ev_u)
-	_btn_ev_s = _mk_btn("Ombreggiato", func(): _on_event("shaded"))
-	_btn_ev_s.tooltip_text = "Gioca il lato ombreggiato dell'Evento"
-	_btn_ev_s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_btn_ev_s.custom_minimum_size = Vector2(0, 38)
-	ev_box.add_child(_btn_ev_s)
-	body.add_child(ev_box)
+	# Evento: carta corrente, titolo con i due lati, prossima carta in piccolo.
+	body.add_child(CLTheme.section_title("Evento"))
+	var cards := HBoxContainer.new()
+	cards.add_theme_constant_override("separation", 8)
+	body.add_child(cards)
+	_cur_img = _card_thumb(Vector2(66, 90), "Carta corrente: clicca per ingrandire")
+	cards.add_child(_cur_img)
+	var cv := VBoxContainer.new()
+	cv.add_theme_constant_override("separation", 5)
+	cv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cards.add_child(cv)
+	_ev_title = CLTheme.label("", CLTheme.INK, 19, CLTheme.display())
+	_ev_title.clip_text = true
+	_ev_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_ev_title.mouse_filter = Control.MOUSE_FILTER_PASS
+	cv.add_child(_ev_title)
+	_btn_ev_u = _mk_btn("Chiaro", func(): _pick_event("unshaded"))
+	_btn_ev_u.tooltip_text = "Scegli il lato chiaro (non ombreggiato) dell'Evento, poi 'Esegui'"
+	_btn_ev_s = _mk_btn("Ombreggiato", func(): _pick_event("shaded"))
+	_btn_ev_s.tooltip_text = "Scegli il lato ombreggiato dell'Evento, poi 'Esegui'"
+	for eb in [_btn_ev_u, _btn_ev_s]:
+		eb.custom_minimum_size = Vector2(0, 30)
+		eb.add_theme_font_size_override("font_size", 14)
+		cv.add_child(eb)
+	var nv := VBoxContainer.new()
+	nv.add_theme_constant_override("separation", 0)
+	nv.alignment = BoxContainer.ALIGNMENT_END
+	cards.add_child(nv)
+	var nl := CLTheme.label("Prossima", CLTheme.INK_DIM, 12)
+	nl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	nv.add_child(nl)
+	_next_img = _card_thumb(Vector2(50, 69), "Prossima carta: clicca per ingrandire")
+	_next_img.modulate = Color(1, 1, 1, 0.85)
+	nv.add_child(_next_img)
 
-	var spacer := Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	spacer.custom_minimum_size = Vector2(0, 4)
-	body.add_child(spacer)
-
-	# Anteprima del costo + Riciclaggio.
-	var prev_box := PanelContainer.new()
-	var pvb := CLTheme.box(Color(0, 0, 0, 0), Color("8a7340"), 1)
-	prev_box.add_theme_stylebox_override("panel", pvb)
+	# Fondo fisso: anteprima, Esegui contestuale, Passa / Concludi turno.
+	var foot_m := MarginContainer.new()
+	for side in ["left", "right"]:
+		foot_m.add_theme_constant_override("margin_" + side, 14)
+	foot_m.add_theme_constant_override("margin_top", 6)
+	foot_m.add_theme_constant_override("margin_bottom", 12)
+	outer.add_child(foot_m)
+	var foot := VBoxContainer.new()
+	foot.add_theme_constant_override("separation", 7)
+	foot_m.add_child(foot)
 	var prow := HBoxContainer.new()
-	prow.add_theme_constant_override("separation", 8)
-	prev_box.add_child(prow)
-	prow.add_child(CLTheme.label("Anteprima", CLTheme.INK_DIM, 14))
+	prow.add_theme_constant_override("separation", 6)
+	foot.add_child(prow)
 	_preview = TipLabel.new()
 	_preview.add_theme_font_override("font", CLTheme.ui_heavy())
 	_preview.add_theme_font_size_override("font_size", 15)
@@ -469,40 +482,74 @@ func _build_action_panel() -> PanelContainer:
 	_preview.mouse_filter = Control.MOUSE_FILTER_STOP
 	_preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_preview.clip_text = true
+	_preview.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	prow.add_child(_preview)
+	_btn_clear = _mk_btn("Annulla scelta", _on_cancel_selection)
+	_btn_clear.tooltip_text = "Scarta la scelta in preparazione, senza toccare le azioni già eseguite. (Esc)"
 	_btn_launder = _mk_btn("Riciclaggio", _on_launder)
 	_btn_launder.tooltip_text = "Rimuovi 1 tuo segnalino Denaro per un'Operazione Limitata extra GRATUITA (non Costruzione). Possibile dopo un'Operazione pagata senza Attività Speciale (max 1 per carta)."
-	prow.add_child(_btn_launder)
-	body.add_child(prev_box)
+	for b in [_btn_clear, _btn_launder]:
+		b.add_theme_font_size_override("font_size", 13)
+		b.custom_minimum_size = Vector2(0, 30)
+		prow.add_child(b)
+	_btn_launder.visible = false
 
 	_btn_exec = _mk_btn("Esegui", _on_execute)
-	_btn_exec.tooltip_text = "Applica l'Operazione preparata (Invio)"
+	_btn_exec.tooltip_text = "Applica la scelta preparata (Invio)"
 	CLTheme.primary_button(_btn_exec)
 	_btn_exec.custom_minimum_size = Vector2(0, 52)
-	body.add_child(_btn_exec)
+	_btn_exec.clip_text = true
+	foot.add_child(_btn_exec)
 
 	var row_a := GridContainer.new()
 	row_a.columns = 2
 	row_a.add_theme_constant_override("h_separation", 8)
-	row_a.add_theme_constant_override("v_separation", 8)
-	body.add_child(row_a)
-	_btn_clear = _mk_btn("Annulla selezione", _on_cancel_selection)
-	_btn_clear.tooltip_text = "Scarta la selezione/coda in preparazione, senza toccare le azioni già eseguite. (Esc)"
-	_btn_end = _mk_btn("Concludi turno", func(): _on_execute_and_end())
-	_btn_end.tooltip_text = "Esegui (se serve) e chiudi il turno della Fazione (Spazio)"
+	foot.add_child(row_a)
 	_btn_pass = _mk_btn("Passa", func(): GameController.seq_pass())
 	_btn_pass.tooltip_text = "La Fazione passa e guadagna Risorse"
-	_btn_bot = _mk_btn("Gioca il Bot", func(): GameController.bot_act_pending())
-	_btn_bot.tooltip_text = "Fai decidere al Bot l'azione della Fazione di turno"
-	for b in [_btn_clear, _btn_end, _btn_pass, _btn_bot]:
+	_btn_end = _mk_btn("Concludi turno", func(): _on_execute_and_end())
+	_btn_end.tooltip_text = "Esegui (se serve) e chiudi il turno della Fazione (Spazio)"
+	for b in [_btn_pass, _btn_end]:
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.custom_minimum_size = Vector2(0, 42)
 		row_a.add_child(b)
-	# "Concludi turno" pieno d'inchiostro: è la seconda azione più usata.
+	# "Concludi turno" pieno d'inchiostro: chiude ogni turno.
 	CLTheme.accent_button(_btn_end, CLTheme.INK, CLTheme.INK)
 	_btn_end.add_theme_color_override("font_color", CLTheme.PAPER)
 	_btn_end.add_theme_color_override("font_hover_color", Color.WHITE)
 	return pc
+
+
+func _card_thumb(sz: Vector2, tip: String) -> TextureRect:
+	var r := TextureRect.new()
+	r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	r.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	r.custom_minimum_size = sz
+	r.mouse_filter = Control.MOUSE_FILTER_STOP
+	r.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	r.tooltip_text = tip
+	r.gui_input.connect(func(e):
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and r.texture != null:
+			_show_card_zoom(r.texture))
+	return r
+
+
+## Carte e titolo dell'Evento (corrente e prossima).
+func _refresh_event_box() -> void:
+	var s: GameState = GameController.state
+	var cc: int = s.current_card
+	_cur_img.texture = CLAssets.card(cc) if cc >= 0 else null
+	var nc: int = GameController.next_card()
+	_next_img.texture = CLAssets.card(nc) if nc >= 0 else null
+	if cc > 0:
+		var c: CardDef = GameController.game_def.card(cc)
+		_ev_title.text = "%d · %s" % [c.number, c.title]
+		_ev_title.tooltip_text = c.translation
+		_cur_img.tooltip_text = "%s\n\n%s\n\n(clicca per ingrandire)" % [c.title, c.translation]
+	elif cc == 0:
+		_ev_title.text = "Propaganda"
+	else:
+		_ev_title.text = "Mazzo esaurito"
 
 
 ## Intestazione del pannello: Fazione di turno, posto nella sequenza, Risorse, ruolo.
@@ -529,40 +576,57 @@ func _refresh_panel_header(fid: String, sub: String, stamp: String) -> void:
 	(_head_stamp.get_theme_stylebox("normal") as StyleBoxFlat).border_color = fg
 
 
-## Evidenzia il tasto dell'Operazione in preparazione (pieno nel colore della Fazione).
+## Evidenzia la scelta in corso (Operazione, Attività speciale o lato dell'Evento)
+## e dà al tasto Esegui il nome di ciò che eseguirà.
 func _mark_op_button() -> void:
-	var active: String = _flow.op if _mode != "idle" and _flow.op != "" else ""
+	var op_on: String = _flow.op if _mode != "idle" and _flow.op != "" else ""
+	var sa_on: String = _sflow.pending if _sflow.is_active() else ""
+	var fcol := CLTheme.faction_ink(_cur_faction)
 	for op in _op_btn_map:
 		var b: Button = _op_btn_map[op]
-		if op == active and active != "":
-			CLTheme.accent_button(b, CLTheme.faction_ink(_cur_faction), CLTheme.faction_ink(_cur_faction))
+		if op == op_on:
+			CLTheme.accent_button(b, fcol, fcol)
 		else:
 			CLTheme.style_button(b)
-	_btn_exec.text = "Esegui" if active == "" else "Esegui %s" % CLNames.op(active)
+	for sa in _sa_btn_map:
+		var sb: Button = _sa_btn_map[sa]
+		if sa == sa_on:
+			CLTheme.accent_button(sb, fcol, fcol)
+		else:
+			CLTheme.style_button(sb)
+	for pair in [[_btn_ev_u, "unshaded"], [_btn_ev_s, "shaded"]]:
+		var eb: Button = pair[0]
+		if _event_side == pair[1]:
+			CLTheme.accent_button(eb, CLTheme.INK, CLTheme.INK)
+		else:
+			CLTheme.style_button(eb)
+	var label := "Esegui"
+	if sa_on != "":
+		label = "Esegui %s" % _sa_label(sa_on)
+	elif op_on != "":
+		label = "Esegui %s" % CLNames.op(op_on)
+	elif _event_side != "":
+		label = "Esegui Evento %s" % ("chiaro" if _event_side == "unshaded" else "ombreggiato")
+	_btn_exec.text = label
+	# La spiegazione compare sotto la scelta fatta: Operazione o Attività speciale.
+	_sa_desc.visible = sa_on != ""
+	_op_desc.visible = op_on != "" and _op_desc.text != ""
 
 
-## Elenco degli spazi scelti (o degli spostamenti in coda) nel passo 2.
-func _refresh_selection_box() -> void:
-	if _sel_lbl == null:
-		return
-	if _sflow.is_active():
-		_sel_lbl.text = "Attività speciale: segui le istruzioni sulla mappa."
-		return
-	if _flow.op == "" or _mode == "idle":
-		_sel_lbl.text = "Scegli prima un'Operazione: gli spazi validi si illuminano sulla mappa."
-		return
-	if _mode == "moves":
-		_sel_lbl.text = "Nessuno spostamento in coda: trascina i pezzi sulla mappa." if _flow.moves.is_empty() \
-			else "%d spostamenti in coda." % _flow.moves.size()
-		return
-	if _flow.selected.is_empty():
-		_sel_lbl.text = "Nessuno: clicca uno spazio evidenziato."
-		return
-	var names: Array = []
-	for sid in _flow.selected:
-		var sd: SpaceDef = GameController.game_def.space(sid)
-		names.append(sd.name if sd != null else sid)
-	_sel_lbl.text = "%d · %s" % [names.size(), ", ".join(names)]
+func _sa_label(sa: String) -> String:
+	return String(SA_SHORT.get(sa, SpecialFlow.label_of(sa)))
+
+
+## Scelta del lato dell'Evento: si esegue poi con "Esegui" (o "Concludi turno").
+func _pick_event(side: String) -> void:
+	if _event_side == side:
+		_event_side = ""
+	else:
+		_clear_pending()
+		_event_side = side
+		_instr.text = "Evento %s scelto: premi 'Esegui' per giocarlo (chiude il turno della Fazione)." % \
+			("chiaro" if side == "unshaded" else "ombreggiato")
+	_refresh_turn_banner()
 
 
 ## Esegui l'operazione (se selezionata e non ancora eseguita) e concludi il turno.
@@ -576,6 +640,9 @@ func _on_execute_and_end() -> void:
 			for sid in r.get("spaces", []):
 				if _space_views.has(sid):
 					_space_views[sid].flash(Color(1.0, 0.4, 0.4))
+		return
+	if _event_side != "":
+		_on_execute()   # l'Evento chiude già il turno della Fazione
 		return
 	if _flow.op != "" and _mode != "idle":
 		if not _on_execute():
@@ -593,7 +660,6 @@ func _prop_banner(stage: String) -> void:
 	_set_btn(_btn_clear, false)
 	_set_btn(_btn_exec, false)
 	_top.set_undo(0, "")
-	_sel_lbl.text = "Round di Propaganda: segui le istruzioni sulla mappa."
 	_op_desc.text = ""
 	if _preview != null:
 		_preview.text = ""
@@ -764,8 +830,7 @@ func _layout_board() -> void:
 	_zoom_box.position = Vector2(left + map_w - zb.x - 10.0, top + 10.0)
 	_zoom_box.size = zb
 	# In basso a sinistra: lì la plancia ha legenda e sequenza di gioco, l'isola resta libera.
-	_map_rect = Rect2(left, top, map_w, map_h)
-	_place_banner()
+
 	# Dimensione base (zoom=1) = tutta la plancia contenuta nel riquadro; lo zoom è
 	# applicato come SCALA al nodo mappa, così mappa, pedine e segnalini scalano insieme.
 	var aspect := 2040.0 / 2640.0
@@ -851,7 +916,7 @@ func _refresh() -> void:
 	if _track_overlay != null:
 		_track_overlay.queue_redraw()
 	_refresh_turn_banner()
-	_strip.refresh()
+	_refresh_event_box()
 	_top.refresh()
 
 
@@ -869,21 +934,29 @@ func _refresh_turn_banner() -> void:
 	var st := GameController.seq_status()
 	var card: int = GameController.state.current_card
 	var turn_active: bool = st.get("active", false) and String(st.get("pending", "")) != ""
+	# Cambio di Fazione PRIMA di abilitare i tasti: altrimenti i tasti appena ricreati
+	# per la nuova Fazione restano attivi anche quando non dovrebbero (es. Op Limitata).
+	if turn_active and String(st["pending"]) != _cur_faction:
+		_select_faction(String(st["pending"]))
 	# Stato pulsanti contestuale
 	_set_btn(_btn_end, turn_active)
 	_set_btn(_btn_pass, turn_active)
 	_set_btn(_btn_bot, turn_active)
 	_set_btn(_btn_launder, turn_active and GameController.can_launder())
 	_set_btn(_btn_clear, _mode != "idle" or not _flow.selected.is_empty() or not _flow.moves.is_empty())
-	_set_btn(_btn_exec, turn_active and (_sflow.is_active() or (_flow.op != "" and _mode != "idle")))
+	_set_btn(_btn_exec, turn_active and (_sflow.is_active() or (_flow.op != "" and _mode != "idle") \
+		or _event_side != ""))
+	if _btn_launder != null:
+		_btn_launder.visible = turn_active and GameController.can_launder()
 	_refresh_undo_btn()
 	_refresh_preview()
-	_refresh_selection_box()
 	_mark_op_button()
 	var legal: Array = st.get("legal", [])
 	var event_ok := turn_active and (legal.has(4))  # EVENT
 	_set_btn(_btn_ev_u, event_ok)
 	_set_btn(_btn_ev_s, event_ok)
+	if not event_ok:
+		_event_side = ""
 	var lim := GameController.seq_is_limited_only()
 	# Momentum "MAP": il Governo può fare l'Att.Speciale anche in Op Limitata.
 	var lim_sa_ok := GameController.limited_special_ok(String(st.get("pending", "")))
@@ -908,8 +981,6 @@ func _refresh_turn_banner() -> void:
 		_banner.visible = _turn_banner.text != "" or _instr.text != ""
 		return
 	var pending: String = st["pending"]
-	if pending != _cur_faction:
-		_select_faction(pending)
 	_turn_banner.add_theme_color_override("font_color", CLTheme.faction_ink(pending))
 	var slot := "1ª" if st.get("first_slot", true) else "2ª"
 	var s: GameState = GameController.state
@@ -919,8 +990,7 @@ func _refresh_turn_banner() -> void:
 		"IN AZIONE" if GameController.is_player(pending) else "BOT")
 	_banner.visible = true
 	if _mode == "idle" and not _sflow.is_active():
-		_op_desc.text = "Scegli un'Operazione: gli spazi dove è possibile si illuminano sulla mappa." \
-			if not lim else "Operazione Limitata: un solo spazio e nessuna Attività speciale."
+		_op_desc.text = ""
 	# Guida passo-passo in base allo stato del flusso.
 	var step := ""
 	if _sflow.is_active():
@@ -929,13 +999,12 @@ func _refresh_turn_banner() -> void:
 		var acts: Array = []
 		for a in legal:
 			acts.append(ACTION_NAMES.get(int(a), str(a)))
-		step = "scegli un'Operazione (tasti), oppure: %s" % ", ".join(acts)
+		step = "scegli un'Operazione, un'Attività speciale o l'Evento (possibili: %s)" % ", ".join(acts)
 	elif _mode == "moves":
-		step = "trascina i pezzi (%d spostamenti) -> 'Concludi turno'" % _flow.moves.size()
+		step = "trascina i pezzi (%d spostamenti in coda), poi 'Esegui' o 'Concludi turno'" % _flow.moves.size()
 	else:
-		step = "clicca gli spazi evidenziati (%d selezionati) -> 'Concludi turno'" % _flow.selected.size()
-	_turn_banner.text = "Tocca a %s (%s Fazione) — %s" % \
-		[GameController.faction_name(pending), slot, step]
+		step = "clicca gli spazi evidenziati (scelti: %d), poi 'Esegui' o 'Concludi turno'" % _flow.selected.size()
+	_turn_banner.text = step.substr(0, 1).to_upper() + step.substr(1)
 
 
 func _set_btn(b: Button, on: bool) -> void:
@@ -1004,52 +1073,31 @@ func _rebuild_action_buttons(fid: String) -> void:
 		var ob: Button = _mk_btn(CLNames.op(op), _start_op.bind(op))
 		ob.tooltip_text = OP_DESC.get(op, "")
 		ob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		ob.custom_minimum_size = Vector2(0, 44)
-		ob.add_theme_font_size_override("font_size", 17)
+		ob.custom_minimum_size = Vector2(0, 38)
+		ob.add_theme_font_size_override("font_size", 16)
 		_op_btns.add_child(ob)
 		_op_btn_map[op] = ob
 	for c in _sa_btns.get_children():
 		c.queue_free()
+	_sa_btn_map.clear()
+	# Un tasto per ogni Attività speciale e per ogni sua variante (niente tendine).
 	for sa in GameController.game_def.faction(fid).special_activities:
+		var ids: Array = []
 		if SpecialFlow.VARIANTS.has(sa):
-			# Un solo tasto a tendina che "esplode" le varianti (niente barra che va a capo).
-			var mb := _mk_menu_btn("%s ▾" % CLNames.sa(sa))
-			mb.custom_minimum_size = Vector2(0, 36)
-			mb.tooltip_text = SA_DESC.get(sa, "")
-			var pop := mb.get_popup()
-			var ids: Array = []
 			for v in SpecialFlow.VARIANTS[sa]:
-				pop.add_item(_variant_short(String(v["label"])))
 				ids.append(String(v["id"]))
-			pop.id_pressed.connect(func(i): _do_special(String(ids[i])))
-			_sa_btns.add_child(mb)
 		else:
-			var sb: Button = _mk_btn(CLNames.sa(sa), _do_special.bind(sa))
-			sb.custom_minimum_size = Vector2(0, 36)
-			sb.tooltip_text = SA_DESC.get(sa, "")
+			ids.append(String(sa))
+		for id in ids:
+			var sb: Button = _mk_btn(_sa_label(id), _do_special.bind(id))
+			sb.custom_minimum_size = Vector2(0, 32)
+			sb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			sb.clip_text = true
+			sb.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			sb.add_theme_font_size_override("font_size", 14)
+			sb.tooltip_text = "%s\n%s" % [SpecialFlow.label_of(id), SA_DESC.get(sa, "")]
 			_sa_btns.add_child(sb)
-
-
-## Etichetta breve di una variante: il testo tra parentesi ("Corruzione (cubi)" -> "cubi").
-func _variant_short(label: String) -> String:
-	var a := label.find("(")
-	var b := label.rfind(")")
-	return label.substr(a + 1, b - a - 1) if a >= 0 and b > a else label
-
-
-## Tasto a tendina (MenuButton) con la stessa veste degli altri tasti.
-func _mk_menu_btn(text: String) -> MenuButton:
-	var b := TipMenuButton.new()
-	b.text = text
-	b.flat = false
-	CLTheme.style_button(b)
-	return b
-
-
-
-
-
-
+			_sa_btn_map[id] = sb
 
 
 func _show_card_zoom(tex: Texture2D) -> void:
@@ -1180,6 +1228,7 @@ func _load_from(path: String, label: String) -> void:
 ## Avvia l'Operazione scelta (tasto): evidenzia gli spazi e imposta il flusso.
 func _start_op(op_id: String) -> void:
 	# LimOp anche quando è armata la LimOp gratuita del Riciclaggio (1 spazio).
+	_event_side = ""
 	var lim_only: bool = GameController.seq_is_limited_only() or GameController.free_limop_armed()
 	if not _flow.start(op_id, _cur_faction, lim_only):
 		_err(_flow.error)
@@ -1324,6 +1373,12 @@ func _update_moves_overlay() -> void:
 
 
 func _on_execute() -> bool:
+	# Evento scelto (Chiaro/Ombreggiato): l'Esegui lo gioca e chiude il turno della Fazione.
+	if _event_side != "":
+		var side := _event_side
+		_event_side = ""
+		_on_event(side)
+		return true
 	# Passi dell'Attività Speciale che si confermano con "Esegui"
 	# (numero di cubi del Trasporto/Muscle, Casinò del Profitto).
 	if _sflow.is_active():
@@ -1362,7 +1417,8 @@ func _do_special(sa: String) -> void:
 		return
 	_mode = "special"
 	_render_special()
-	_op_desc.text = "%s: %s" % [SpecialFlow.label_of(sa), SA_DESC.get(SpecialFlow.base_of(sa), "")]
+	_event_side = ""
+	_sa_desc.text = "%s: %s" % [SpecialFlow.label_of(sa), SA_DESC.get(SpecialFlow.base_of(sa), "")]
 	_instr.text = "%s — %s" % [SpecialFlow.label_of(sa), _sflow.message]
 	_refresh_turn_banner()
 
@@ -1487,6 +1543,7 @@ func _on_new_game() -> void:
 ## Pulizia interna della selezione/coda in preparazione (senza undo).
 func _clear_pending() -> void:
 	_mode = "idle"
+	_event_side = ""
 	_flow.clear()
 	_sflow.clear()
 	_clear_highlights()

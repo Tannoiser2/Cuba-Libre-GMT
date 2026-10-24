@@ -10,10 +10,16 @@ extends PanelContainer
 signal role_toggle_requested(fid: String)
 signal undo_requested
 signal auto_bot_toggled
+signal bot_turn_requested
 signal menu_id_pressed(id: int)
 
-const HEIGHT := 64.0
+const HEIGHT := 72.0
 const FACTIONS := ["government", "m26", "directorio", "syndicate"]
+## Nome della metrica di vittoria di ogni Fazione (suggerimento della tessera).
+const VIC_LABEL := {
+	"government": "Supporto", "m26": "Opposizione + Basi",
+	"directorio": "Pop DR + Basi", "syndicate": "Casinò aperti",
+}
 
 ## Voci del menu di partita (gli id arrivano alla scena con `menu_id_pressed`).
 enum MenuId { SAVE, LOAD, AUTOSAVE, NEW_GAME, MAIN_MENU, BOT_TURN, ALL_BOTS, FULL_GAME,
@@ -23,6 +29,7 @@ var _tiles: Dictionary = {}       ## fid -> {panel, order, name, sub, res}
 var _turn_lbl: Label
 var _btn_undo: Button
 var _btn_auto: Button
+var _btn_bot: Button
 var _menu: MenuButton
 
 
@@ -74,8 +81,12 @@ func _init() -> void:
 	_btn_auto.toggled.connect(func(_on): auto_bot_toggled.emit())
 	row.add_child(_btn_auto)
 	row.add_child(_vline())
+	_btn_bot = _cmd_button("Gioca Bot", "Fai decidere al Bot l'azione della Fazione di turno")
+	_btn_bot.pressed.connect(func(): bot_turn_requested.emit())
+	row.add_child(_btn_bot)
+	row.add_child(_vline())
 	_menu = MenuButton.new()
-	_menu.text = "Partita"
+	_menu.text = "Menu"
 	_menu.tooltip_text = "Salvataggi, nuova partita, Bot e velocità"
 	_style_cmd(_menu)
 	var p := _menu.get_popup()
@@ -83,7 +94,6 @@ func _init() -> void:
 	p.add_item("Carica partita", MenuId.LOAD)
 	p.add_item("Riprendi autosalvataggio", MenuId.AUTOSAVE)
 	p.add_separator("Bot")
-	p.add_item("Gioca la Fazione di turno", MenuId.BOT_TURN)
 	p.add_item("Tutti i Bot (questa carta)", MenuId.ALL_BOTS)
 	p.add_item("Auto: tutta la partita", MenuId.FULL_GAME)
 	p.add_separator("Velocità dei Bot")
@@ -171,13 +181,29 @@ func _build_tile(fid: String) -> Control:
 	var sub := CLTheme.label("", CLTheme.TEXT_DIM, 13)
 	sub.clip_text = true
 	v.add_child(sub)
+	# Vittoria: barra con la tacca della soglia e valore/soglia accanto.
+	var vrow := HBoxContainer.new()
+	vrow.add_theme_constant_override("separation", 5)
+	vrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bar := MeterBar.new()
+	bar.color = CLTheme.faction(fid).lightened(0.15)
+	bar.track_color = Color("33312b")
+	bar.tick_color = CLTheme.PAPER
+	bar.bar_height = 6
+	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	vrow.add_child(bar)
+	var vval := CLTheme.label("", CLTheme.TEXT_DIM, 12, CLTheme.ui_bold())
+	vrow.add_child(vval)
+	v.add_child(vrow)
 	h.add_child(v)
 	var res := CLTheme.label("", Color.WHITE, 28, CLTheme.display())
 	res.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	res.tooltip_text = "Risorse"
 	res.mouse_filter = Control.MOUSE_FILTER_PASS
 	h.add_child(res)
-	_tiles[fid] = {"panel": pc, "order": order, "sub": sub, "res": res, "name": name_l}
+	_tiles[fid] = {"panel": pc, "order": order, "sub": sub, "res": res, "name": name_l,
+		"bar": bar, "vval": vval}
 	return pc
 
 
@@ -252,6 +278,8 @@ func refresh() -> void:
 	var actors: PackedStringArray = gc.seq.actors() if gc.seq != null else PackedStringArray()
 	var passers: PackedStringArray = gc.seq.passers() if gc.seq != null else PackedStringArray()
 	_turn_lbl.text = str(gc.cards_left())
+	var vs: Dictionary = gc.victory()
+	_btn_bot.disabled = pending == "" or gc.prop_pending
 	for fid in FACTIONS:
 		var t: Dictionary = _tiles[fid]
 		var col := CLTheme.faction(fid)
@@ -270,6 +298,19 @@ func refresh() -> void:
 			status = "non disponibile"
 		(t["sub"] as Label).text = "%s · %s" % ["Giocatore" if gc.is_player(fid) else "Bot", status]
 		(t["res"] as Label).text = str(s.get_resources(fid)) if s.tracks_resources(fid) else "—"
+		var d: Dictionary = vs.get(fid, {})
+		var val := int(d.get("value", 0))
+		var thr := int(d.get("threshold", 0))
+		var bar: MeterBar = t["bar"]
+		bar.max_value = maxf(thr * 1.45, val + 2.0)
+		bar.set_values(val, thr)
+		bar.color = Color.WHITE if active else col.lightened(0.15)
+		bar.track_color = col.darkened(0.45) if active else Color("33312b")
+		(t["vval"] as Label).text = "%d/%d" % [val, thr]
+		(t["vval"] as Label).add_theme_color_override("font_color",
+			Color("3b2f0a") if active and fid == "directorio" else (Color.WHITE if active else CLTheme.TEXT_DIM))
+		(t["panel"] as Control).tooltip_text = "%s · Vittoria %s: %d (soglia %d, margine %+d)\nClicca per passare da Giocatore a Bot e viceversa" % [
+			gc.faction_name(fid), VIC_LABEL.get(fid, ""), val, thr, int(d.get("margin", 0))]
 		var sb := CLTheme.box(col if active else Color("1c1b18"),
 			CLTheme.PAPER if active else Color("33312b"), 1)
 		sb.border_width_left = 5
@@ -310,3 +351,4 @@ class FlagEmblem:
 			var a := -PI / 2.0 + i * PI / 5.0
 			pts.append(c + Vector2(cos(a), sin(a)) * r)
 		draw_colored_polygon(pts, CLTheme.PAPER)
+

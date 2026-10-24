@@ -324,7 +324,7 @@ static func primary_button(b: Button, size: int = 26) -> void:
 # --- Etichette -----------------------------------------------------------------
 
 ## Titolo di sezione in Bebas (es. "1 · OPERAZIONE").
-static func section_title(text: String, color: Color = INK_DIM, size: int = 19) -> Label:
+static func section_title(text: String, color: Color = INK_DIM, size: int = 18) -> Label:
 	var l := Label.new()
 	l.text = text
 	l.add_theme_font_override("font", display())
